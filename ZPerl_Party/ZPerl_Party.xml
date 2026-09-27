@@ -1,0 +1,439 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
+	<Script file="ZPerl_Party.lua"/>
+	<Button name="XPerl_Party_FrameTemplate" inherits="SecureUnitButtonTemplate" virtual="true" clampedToScreen="true" frameStrata="LOW" hidden="true">
+		<Size x="220" y="62"/>
+		<Scripts>
+			<OnLoad>
+				self:RegisterForClicks("AnyUp")
+				self:RegisterForDrag("LeftButton")
+				ZPerl_Party_OnLoad(self)
+				self:SetScript("OnEnter", ZPerl_Unit_OnEnter)
+				self:SetScript("OnLeave", ZPerl_Unit_OnLeave)
+			</OnLoad>
+			<OnDragStart>
+				if (XPerlLocked == 0) then
+					XPerl_Party_Anchor:StartMoving()
+				end
+			</OnDragStart>
+			<OnDragStop>
+				XPerl_Party_Anchor:StopMovingOrSizing()
+				XPerl_SavePosition(XPerl_Party_Anchor)
+			</OnDragStop>
+		</Scripts>
+		<Frames>
+			<!-- Party Portrait -->
+			<Frame name="$parentportraitFrame" inherits="XPerlBackdropTemplate,XPerl_Portrait_Template" hidden="true">
+				<KeyValues>
+					<KeyValue key="backdropInfo" value="XPerl_Frame_Backdrop_32_16_3333" type="global"/>
+				</KeyValues>
+				<Anchors>
+					<Anchor point="TOPLEFT"/>
+				</Anchors>
+			</Frame>
+			<!-- Party Name -->
+			<Button name="$parentnameFrame" inherits="XPerlBackdropTemplate,SecureUnitButtonTemplate">
+				<KeyValues>
+					<KeyValue key="backdropInfo" value="XPerl_Frame_Backdrop_32_16_3333" type="global"/>
+				</KeyValues>
+				<Scripts>
+					<OnLoad>
+						self:OnBackdropLoaded()
+						self:RegisterForClicks("AnyUp")
+						self:RegisterForDrag("LeftButton")
+						XPerl_RegisterUnitText(_G[self:GetName().."text"])
+						self:SetScript("OnEnter", function(self)
+							ZPerl_Unit_OnEnter(self:GetParent())
+						end)
+						self:SetScript("OnLeave", function(self)
+							ZPerl_Unit_OnLeave(self:GetParent())
+						end)
+					</OnLoad>
+					<OnDragStart>
+						if (XPerlLocked == 0) then
+							XPerl_Party_Anchor:StartMoving()
+						end
+					</OnDragStart>
+					<OnDragStop>
+						XPerl_Party_Anchor:StopMovingOrSizing()
+						XPerl_SavePosition(XPerl_Party_Anchor)
+					</OnDragStop>
+				</Scripts>
+				<Size x="106" y="24"/>
+				<Anchors>
+					<Anchor point="TOPLEFT"/>
+				</Anchors>
+				<Layers>
+					<Layer level="OVERLAY">
+						<!-- Combat Icon -->
+						<Texture name="$parentcombatIcon" file="Interface\CharacterFrame\UI-StateIcon" hidden="true">
+							<Size x="32" y="31"/>
+							<Anchors>
+								<Anchor point="RIGHT"/>
+							</Anchors>
+						</Texture>
+						<!-- PVP Icon -->
+						<Texture name="$parentpvpIcon" file="Interface\TargetingFrame\UI-PVP-FFA" hidden="true">
+							<Size x="36" y="36"/>
+							<Anchors>
+								<Anchor point="RIGHT" x="16" y="-7"/>
+							</Anchors>
+						</Texture>
+						<!-- 30 Yard Range Icon -->
+						<Texture name="$parentrangeIcon" file="Interface\Addons\ZPerl\Images\XPerl_30Yard" hidden="true">
+							<Size x="48" y="19"/>
+							<Anchors>
+								<Anchor point="CENTER" relativePoint="TOP" x="0" y="-2"/>
+							</Anchors>
+						</Texture>
+						<!-- Raid Target Icon -->
+						<Texture name="$parentraidIcon" file="Interface\TargetingFrame\UI-RaidTargetingIcons" hidden="true">
+							<Size x="20" y="20"/>
+							<Anchors>
+								<Anchor point="CENTER" relativePoint="TOPLEFT" x="0" y="-4"/>
+							</Anchors>
+						</Texture>
+						<!-- Leader Icon -->
+						<Texture name="$parentleaderIcon" file="Interface\GroupFrame\UI-Group-LeaderIcon" hidden="true">
+							<Size x="16" y="16"/>
+							<Anchors>
+								<Anchor point="TOPLEFT" x="10" y="7"/>
+							</Anchors>
+						</Texture>
+						<!-- Master Icon -->
+						<Texture name="$parentmasterIcon" file="Interface\GroupFrame\UI-Group-MasterLooter" hidden="true">
+							<Size x="16" y="16"/>
+							<Anchors>
+								<Anchor point="TOPLEFT" x="25" y="7"/>
+							</Anchors>
+						</Texture>
+						<!-- Role Icon -->
+						<Texture name="$parentroleIcon" file="Interface\GroupFrame\UI-Group-MainAssistIcon" hidden="true">
+							<Anchors>
+								<Anchor point="TOPLEFT" x="40" y="5"/>
+							</Anchors>
+							<Size x="16" y="16"/>
+						</Texture>
+						<!-- Warning Icon -->
+						<Texture name="$parentwarningIcon" file="Interface\Minimap\Ping\ping6" alphaMode="ADD" hidden="true">
+							<Size x="32" y="31"/>
+							<Anchors>
+								<Anchor point="TOP" relativePoint="TOP" x="0" y="2"/>
+							</Anchors>
+						</Texture>
+						<FontString name="$parenttext" inherits="GameFontNormal">
+							<Anchors>
+								<Anchor point="TOPLEFT"/>
+								<Anchor point="BOTTOMRIGHT" x="0" y="1"/>
+							</Anchors>
+						</FontString>
+					</Layer>
+				</Layers>
+			</Button>
+			<!-- Party Level Frame -->
+			<Frame name="$parentlevelFrame" inherits="XPerlBackdropTemplate">
+				<KeyValues>
+					<KeyValue key="backdropInfo" value="XPerl_Frame_Backdrop_8_16_3333" type="global"/>
+				</KeyValues>
+				<Size x="34" y="42"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$parentnameFrame"/>
+				</Anchors>
+				<Layers>
+					<Layer level="OVERLAY">
+						<!-- Level Text -->
+						<FontString name="$parenttext" inherits="GameFontNormalSmall" setAllPoints="true">
+							<Size x="32" y="12"/>
+						</FontString>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnLoad>
+						self:OnBackdropLoaded()
+						XPerl_RegisterUnitText(_G[self:GetName().."text"])
+					</OnLoad>
+				</Scripts>
+			</Frame>
+			<!-- Class Icon -->
+			<Frame name="$parentclassFrame" inherits="XPerlBackdropTemplate">
+				<KeyValues>
+					<KeyValue key="backdropInfo" value="XPerl_Icon_Backdrop_8_16_3333" type="global"/>
+				</KeyValues>
+				<Size x="20" y="20"/>
+				<Anchors>
+					<Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMLEFT" relativeTo="$parentportraitFrame" x="-1" y="2"/>
+				</Anchors>
+				<Layers>
+					<Layer level="OVERLAY">
+						<Texture name="$parenttex" file="Interface\Glues\CharacterCreate\UI-CharacterCreate-Classes" setAllPoints="true"/>
+					</Layer>
+				</Layers>
+			</Frame>
+			<!-- Party Stats -->
+			<Frame name="$parentstatsFrame" inherits="XPerlBackdropTemplate,XPerl_Stats_Template">
+				<KeyValues>
+					<KeyValue key="backdropInfo" value="XPerl_Frame_Backdrop_32_16_3333" type="global"/>
+				</KeyValues>
+				<Size x="140" y="41"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentlevelFrame" x="-4" y="-1"/>
+				</Anchors>
+				<Frames>
+					<!-- Ready Icon -->
+					<Frame name="$parentready" hidden="true" setAllPoints="true" topLevel="true">
+						<Layers>
+							<Layer level="OVERLAY">
+								<Texture name="$parentcheck">
+									<Size x="32" y="32"/>
+									<Anchors>
+										<Anchor point="RIGHT" x="-5" y="0"/>
+									</Anchors>
+								</Texture>
+							</Layer>
+						</Layers>
+					</Frame>
+				</Frames>
+			</Frame>
+			<!-- Phase Indicator Frame -->
+			<Frame name="$parentPhasingIcon" parentKey="phasingIcon" inherits="XPerlBackdropTemplate" hidden="true">
+				<Size x="22" y="22"/>
+				<Anchors>
+					<Anchor point="BOTTOMLEFT" relativeTo="$parentnameFrame" relativePoint="BOTTOMRIGHT" x="0" y="2"/>
+				</Anchors>
+				<Layers>
+					<Layer level="ARTWORK">
+						<Texture file="Interface\TargetingFrame\UI-PhasingIcon" setAllPoints="true">
+						</Texture>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnEnter>
+						GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+						GameTooltip:SetText(PARTY_PHASED_MESSAGE, nil, nil, nil, nil, true)
+						GameTooltip:Show()
+					</OnEnter>
+					<OnLeave function="GameTooltip_Hide"/>
+				</Scripts>
+			</Frame>
+			<!-- Party Target Frame -->
+			<Button name="$parenttargetFrame" hidden="true" inherits="XPerlBackdropTemplate,SecureUnitButtonTemplate">
+				<KeyValues>
+					<KeyValue key="backdropInfo" value="XPerl_Frame_Backdrop_32_16_3333" type="global"/>
+				</KeyValues>
+				<Scripts>
+					<OnLoad>
+						self:OnBackdropLoaded()
+						self:SetFrameLevel(self:GetParent():GetFrameLevel() + 5)
+						self:RegisterForClicks("AnyUp")
+						self:SetAttribute("*type1", "target")
+						self:SetAttribute("type2", "togglemenu")
+						self:SetAttribute("useparent-unit", true)
+						self:SetAttribute("unitsuffix", "target")
+						self:SetScript("OnEnter", ZPerl_Unit_OnEnter)
+						self:SetScript("OnLeave", ZPerl_Unit_OnLeave)
+					</OnLoad>
+				</Scripts>
+				<Size x="68" y="24"/>
+				<Anchors>
+					<Anchor point="BOTTOMLEFT" relativePoint="BOTTOMRIGHT" relativeTo="$parentnameFrame" x="-2" y="0"/>
+				</Anchors>
+				<Frames>
+					<!-- Health Bar -->
+					<StatusBar name="$parenthealthBar" inherits="XPerlBackdropTemplate,XPerlStatusBar">
+						<Anchors>
+							<Anchor point="TOPLEFT" x="5" y="-14"/>
+							<Anchor point="BOTTOMRIGHT" x="-5" y="5"/>
+						</Anchors>
+						<BarColor r="0" g="0.8" b="0"/>
+					</StatusBar>
+					<!-- Expected Health Bar -->
+					<StatusBar name="$parentexpectedHealth" inherits="XPerlBackdropTemplate" drawLayer="BORDER" hidden="true">
+						<Anchors>
+							<Anchor point="TOPLEFT" relativeTo="$parenthealthBar" x="0" y="0"/>
+							<Anchor point="BOTTOMRIGHT" relativeTo="$parenthealthBar" x="0" y="0"/>
+						</Anchors>
+						<BarTexture name="$parenttex" file="Interface\TargetingFrame\UI-StatusBar"/>
+						<BarColor r="0" g="1" b="1" a="1"/>
+						<Scripts>
+							<OnLoad>
+								XPerl_SetChildMembers(self)
+								XPerl_RegisterBar(self)
+								self:SetFrameLevel(_G[self:GetParent():GetName().."healthBar"]:GetFrameLevel() - 1)
+							</OnLoad>
+						</Scripts>
+					</StatusBar>
+					<!-- Absorb Health Bar -->
+					<StatusBar name="$parentexpectedAbsorbs" inherits="XPerlBackdropTemplate" drawLayer="OVERLAY" hidden="true">
+						<Anchors>
+							<Anchor point="TOPLEFT" relativeTo="$parenthealthBar" x="0" y="0"/>
+							<Anchor point="BOTTOMRIGHT" relativeTo="$parenthealthBar" x="0" y="0"/>
+						</Anchors>
+						<BarTexture name="$parenttex" file="Interface\Buttons\White8x8"/>
+						<BarColor r="0.14" g="0.33" b="0.7" a="0.7"/>
+						<Scripts>
+							<OnLoad>
+								self:SetReverseFill(true)
+								XPerl_SetChildMembers(self)
+							</OnLoad>
+						</Scripts>
+					</StatusBar>
+				</Frames>
+				<Layers>
+					<Layer level="OVERLAY">
+						<!-- Combat Icon -->
+						<Texture name="$parentcombatIcon" file="Interface\CharacterFrame\UI-StateIcon" hidden="true">
+							<Size x="22" y="21"/>
+							<Anchors>
+								<Anchor point="TOPRIGHT"/>
+							</Anchors>
+						</Texture>
+						<!-- PVP Icon -->
+						<Texture name="$parentpvpIcon" file="Interface\TargetingFrame\UI-PVP-FFA" hidden="true">
+							<Size x="32" y="32"/>
+							<Anchors>
+								<Anchor point="TOPLEFT" x="-3" y="0"/>
+							</Anchors>
+						</Texture>
+						<!-- Marker Icon -->
+						<Texture name="$parentraidIcon" file="Interface\TargetingFrame\UI-RaidTargetingIcons" hidden="true">
+							<Size x="16" y="16"/>
+							<Anchors>
+								<Anchor point="CENTER" relativePoint="RIGHT" x="1" y="0"/>
+							</Anchors>
+						</Texture>
+						<FontString name="$parenttext" inherits="GameFontNormalSmall">
+							<Anchors>
+								<Anchor point="TOPLEFT" x="3" y="-4"/>
+								<Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" x="-3" y="-14"/>
+							</Anchors>
+						</FontString>
+					</Layer>
+				</Layers>
+			</Button>
+			<!-- Buffs Frame -->
+			<Frame name="$parentbuffFrame" inherits="XPerlBackdropTemplate">
+				<Size x="170" y="20"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$parentstatsFrame" x="5" y="0"/>
+				</Anchors>
+			</Frame>
+			<!-- Debuffs Frame -->
+			<Frame name="$parentdebuffFrame" inherits="XPerlBackdropTemplate">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parentbuffFrame"/>
+					<Anchor point="BOTTOMRIGHT" relativeTo="$parentbuffFrame"/>
+				</Anchors>
+			</Frame>
+			<!-- Highlight Frame -->
+			<Frame name="$parenthighlight" inherits="XPerlBackdropTemplate,XPerl_HighlightTemplate">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parentnameFrame"/>
+					<Anchor point="BOTTOMRIGHT" relativeTo="$parentstatsFrame"/>
+				</Anchors>
+			</Frame>
+			<!-- Hit Indicator Frame -->
+			<Frame name="$parenthitIndicator" inherits="XPerlBackdropTemplate" frameStrata="HIGH">
+				<Layers>
+					<Layer level="OVERLAY">
+						<FontString name="$parenttext" inherits="NumberFontNormalHuge" hidden="true" text="Error!">
+							<FontHeight>
+								<AbsValue val="30"/>
+							</FontHeight>
+						</FontString>
+					</Layer>
+				</Layers>
+			</Frame>
+		</Frames>
+	</Button>
+	<Frame name="XPerl_Party_Anchor" frameStrata="LOW" parent="UIParent" inherits="XPerlBackdropTemplate" clampedToScreen="true" movable="true">
+		<Size x="100" y="60"/>
+		<Anchors>
+			<Anchor point="TOPLEFT" x="0" y="-150"/>
+		</Anchors>
+		<Frames>
+			<Frame name="$parentVirtual" inherits="XPerlBackdropTemplate" hidden="true">
+				<KeyValues>
+					<KeyValue key="backdropInfo" value="XPerl_Frame_Backdrop_16_16_4444" type="global"/>
+				</KeyValues>
+				<Size x="80" y="10"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+				<Scripts>
+					<OnLoad>
+						self:OnBackdropLoaded()
+						self:RegisterForDrag("LeftButton")
+					</OnLoad>
+					<OnDragStart>
+						if (XPerlLocked == 0) then
+							XPerl_Party_Anchor:StartMoving()
+						end
+					</OnDragStart>
+					<OnDragStop>
+						XPerl_Party_Anchor:StopMovingOrSizing()
+						XPerl_SavePosition(XPerl_Party_Anchor)
+					</OnDragStop>
+				</Scripts>
+				<Layers>
+					<Layer>
+						<FontString name="$parentText" setAllPoints="true" inherits="GameFontNormal" text="Party"/>
+					</Layer>
+				</Layers>
+			</Frame>
+		</Frames>
+	</Frame>
+	<Frame name="ZPerl_Party_SecureHeader" parent="XPerl_Party_Anchor" clampedToScreen="true" inherits="XPerlBackdropTemplate,SecurePartyHeaderTemplate" frameStrata="LOW" virtual="false" hidden="true">
+		<Size x="100" y="60"/>
+		<Anchors>
+			<Anchor point="TOPLEFT" relativeTo="XPerl_Party_Anchor" relativePoint="CENTER"/>
+		</Anchors>
+		<!--<Attributes>
+			<Attribute name="template" type="string" value="XPerl_Party_FrameTemplate"/>
+			<Attribute name="templateType" type="string" value="Button"/>
+			<Attribute name="minWidth" type="number" value="80"/>
+			<Attribute name="minHeight" type="number" value="10"/>
+			<Attribute name="xOffset" type="number" value="0"/>
+		</Attributes>-->
+	</Frame>
+	<Frame name="ZPerl_Party_SecureState" inherits="SecureHandlerStateTemplate" parent="UIParent" protected="true">
+		<Attributes>
+			<Attribute name="_onstate-partymonitor" value="
+				if not self:GetAttribute('partyEnabled') then
+					self:GetFrameRef('partyHeader'):Hide()
+					return
+				end
+
+				if newstate == 'petbattle' then
+					self:GetFrameRef('partyHeader'):Hide()
+				elseif self:GetAttribute('partySmallRaid') then
+					return
+				elseif newstate == 'raid' and self:GetAttribute('partyInRaid') then
+					self:GetFrameRef('partyHeader'):Show()
+				elseif newstate == 'party' then
+					self:GetFrameRef('partyHeader'):Show()
+				else
+					self:GetFrameRef('partyHeader'):Hide()
+				end"/>
+		</Attributes>
+		<Scripts>
+			<OnLoad>
+				SecureHandler_OnLoad(self)
+				self:SetFrameRef("partyHeader", ZPerl_Party_SecureHeader)
+				self:SetAttribute("partyEnabled", XPerlDB.party.enable)
+				self:SetAttribute("partyInRaid", XPerlDB.party.inRaid)
+				self:SetAttribute("partySmallRaid", XPerlDB.party.smallRaid)
+				RegisterStateDriver(self, "partymonitor", "[petbattle] petbattle; [group:raid] raid; [group:party] party; hide")
+			</OnLoad>
+		</Scripts>
+	</Frame>
+	<!-- The Real Frames -->
+	<Button name="XPerl_party1" inherits="XPerl_Party_FrameTemplate" parent="ZPerl_Party_SecureHeader" id="1"/>
+	<Button name="XPerl_party2" inherits="XPerl_Party_FrameTemplate" parent="ZPerl_Party_SecureHeader" id="2"/>
+	<Button name="XPerl_party3" inherits="XPerl_Party_FrameTemplate" parent="ZPerl_Party_SecureHeader" id="3"/>
+	<Button name="XPerl_party4" inherits="XPerl_Party_FrameTemplate" parent="ZPerl_Party_SecureHeader" id="4"/>
+	<Button name="XPerl_party5" inherits="XPerl_Party_FrameTemplate" parent="ZPerl_Party_SecureHeader" id="5"/>
+	<Frame name="XPerl_Party_Events_Frame">
+		<Scripts>
+			<OnLoad function="XPerl_Party_Events_OnLoad"/>
+		</Scripts>
+	</Frame>
+</Ui>

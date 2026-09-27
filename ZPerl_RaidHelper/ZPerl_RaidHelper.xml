@@ -1,0 +1,410 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
+
+	<Script file="localization.lua"/>
+	<Script file="localization.deDE.lua"/>
+	<Script file="localization.frFR.lua"/>
+	<Script file="Localization.esES.lua"/>
+	<Script file="localization.zhCN.lua"/>
+	<Script file="localization.zhTW.lua"/>
+	<Script file="localization.koKR.lua"/>
+	<Script file="localization.ruRU.lua"/>
+	<Script file="localization.itIT.lua"/>
+	<Script file="ZPerl_Config.lua"/>
+	<Script file="ZPerl_RaidHelper.lua"/>
+
+	<GameTooltip name="XPerl_BottomTip" frameStrata="LOW" parent="UIParent" inherits="GameTooltipTemplate"/>
+
+	<Button name="XPerl_MTList_BasicButton" inherits="XPerlBackdropTemplate" virtual="true">
+		<KeyValues>
+			<KeyValue key="backdropInfo" value="XPerl_Raid_Backdrop_16_9_3333" type="global"/>
+		</KeyValues>
+		<Scripts>
+			<OnEnter>
+				if (self.tooltipText) then
+					GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+					GameTooltip:SetText(self.tooltipText, nil, nil, nil, nil, true)
+				end
+			</OnEnter>
+			<OnLeave>
+				GameTooltip:Hide()
+			</OnLeave>
+		</Scripts>
+	</Button>
+
+	<Button name="XPerl_MTList_UnitTemplate" inherits="XPerlBackdropTemplate,SecureActionButtonTemplate" virtual="true" hidden="true">
+		<KeyValues>
+			<KeyValue key="backdropInfo" value="XPerl_Raid_Backdrop_16_9_3333" type="global"/>
+		</KeyValues>
+		<Scripts>
+			<OnLoad>
+				self:OnBackdropLoaded()
+				XPerl_SetChildMembers(self)
+				self:RegisterForClicks("AnyUp")
+				XPerl_RegisterBar(_G[self:GetName().."healthBar"])
+
+				if (not strmatch(self:GetName(), "Targets.+Target")) then
+					XPerl_MTList_ChildUnits(self)
+				end
+			</OnLoad>
+			<OnEnter function="XPerl_MTListUnit_OnEnter"/>
+			<OnLeave>
+				GameTooltip:Hide()
+				XPerl_BottomTip:Hide()
+			</OnLeave>
+		</Scripts>
+		<Size x="100" y="26"/>
+		<HighlightTexture file="Interface\Addons\ZPerl\Images\XPerl_Highlight" alphaMode="ADD">
+		</HighlightTexture>
+		<Frames>
+			<StatusBar name="$parenthealthBar" inherits="XPerlBackdropTemplate" enableMouse="false">
+				<Scripts>
+					<OnLoad>
+						self.text = _G[self:GetName().."text"]
+						self.tex = _G[self:GetName().."tex"]
+						self.bg = _G[self:GetName().."bg"]
+					</OnLoad>
+				</Scripts>
+				<Size x="70" y="10"/>
+				<HitRectInsets>
+					<AbsInset left="70" right="70" top="10" bottom="10"/>
+				</HitRectInsets>
+				<Anchors>
+					<Anchor point="TOPLEFT" x="3" y="-14"/>
+					<Anchor point="BOTTOMRIGHT" x="-3" y="2"/>
+				</Anchors>
+				<BarTexture name="$parenttex" file="Interface\TargetingFrame\UI-StatusBar"/>
+				<Layers>
+					<Layer level="OVERLAY">
+						<FontString name="$parenttext" inherits="GameFontNormalSmall" setAllPoints="true" hidden="tru">
+						</FontString>
+					</Layer>
+					<Layer level="BACKGROUND">
+						<Texture name="$parentbg" file="Interface\TargetingFrame\UI-TargetingFrame-BarFill" setAllPoints="true"/>
+					</Layer>
+				</Layers>
+			</StatusBar>
+		</Frames>
+
+		<Layers>
+			<Layer level="ARTWORK">
+				<!-- Combat Icon -->
+				<Texture name="$parentcombatIcon" file="Interface\CharacterFrame\UI-StateIcon" hidden="true">
+					<Size x="24" y="24"/>
+					<Anchors>
+						<Anchor point="TOPRIGHT" x="4" y="4"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+
+			<Layer level="OVERLAY">
+				<!-- Raid Target Icon -->
+				<Texture name="$parentraidIcon" file="Interface\TargetingFrame\UI-RaidTargetingIcons" hidden="true">
+					<Size x="10" y="10"/>
+					<Anchors>
+						<Anchor point="CENTER" relativePoint="TOPRIGHT" x="-4" y="-4"/>
+					</Anchors>
+				</Texture>
+
+				<!-- Warning Icon -->
+				<Texture name="$parentwarningIcon" file="Interface\Minimap\Ping\ping6" alphaMode="ADD" hidden="true">
+					<Size x="24" y="24"/>
+					<Anchors>
+						<Anchor point="TOP" x="0" y="3"/>
+					</Anchors>
+				</Texture>
+
+				<FontString name="$parenttext" inherits="GameFontNormalSmall" text="-" justifyH="LEFT" justifyV="TOP">
+					<FontHeight>
+						<AbsValue val="10"/>
+					</FontHeight>
+					<Anchors>
+						<Anchor point="TOPLEFT" x="2" y="-2"/>
+						<Anchor point="BOTTOMRIGHT" x="-2" y="1"/>
+					</Anchors>
+				</FontString>
+
+				<FontString name="$parentlabel" inherits="GameFontNormalSmall" hidden="true" justifyH="RIGHT" justifyV="TOP">
+					<Size x="24" y="12"/>
+					<Anchors>
+						<Anchor point="TOPRIGHT" relativePoint="TOPLEFT" relativeTo="$parenttext" x="-1" y="0"/>
+						<Anchor point="BOTTOMLEFT" relativePoint="BOTTOMLEFT" relativeTo="$parenttext" x="-20" y="0"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+	</Button>
+
+	<Frame name="XPerl_MTList_Anchor" parent="UIParent" inherits="XPerlBackdropTemplate" movable="true" resizable="true" clampedToScreen="true">
+		<Size x="206" y="80"/>
+		<Anchors>
+			<Anchor point="CENTER"/>
+		</Anchors>
+	</Frame>
+
+	<Frame name="XPerl_RaidHelperCheck" inherits="XPerlBackdropTemplate">
+		<Scripts>
+			<OnUpdate function="XPerl_HelperCheck_OnUpdate"/>
+		</Scripts>
+	</Frame>
+
+	<Frame name="XPerl_RaidHelper_Frame" parent="XPerl_MTList_Anchor" inherits="XPerlBackdropTemplate" hidden="true" clampedToScreen="true">
+		<KeyValues>
+			<KeyValue key="backdropInfo" value="XPerl_Raid_Backdrop_16_9_3333" type="global"/>
+		</KeyValues>
+		<Scripts>
+			<OnLoad function="XPerl_RaidHelper_OnLoad"/>
+			<OnEvent function="XPerl_RaidHelper_OnEvent"/>
+			<OnDragStart>
+				if (not ZPerlConfigHelper or not ZPerlConfigHelper.Pinned or (IsAltKeyDown() and IsControlKeyDown() and IsShiftKeyDown())) then
+					XPerl_MTList_Anchor:StartMoving()
+				end
+			</OnDragStart>
+			<OnDragStop>
+				XPerl_MTList_Anchor:StopMovingOrSizing()
+				if (XPerl_SavePosition) then
+					XPerl_SavePosition(XPerl_MTList_Anchor)
+				end
+			</OnDragStop>
+		</Scripts>
+		<Size x="206" y="80"/>
+		<Anchors>
+			<Anchor point="TOPLEFT" relativeTo="XPerl_MTList_Anchor"/>
+		</Anchors>
+		<Frames>
+			<Frame name="$parent_TitleBar" inherits="XPerlBackdropTemplate" >
+				<Size x="160" y="12"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" x="3" y="-3"/>
+					<Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" x="-3" y="-13"/>
+				</Anchors>
+				<Frames>
+					<Button name="$parent_CloseButton" inherits="UIPanelCloseButton">
+						<Size x="20" y="20"/>
+						<Anchors>
+							<Anchor point="TOPRIGHT" x="5" y="5"/>
+						</Anchors>
+						<Scripts>
+							<OnClick>
+								ZPerlConfigHelper.RaidHelper = 0
+								XPerl_EnableDisable()
+							</OnClick>
+						</Scripts>
+					</Button>
+
+					<Button name="$parent_Pin" inherits="XPerl_MTList_BasicButton">
+						<Size x="11" y="11"/>
+						<Anchors>
+							<Anchor point="RIGHT" relativeTo="$parent_CloseButton" relativePoint="LEFT" x="4" y="0"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Pin">
+						</NormalTexture>
+
+						<PushedTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Pin">
+						</PushedTexture>
+
+						<HighlightTexture file="Interface\Buttons\UI-Panel-MinimizeButton-Highlight" alphaMode="ADD">
+						</HighlightTexture>
+
+						<Scripts>
+							<OnLoad>
+								self.SetButtonTex = function()
+									local tex = XPerl_RaidHelper_Frame_TitleBar_Pin:GetNormalTexture()
+									if (ZPerlConfigHelper.Pinned) then
+										tex:SetTexCoord(0.5, 0.96875, 0, 0.453125)
+									else
+										tex:SetTexCoord(0, 0.46875, 0, 0.453125)
+									end
+
+									tex = XPerl_RaidHelper_Frame_TitleBar_Pin:GetPushedTexture()
+									if (ZPerlConfigHelper.Pinned) then
+										if (XPerl_RaidHelper_Frame.corner) then
+											XPerl_RaidHelper_Frame.corner:Hide()
+										end
+										tex:SetTexCoord(0.5, 0.96875, 0.5, 0.953125)
+									else
+										if (XPerl_RaidHelper_Frame.corner) then
+											XPerl_RaidHelper_Frame.corner:Show()
+										end
+										tex:SetTexCoord(0, 0.46875, 0.5, 0.953125)
+									end
+								end
+								self.tooltipText = XPERL_BUTTON_HELPER_PIN
+							</OnLoad>
+							<OnClick>
+								ZPerlConfigHelper.Pinned = not ZPerlConfigHelper.Pinned
+								self:SetButtonTex()
+							</OnClick>
+						</Scripts>
+					</Button>
+
+					<Button name="$parent_ToggleLabels" inherits="XPerl_MTList_BasicButton">
+						<Size x="11" y="11"/>
+						<Anchors>
+							<Anchor point="RIGHT" relativeTo="$parent_Pin" relativePoint="LEFT"/>
+							<!--Anchor point="RIGHT" relativeTo="XPerl_Frame_ExpandLock" relativePoint="LEFT"/-->
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Bits">
+						</NormalTexture>
+
+						<PushedTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Bits">
+						</PushedTexture>
+
+						<DisabledTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Bits">
+						</DisabledTexture>
+
+						<HighlightTexture file="Interface\Buttons\UI-Panel-MinimizeButton-Highlight" alphaMode="ADD">
+						</HighlightTexture>
+
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = XPERL_BUTTON_TOGGLE_LABELS
+								self.SetButtonTex = function(self)
+									local tex = self:GetNormalTexture()
+									if (ZPerlConfigHelper.MTLabels == 1) then
+										tex:SetTexCoord(0.5, 0.625, 0.125, 0.25)
+									else
+										tex:SetTexCoord(0.5, 0.625, 0, 0.125)
+									end
+
+									tex = self:GetDisabledTexture()
+									if (ZPerlConfigHelper.MTLabels == 1) then
+										tex:SetTexCoord(0.5, 0.625, 0.375, 0.5)
+									else
+										tex:SetTexCoord(0.5, 0.625, 0.25, 0.375)
+									end
+								end
+							</OnLoad>
+							<OnClick function="XPerl_RaidHelper_ToggleLabels"/>
+						</Scripts>
+					</Button>
+
+					<Button name="$parent_ToggleMTTargets" inherits="XPerl_MTList_BasicButton">
+						<Size x="11" y="11"/>
+						<Anchors>
+							<Anchor point="RIGHT" relativeTo="$parent_ToggleLabels" relativePoint="LEFT"/>
+							<!--Anchor point="RIGHT" relativeTo="XPerl_Frame_ToggleTargets" relativePoint="LEFT"/-->
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Bits">
+						</NormalTexture>
+
+						<PushedTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Bits">
+						</PushedTexture>
+
+						<DisabledTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Bits">
+						</DisabledTexture>
+
+						<HighlightTexture file="Interface\Buttons\UI-Panel-MinimizeButton-Highlight" alphaMode="ADD">
+						</HighlightTexture>
+
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = XPERL_BUTTON_TOGGLE_MTTARGETS
+								self.SetButtonTex = function(self)
+									local tex = self:GetNormalTexture()
+
+									if (ZPerlConfigHelper.MTTargetTargets == 1) then
+										tex:SetTexCoord(0.625, 0.75, 0.125, 0.25)
+									else
+										tex:SetTexCoord(0.625, 0.75, 0, 0.125)
+									end
+
+									tex = self:GetDisabledTexture()
+									if (ZPerlConfigHelper.MTTargetTargets == 1) then
+										tex:SetTexCoord(0.625, 0.75, 0.375, 0.5)
+									else
+										tex:SetTexCoord(0.625, 0.75, 0.25, 0.375)
+									end
+								end
+							</OnLoad>
+							<OnClick function="XPerl_RaidHelper_ToggleMTTargets"/>
+						</Scripts>
+					</Button>
+
+					<Button name="$parent_ToggleShowMT" inherits="XPerl_MTList_BasicButton">
+						<Size x="11" y="11"/>
+						<Anchors>
+							<Anchor point="RIGHT" relativeTo="$parent_ToggleMTTargets" relativePoint="LEFT"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Bits">
+						</NormalTexture>
+
+						<PushedTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Bits">
+						</PushedTexture>
+
+						<DisabledTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Bits">
+						</DisabledTexture>
+
+						<HighlightTexture file="Interface\Buttons\UI-Panel-MinimizeButton-Highlight" alphaMode="ADD">
+						</HighlightTexture>
+
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = XPERL_BUTTON_TOGGLE_SHOWMT
+								self.SetButtonTex = function(self)
+									local tex = self:GetNormalTexture()
+
+									if (ZPerlConfigHelper.ShowMT == 1) then
+										tex:SetTexCoord(0.75, 0.875, 0.125, 0.25)
+									else
+										tex:SetTexCoord(0.75, 0.875, 0, 0.125)
+									end
+
+									tex = self:GetDisabledTexture()
+									if (ZPerlConfigHelper.ShowMT == 1) then
+										tex:SetTexCoord(0.75, 0.875, 0.375, 0.5)
+									else
+										tex:SetTexCoord(0.75, 0.875, 0.25, 0.375)
+									end
+								end
+							</OnLoad>
+							<OnClick function="XPerl_RaidHelper_ToggleShowMT"/>
+						</Scripts>
+					</Button>
+				</Frames>
+				<Layers>
+					<Layer level="ARTWORK">
+						<FontString name="XPerl_Frame_Title" inherits="GameFontNormalSmall" text="MT Targets" justifyH="LEFT">
+							<Anchors>
+								<Anchor point="TOPLEFT" x="10" y="0"/>
+								<Anchor point="BOTTOMRIGHT"/>
+							</Anchors>
+						</FontString>
+					</Layer>
+				</Layers>
+			</Frame>
+
+			<Frame name="XPerl_MTTargets" inherits="XPerlBackdropTemplate,SecureRaidGroupHeaderTemplate">
+				<Size x="160" y="26"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" x="3" y="-13"/>
+				</Anchors>
+				<Attributes>
+					<Attribute name="template" type="string" value="XPerl_MTList_UnitTemplate"/>
+				</Attributes>
+				<Layers>
+					<Layer level="OVERLAY">
+						<Texture name="XPerl_MainAssist" file="Interface\GroupFrame\UI-Group-MainAssistIcon" hidden="true">
+							<Size x="12" y="12"/>
+							<Anchors>
+								<Anchor point="RIGHT" relativePoint="LEFT" x="-100" y="0"/>
+							</Anchors>
+						</Texture>
+						<Texture name="XPerl_MainTank" file="Interface\GroupFrame\UI-Group-MainTankIcon" hidden="true">
+							<Size x="12" y="12"/>
+							<Anchors>
+								<Anchor point="RIGHT" relativePoint="LEFT" x="-100" y="0"/>
+							</Anchors>
+						</Texture>
+
+						<Texture name="XPerl_MyTarget" file="Interface\Minimap\Ping\ping5" hidden="true" alphaMode="ADD">
+							<Size x="16" y="12"/>
+							<Anchors>
+								<Anchor point="RIGHT" relativePoint="LEFT" x="-100" y="0"/>
+							</Anchors>
+						</Texture>
+					</Layer>
+				</Layers>
+			</Frame>
+		</Frames>
+	</Frame>
+</Ui>

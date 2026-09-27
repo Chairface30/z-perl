@@ -1,0 +1,1034 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
+
+	<Script file="ZPerl_Check.lua"/>
+
+	<Button name="XPerl_CheckButtonTemplate" inherits="XPerl_BasicButton" virtual="true">
+		<Size x="32" y="32"/>
+	</Button>
+
+	<Button name="XPerlNormalListItemTemplate" inherits="XPerlBackdropTemplate" virtual="true">
+		<Size x="250" y="14"/>
+		<Layers>
+			<Layer level="BORDER">
+				<Texture name="$parentIcon" file="Interface\Glues\CharacterCreate\UI-CharacterCreate-Classes" hidden="true">
+					<Size x="14" y="14"/>
+					<Anchors>
+						<Anchor point="TOPLEFT"/>
+					</Anchors>
+				</Texture>
+				<FontString name="$parentName" inherits="GameFontNormalSmall" justifyH="LEFT">
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeTo="$parentIcon" relativePoint="TOPRIGHT"/>
+						<Anchor point="BOTTOMRIGHT" x="0" y="1"/>
+					</Anchors>
+				</FontString>
+				<FontString name="$parentCount" inherits="GameFontNormal" justifyV="CENTER" justifyH="RIGHT">
+					<Size x="50" y="14"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeTo="$parentIcon" relativePoint="TOPRIGHT"/>
+						<Anchor point="BOTTOMRIGHT" x="-18" y="1"/>
+					</Anchors>
+				</FontString>
+				<FontString name="$parentFR" inherits="GameFontNormal" justifyH="RIGHT" hidden="true">
+					<Size x="28" y="14"/>
+					<Anchors>
+						<Anchor point="TOPRIGHT" relativePoint="TOP" x="0" y="1"/>
+					</Anchors>
+				</FontString>
+				<FontString name="$parentNR" inherits="GameFontNormal" justifyH="RIGHT" hidden="true">
+					<Size x="28" y="14"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentFR"/>
+					</Anchors>
+				</FontString>
+				<FontString name="$parentFRR" inherits="GameFontNormal" justifyH="RIGHT" hidden="true">
+					<Size x="28" y="14"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentNR"/>
+					</Anchors>
+				</FontString>
+				<FontString name="$parentSR" inherits="GameFontNormal" justifyH="RIGHT" hidden="true">
+					<Size x="28" y="14"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentFRR"/>
+					</Anchors>
+				</FontString>
+				<FontString name="$parentAR" inherits="GameFontNormal" justifyH="RIGHT" hidden="true">
+					<Size x="28" y="14"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentSR"/>
+					</Anchors>
+				</FontString>
+				<Texture name="$parentEquiped" file="Interface\Buttons\UI-CheckBox-Check" hidden="true">
+					<Size x="18" y="18"/>
+					<Anchors>
+						<Anchor point="TOP" relativeTo="$parentNR"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+		</Layers>
+		<HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD"/>
+		<Scripts>
+			<OnLoad>
+				self:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			</OnLoad>
+			<OnClick>
+				XPerl_Check_PlayerOnClick(arg1)
+			</OnClick>
+		</Scripts>
+	</Button>
+
+	<Button name="XPerlCheckListItemTemplate" inherits="XPerlBackdropTemplate" virtual="true">
+		<Size x="206" y="14"/>
+		<Frames>
+			<CheckButton name="$parentTick" inherits="UICheckButtonTemplate">
+				<Size x="18" y="18"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" x="-3" y="2"/>
+				</Anchors>
+				<Scripts>
+					<OnClick>
+						XPerl_Check_OnClickTick(self)
+						XPerl_Check_OnClickItem(arg1)
+					</OnClick>
+					<OnEnter>
+						self:GetParent():LockHighlight()
+						XPerl_Check_OnEnter(self)
+					</OnEnter>
+					<OnLeave>
+						GameTooltip:Hide()
+						for k,v in pairs(ZPerl_CheckItems) do
+							if (v.link == _G[self:GetParent():GetName().."Name"]:GetText()) then
+								if (not v.selected) then
+									self:GetParent():UnlockHighlight()
+								end
+							end
+						end
+					</OnLeave>
+				</Scripts>
+			</CheckButton>
+		</Frames>
+		<Layers>
+			<Layer level="BORDER">
+				<Texture name="$parentIcon">
+					<Size x="14" y="14"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" x="14" y="0"/>
+					</Anchors>
+				</Texture>
+				<FontString name="$parentName" inherits="GameFontNormalSmall" justifyH="LEFT">
+					<Anchors>
+						<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentIcon"/>
+						<Anchor point="BOTTOMRIGHT" x="0" y="2"/>
+					</Anchors>
+				</FontString>
+				<FontString name="$parentCount" inherits="GameFontNormal" justifyH="RIGHT">
+					<Size x="20" y="14"/>
+					<Anchors>
+						<Anchor point="TOPRIGHT" x="0" y="2"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+			<Layer level="BACKGROUND">
+				<Texture name="$parentGauge" file="Interface\TargetingFrame\UI-StatusBar" hidden="true">
+					<Size x="1" y="12"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeTo="$parentName" x="1" y="-1"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+		</Layers>
+		<HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD"/>
+		<Scripts>
+			<OnLoad>
+				self:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+			</OnLoad>
+			<OnEnter>
+				XPerl_Check_OnEnter(self)
+			</OnEnter>
+			<OnLeave>
+				GameTooltip:Hide()
+			</OnLeave>
+			<OnClick>
+				XPerl_Check_OnClickItem(arg1)
+			</OnClick>
+		</Scripts>
+	</Button>
+
+	<Button name="XPerl_NormalListTemplate" inherits="XPerlBackdropTemplate" virtual="true" enableMouse="true">
+		<KeyValues>
+			<KeyValue key="backdropInfo" value="XPerl_Raid_Backdrop_16_9_3333" type="global"/>
+		</KeyValues>
+		<Size x="260" y="178"/>
+		<Frames>
+			<Button name="$parentTitle">
+				<Size x="240" y="14"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" x="5" y="-5"/>
+				</Anchors>
+				<Frames>
+					<Button name="$parentClass" text="!">
+						<Size x="14" y="14"/>
+						<Anchors>
+							<Anchor point="TOPLEFT" x="0" y="2"/>
+						</Anchors>
+						<ButtonText name="$parentText">
+							<Anchors>
+								<Anchor point="TOPLEFT"/>
+								<Anchor point="BOTTOMRIGHT"/>
+							</Anchors>
+						</ButtonText>
+						<NormalFont style="GameFontNormal"/>
+						<HighlightFont style="GameFontHighlight"/>
+						<DisabledFont style="GameFontDisable"/>
+						<HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD"/>
+						<Scripts>
+							<OnClick>
+								XPerl_Check_Players_Sort("class")
+							</OnClick>
+						</Scripts>
+					</Button>
+					<Button name="$parentName" text="XPERL_CHECK_NAME">
+						<Size x="75" y="14"/>
+						<Anchors>
+							<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentClass"/>
+						</Anchors>
+						<ButtonText name="$parentText">
+							<Anchors>
+								<Anchor point="TOPLEFT"/>
+								<Anchor point="BOTTOMRIGHT"/>
+							</Anchors>
+						</ButtonText>
+						<NormalFont style="GameFontNormal"/>
+						<HighlightFont style="GameFontHighlight"/>
+						<DisabledFont style="GameFontDisable"/>
+						<HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD"/>
+						<Scripts>
+							<OnClick>
+								XPerl_Check_Players_Sort("name")
+							</OnClick>
+						</Scripts>
+					</Button>
+					<Button name="$parentCount" text="#">
+						<Size x="60" y="14"/>
+						<Anchors>
+							<Anchor point="TOPRIGHT" x="0" y="2"/>
+						</Anchors>
+						<ButtonText name="$parentText">
+							<Anchors>
+								<Anchor point="TOPLEFT"/>
+								<Anchor point="BOTTOMRIGHT"/>
+							</Anchors>
+						</ButtonText>
+						<NormalFont style="GameFontNormal"/>
+						<HighlightFont style="GameFontHighlight"/>
+						<DisabledFont style="GameFontDisable"/>
+						<HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD"/>
+						<Scripts>
+							<OnClick>
+								XPerl_Check_Players_Sort("count")
+							</OnClick>
+						</Scripts>
+					</Button>
+					<Button name="$parentFR" hidden="true">
+						<Size x="28" y="14"/>
+						<Anchors>
+							<Anchor point="TOP" x="-4" y="2"/>
+						</Anchors>
+						<Layers>
+							<Layer level="BACKGROUND">
+								<Texture file="Interface\PaperDollInfoFrame\UI-Character-ResistanceIcons" alphaMode="ADD">
+									<Size x="14" y="14"/>
+									<Anchors>
+										<Anchor point="TOPLEFT" x="7" y="0"/>
+									</Anchors>
+								</Texture>
+							</Layer>
+						</Layers>
+						<HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD"/>
+						<Scripts>
+							<OnClick>
+								XPerl_Check_Players_Sort("fr")
+							</OnClick>
+						</Scripts>
+					</Button>
+					<Button name="$parentNR" hidden="true">
+						<Size x="28" y="14"/>
+						<Anchors>
+							<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentFR"/>
+						</Anchors>
+						<Layers>
+							<Layer level="BACKGROUND">
+								<Texture file="Interface\PaperDollInfoFrame\UI-Character-ResistanceIcons" alphaMode="ADD">
+									<Size x="14" y="14"/>
+									<Anchors>
+										<Anchor point="TOPLEFT" x="7" y="0"/>
+									</Anchors>
+								</Texture>
+							</Layer>
+						</Layers>
+						<HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD"/>
+						<Scripts>
+							<OnClick>
+								XPerl_Check_Players_Sort("nr")
+							</OnClick>
+						</Scripts>
+					</Button>
+					<Button name="$parentFRR" hidden="true">
+						<Size x="28" y="14"/>
+						<Anchors>
+							<Anchor point="TOPLEFT" relativePoint="TOPRIGHT"  relativeTo="$parentNR"/>
+						</Anchors>
+						<Layers>
+							<Layer level="BACKGROUND">
+								<Texture file="Interface\PaperDollInfoFrame\UI-Character-ResistanceIcons" alphaMode="ADD">
+									<Size x="14" y="14"/>
+									<Anchors>
+										<Anchor point="TOPLEFT" x="7" y="0"/>
+									</Anchors>
+								</Texture>
+							</Layer>
+						</Layers>
+						<HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD"/>
+						<Scripts>
+							<OnClick>
+								XPerl_Check_Players_Sort("frr")
+							</OnClick>
+						</Scripts>
+					</Button>
+					<Button name="$parentSR" hidden="true">
+						<Size x="28" y="14"/>
+						<Anchors>
+							<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentFRR"/>
+						</Anchors>
+						<Layers>
+							<Layer level="BACKGROUND">
+								<Texture file="Interface\PaperDollInfoFrame\UI-Character-ResistanceIcons" alphaMode="ADD">
+									<Size x="14" y="14"/>
+									<Anchors>
+										<Anchor point="TOPLEFT" x="7" y="0"/>
+									</Anchors>
+								</Texture>
+							</Layer>
+						</Layers>
+						<HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD"/>
+						<Scripts>
+							<OnClick>
+								XPerl_Check_Players_Sort("sr")
+							</OnClick>
+						</Scripts>
+					</Button>
+					<Button name="$parentAR" hidden="true">
+						<Size x="28" y="14"/>
+						<Anchors>
+							<Anchor point="TOPLEFT" relativePoint="TOPRIGHT"  relativeTo="$parentSR"/>
+						</Anchors>
+						<Layers>
+							<Layer level="BACKGROUND">
+								<Texture file="Interface\PaperDollInfoFrame\UI-Character-ResistanceIcons" alphaMode="ADD">
+									<Size x="14" y="14"/>
+									<Anchors>
+										<Anchor point="TOPLEFT" x="7" y="0"/>
+									</Anchors>
+								</Texture>
+							</Layer>
+						</Layers>
+						<HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD"/>
+						<Scripts>
+							<OnClick>
+								XPerl_Check_Players_Sort("ar")
+							</OnClick>
+						</Scripts>
+					</Button>
+					<Button name="$parentDur" text="%" hidden="true">
+						<Size x="68" y="14"/>
+						<Anchors>
+							<Anchor point="TOP" relativeTo="$parentNR" x="2" y="0"/>
+						</Anchors>
+						<ButtonText name="$parentText">
+							<Anchors>
+								<Anchor point="TOPLEFT"/>
+								<Anchor point="BOTTOMRIGHT"/>
+							</Anchors>
+						</ButtonText>
+						<NormalFont style="GameFontNormal"/>
+						<HighlightFont style="GameFontHighlight"/>
+						<DisabledFont style="GameFontDisable"/>
+						<HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD"/>
+						<Scripts>
+							<OnClick>
+								XPerl_Check_Players_Sort("dur")
+							</OnClick>
+						</Scripts>
+					</Button>
+				</Frames>
+				<Scripts>
+					<OnLoad>
+						_G[self:GetName().."Name"]:SetText(XPERL_CHECK_NAME)
+						_G[self:GetName().."Count"]:SetText("#")
+					</OnLoad>
+				</Scripts>
+			</Button>
+			<Button name="$parent1" inherits="XPerlNormalListItemTemplate" id="1">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parentTitle" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent2" inherits="XPerlNormalListItemTemplate" id="2">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent1" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent3" inherits="XPerlNormalListItemTemplate" id="3">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent2" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent4" inherits="XPerlNormalListItemTemplate" id="4">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent3" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent5" inherits="XPerlNormalListItemTemplate" id="5">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent4" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent6" inherits="XPerlNormalListItemTemplate" id="6">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent5" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent7" inherits="XPerlNormalListItemTemplate" id="7">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent6" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent8" inherits="XPerlNormalListItemTemplate" id="8">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent7" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent9" inherits="XPerlNormalListItemTemplate" id="9">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent8" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent10" inherits="XPerlNormalListItemTemplate" id="10">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent9" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parentTotals" inherits="XPerlNormalListItemTemplate" id="99">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent10" relativePoint="BOTTOMLEFT" x="0" y="-2"/>
+				</Anchors>
+			</Button>
+			<ScrollFrame name="$parentScrollBar" inherits="FauxScrollFrameTemplate">
+				<Size x="230" y="145"/>
+				<Anchors>
+					<Anchor point="TOPRIGHT" x="-25" y="-17"/>
+				</Anchors>
+				<Scripts>
+					<OnVerticalScroll>
+						FauxScrollFrame_OnVerticalScroll(self, offset, 14, XPerl_Check_UpdatePlayerList)
+					</OnVerticalScroll>
+				</Scripts>
+			</ScrollFrame>
+		</Frames>
+		<Layers>
+			<Layer level="ARTWORK">
+				<Texture file="Interface\TradeSkillFrame\UI-TradeSkill-SkillBorder">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="3" y="-16"/>
+						<Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" x="-3" y="-20"/>
+					</Anchors>
+				</Texture>
+				<Texture file="Interface\TradeSkillFrame\UI-TradeSkill-SkillBorder">
+					<Anchors>
+						<Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" x="3" y="20"/>
+						<Anchor point="BOTTOMRIGHT" x="-3" y="16"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+		</Layers>
+	</Button>
+
+	<Button name="XPerl_CheckListTemplate" inherits="XPerlBackdropTemplate" virtual="true">
+		<KeyValues>
+			<KeyValue key="backdropInfo" value="XPerl_Raid_Backdrop_16_9_3333" type="global"/>
+		</KeyValues>
+		<Scripts>
+			<OnLoad>
+				self:OnBackdropLoaded()
+				self:RegisterForClicks("LeftButtonDown", "LeftButtonUp", "RightButtonUp", "RightButtonDown")
+			</OnLoad>
+			<OnClick>
+				XPerl_Check_OnClickItem(arg1)
+			</OnClick>
+			<OnEnter>
+				XPerl_Check_OnEnter(self)
+			</OnEnter>
+			<OnLeave>
+				GameTooltip:Hide()
+			</OnLeave>
+		</Scripts>
+		<Size x="230" y="178"/>
+		<Frames>
+			<Button name="$parent1" inherits="XPerlCheckListItemTemplate" id="1">
+				<Anchors>
+					<Anchor point="TOPLEFT" x="5" y="-5"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent2" inherits="XPerlCheckListItemTemplate" id="2">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent1" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent3" inherits="XPerlCheckListItemTemplate" id="3">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent2" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent4" inherits="XPerlCheckListItemTemplate" id="4">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent3" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent5" inherits="XPerlCheckListItemTemplate" id="5">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent4" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent6" inherits="XPerlCheckListItemTemplate" id="6">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent5" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent7" inherits="XPerlCheckListItemTemplate" id="7">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent6" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent8" inherits="XPerlCheckListItemTemplate" id="8">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent7" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent9" inherits="XPerlCheckListItemTemplate" id="9">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent8" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent10" inherits="XPerlCheckListItemTemplate" id="10">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent9" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent11" inherits="XPerlCheckListItemTemplate" id="11">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent10" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<Button name="$parent12" inherits="XPerlCheckListItemTemplate" id="12">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parent11" relativePoint="BOTTOMLEFT"/>
+				</Anchors>
+			</Button>
+			<ScrollFrame name="$parentScrollBar" inherits="FauxScrollFrameTemplate" enableMouse="true">
+				<Size x="200" y="173"/>
+				<Anchors>
+					<Anchor point="TOPRIGHT" x="-25" y="-3"/>
+				</Anchors>
+				<Scripts>
+					<OnVerticalScroll>
+						FauxScrollFrame_OnVerticalScroll(self, offset, 14, XPerl_Check_UpdateItemList)
+					</OnVerticalScroll>
+				</Scripts>
+			</ScrollFrame>
+		</Frames>
+	</Button>
+
+	<Frame name="XPerl_CheckAnchor" parent="UIParent" resizable="true" movable="true" clampedToScreen="true">
+		<Anchors>
+			<Anchor point="CENTER"/>
+		</Anchors>
+		<Size x="500" y="240"/>
+	</Frame>
+
+	<Frame name="XPerl_Check" parent="XPerl_CheckAnchor" inherits="XPerlBackdropTemplate" hidden="true" clampedToScreen="true">
+		<KeyValues>
+			<KeyValue key="backdropInfo" value="XPerl_Raid_Backdrop_16_9_3333" type="global"/>
+		</KeyValues>
+		<Scripts>
+			<OnLoad>
+				self:OnBackdropLoaded()
+				XPerl_CheckOnLoad(self)
+			</OnLoad>
+			<OnEnter>
+				XPerl_Check.forcedOpen = nil
+			</OnEnter>
+			<OnDragStart>
+				if (not ZPerl_Admin.CheckPinned or (IsAltKeyDown() and IsControlKeyDown() and IsShiftKeyDown())) then
+					XPerl_CheckAnchor:StartMoving()
+				end
+			</OnDragStart>
+			<OnDragStop>
+				XPerl_CheckAnchor:StopMovingOrSizing()
+				if (XPerl_SavePosition) then
+					XPerl_SavePosition(XPerl_CheckAnchor)
+				end
+			</OnDragStop>
+		</Scripts>
+		<Anchors>
+			<Anchor point="TOPLEFT"/>
+		</Anchors>
+		<Size x="500" y="240"/>
+		<Frames>
+			<Frame name="$parentTitleBar">
+				<Scripts>
+					<OnEnter>
+						XPerl_Check.forcedOpen = nil
+						XPerl_Check_Expand()
+						XPerl_Check_ItemsChanged()
+					</OnEnter>
+					<OnLoad>
+						self:RegisterForDrag("LeftButton")
+					</OnLoad>
+					<OnDragStart>
+						if (not ZPerl_Admin.CheckPinned or (IsAltKeyDown() and IsControlKeyDown() and IsShiftKeyDown())) then
+							XPerl_CheckAnchor:StartMoving()
+						end
+					</OnDragStart>
+					<OnDragStop>
+						XPerl_CheckAnchor:StopMovingOrSizing()
+						if (XPerl_SavePosition) then
+							XPerl_SavePosition(XPerl_CheckAnchor)
+						end
+					</OnDragStop>
+				</Scripts>
+				<Anchors>
+					<Anchor point="TOPLEFT" x="3" y="-3"/>
+					<Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" x="-3" y="-14"/>
+				</Anchors>
+				<Layers>
+					<Layer level="ARTWORK">
+						<FontString inherits="GameFontNormalSmall" text="XPERL_CHECK_TITLE" justifyH="LEFT">
+							<Anchors>
+								<Anchor point="TOPLEFT" x="2" y="0"/>
+								<Anchor point="BOTTOMRIGHT"/>
+							</Anchors>
+						</FontString>
+					</Layer>
+				</Layers>
+				<Frames>
+					<Button name="$parentClose" inherits="XPerlBackdropTemplate,UIPanelCloseButton">
+						<Size x="22" y="22"/>
+						<Anchors>
+							<Anchor point="TOPRIGHT" x="5" y="5"/>
+						</Anchors>
+						<Scripts>
+							<OnClick>
+								XPerl_Check:Hide()
+							</OnClick>
+						</Scripts>
+					</Button>
+					<Button name="$parentPin" inherits="XPerl_BasicButton">
+						<Size x="12" y="12"/>
+						<Anchors>
+							<Anchor point="RIGHT" relativeTo="$parentClose" relativePoint="LEFT" x="3" y="0"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Pin">
+						</NormalTexture>
+
+						<PushedTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Pin">
+						</PushedTexture>
+
+						<HighlightTexture file="Interface\Buttons\UI-Panel-MinimizeButton-Highlight" alphaMode="ADD">
+						</HighlightTexture>
+
+						<Scripts>
+							<OnLoad>
+								self.SetButtonTex = function()
+									local tex = XPerl_CheckTitleBarPin:GetNormalTexture()
+									if (ZPerl_Admin.CheckPinned) then
+										tex:SetTexCoord(0.5, 0.96875, 0, 0.453125)
+									else
+										tex:SetTexCoord(0, 0.46875, 0, 0.453125)
+									end
+
+									tex = XPerl_CheckTitleBarPin:GetPushedTexture()
+									if (ZPerl_Admin.CheckPinned) then
+										tex:SetTexCoord(0.5, 0.96875, 0.5, 0.953125)
+									else
+										tex:SetTexCoord(0, 0.46875, 0.5, 0.953125)
+									end
+								end
+								self.tooltipText = XPERL_BUTTON_ADMIN_PIN
+							</OnLoad>
+							<OnClick>
+								ZPerl_Admin.CheckPinned = not ZPerl_Admin.CheckPinned
+								self:SetButtonTex()
+							</OnClick>
+						</Scripts>
+					</Button>
+					<Button name="$parentLockOpen" inherits="XPerl_BasicButton">
+						<Size x="12" y="12"/>
+						<Anchors>
+							<Anchor point="RIGHT" relativeTo="$parentPin" relativePoint="LEFT"/>
+						</Anchors>
+
+						<NormalTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Bits">
+						</NormalTexture>
+
+						<PushedTexture file="Interface\Addons\ZPerl_RaidHelper\Images\XPerl_Bits">
+						</PushedTexture>
+
+						<HighlightTexture file="Interface\Buttons\UI-Panel-MinimizeButton-Highlight" alphaMode="ADD">
+						</HighlightTexture>
+
+						<Scripts>
+							<OnLoad>
+								self.SetButtonTex = function()
+									local tex = XPerl_CheckTitleBarLockOpen:GetNormalTexture()
+									if (ZPerl_Admin.CheckLockOpen) then
+										tex:SetTexCoord(0.375, 0.5, 0, 0.125)
+									else
+										tex:SetTexCoord(0.375, 0.5, 0.125, 0.25)
+									end
+								end
+								self.tooltipText = XPERL_BUTTON_ADMIN_LOCKOPEN
+							</OnLoad>
+							<OnClick>
+								ZPerl_Admin.CheckLockOpen = not ZPerl_Admin.CheckLockOpen
+								self:SetButtonTex()
+							</OnClick>
+						</Scripts>
+					</Button>
+				</Frames>
+			</Frame>
+			<Frame name="$parentList" inherits="XPerlBackdropTemplate" hidden="true">
+				<Scripts>
+					<OnShow>
+						XPerl_Check_UpdateItemList()
+						XPerl_Check_MakePlayerList()
+						XPerl_Check_ShowInfo()
+					</OnShow>
+				</Scripts>
+				<Size x="460" y="178"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$parentTitleBar"/>
+				</Anchors>
+				<Frames>
+					<Button name="$parentItems" inherits="XPerl_CheckListTemplate" id="1">
+						<Anchors>
+							<Anchor point="TOPLEFT"/>
+						</Anchors>
+					</Button>
+					<Button name="$parentPlayers" inherits="XPerl_NormalListTemplate" id="2">
+						<Anchors>
+							<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentItems"/>
+						</Anchors>
+					</Button>
+				</Frames>
+			</Frame>
+			<Frame name="$parentButton" inherits="XPerlBackdropTemplate" hidden="true">
+				<Scripts>
+					<OnUpdate>
+						XPerl_Check_ShowInfo()
+						if (not XPerl_Check.forcedOpen and not ZPerl_Admin.CheckLockOpen) then
+							local f = GetMouseFocus()
+							if (f) then
+								while (f:GetParent() and f:GetParent() ~= UIParent and f:GetParent() ~= XPerl_CheckAnchor) do
+									f = f:GetParent()
+								end
+
+								if (f ~= XPerl_Check) then
+									XPerl_Check:SetWidth(130)
+									XPerl_Check:SetHeight(18)
+									XPerl_CheckList:Hide()
+									XPerl_CheckButton:Hide()
+									XPerl_CheckTitleBarLockOpen:Hide()
+								end
+							end
+						end
+					</OnUpdate>
+				</Scripts>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$parentList" x="0" y="-2"/>
+					<Anchor point="BOTTOMRIGHT" x="-3" y="3"/>
+				</Anchors>
+				<Frames>
+					<Button name="$parentQuery" inherits="XPerl_CheckButtonTemplate">
+						<Anchors>
+							<Anchor point="TOPLEFT"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</NormalTexture>
+						<PushedTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</PushedTexture>
+						<DisabledTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</DisabledTexture>
+						<HighlightTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check" alphaMode="ADD">
+						</HighlightTexture>
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = "XPERL_CHECK_QUERY_DESC"
+							</OnLoad>
+							<OnClick>
+								XPerl_Check_Query()
+							</OnClick>
+						</Scripts>
+					</Button>
+
+					<Button name="$parentSelectLast" inherits="XPerl_CheckButtonTemplate">
+						<Anchors>
+							<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentQuery"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</NormalTexture>
+						<PushedTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</PushedTexture>
+						<HighlightTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check" alphaMode="ADD">
+						</HighlightTexture>
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = "XPERL_CHECK_LAST_DESC"
+							</OnLoad>
+							<OnClick>
+								XPerl_Check_TickLastResults()
+							</OnClick>
+						</Scripts>
+					</Button>
+
+					<Button name="$parentSelectAll" inherits="XPerl_CheckButtonTemplate">
+						<Anchors>
+							<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentSelectLast"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</NormalTexture>
+						<PushedTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</PushedTexture>
+						<HighlightTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check" alphaMode="ADD">
+						</HighlightTexture>
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = "XPERL_CHECK_ALL_DESC"
+							</OnLoad>
+							<OnClick>
+								XPerl_Check_TickAll(true)
+							</OnClick>
+						</Scripts>
+					</Button>
+
+					<Button name="$parentSelectNone" inherits="XPerl_CheckButtonTemplate">
+						<Anchors>
+							<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentSelectAll"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</NormalTexture>
+						<PushedTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</PushedTexture>
+						<HighlightTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check" alphaMode="ADD">
+						</HighlightTexture>
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = "XPERL_CHECK_NONE_DESC"
+							</OnLoad>
+							<OnClick>
+								XPerl_Check_TickAll()
+							</OnClick>
+						</Scripts>
+					</Button>
+
+					<Button name="$parentDelete" inherits="XPerl_CheckButtonTemplate">
+						<Anchors>
+							<Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeTo="$parentSelectNone" x="30" y="0"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</NormalTexture>
+						<PushedTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</PushedTexture>
+						<DisabledTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</DisabledTexture>
+						<HighlightTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check" alphaMode="ADD">
+						</HighlightTexture>
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = "XPERL_CHECK_DELETE_DESC"
+							</OnLoad>
+							<OnClick>
+								XPerl_Check_DeleteSelectedItems()
+							</OnClick>
+						</Scripts>
+					</Button>
+
+					<Button name="$parentEquiped" inherits="XPerl_CheckButtonTemplate">
+						<Anchors>
+							<Anchor point="TOPRIGHT"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</NormalTexture>
+						<PushedTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</PushedTexture>
+						<DisabledTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</DisabledTexture>
+						<HighlightTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check" alphaMode="ADD">
+						</HighlightTexture>
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = "XPERL_CHECK_SCAN_DESC"
+							</OnLoad>
+							<OnClick>
+								XPerl_Check_StartActiveScan()
+							</OnClick>
+						</Scripts>
+					</Button>
+
+					<Button name="$parentReportWithout" inherits="XPerl_CheckButtonTemplate">
+						<Anchors>
+							<Anchor point="TOPRIGHT" relativePoint="TOPLEFT" relativeTo="$parentEquiped"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</NormalTexture>
+						<PushedTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</PushedTexture>
+						<DisabledTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</DisabledTexture>
+						<HighlightTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check" alphaMode="ADD">
+						</HighlightTexture>
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = "XPERL_CHECK_REPORT_WITHOUT_DESC"
+							</OnLoad>
+							<OnClick>
+								XPerl_Check_Report("without")
+							</OnClick>
+						</Scripts>
+					</Button>
+
+					<Button name="$parentReportWith" inherits="XPerl_CheckButtonTemplate">
+						<Anchors>
+							<Anchor point="TOPRIGHT" relativePoint="TOPLEFT" relativeTo="$parentReportWithout"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</NormalTexture>
+						<PushedTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</PushedTexture>
+						<DisabledTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</DisabledTexture>
+						<HighlightTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check" alphaMode="ADD">
+						</HighlightTexture>
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = "XPERL_CHECK_REPORT_WITH_DESC"
+							</OnLoad>
+							<OnClick>
+								XPerl_Check_Report("with")
+							</OnClick>
+						</Scripts>
+					</Button>
+
+					<Button name="$parentReport" inherits="XPerl_CheckButtonTemplate">
+						<Anchors>
+							<Anchor point="TOPRIGHT" relativePoint="TOPLEFT" relativeTo="$parentReportWith"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</NormalTexture>
+						<PushedTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</PushedTexture>
+						<DisabledTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</DisabledTexture>
+						<HighlightTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check" alphaMode="ADD">
+						</HighlightTexture>
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = "XPERL_CHECK_REPORT_DESC"
+							</OnLoad>
+							<OnClick>
+								XPerl_Check_Report()
+							</OnClick>
+						</Scripts>
+					</Button>
+
+					<Button name="$parentPlayer" inherits="XPerl_CheckButtonTemplate">
+						<Anchors>
+							<Anchor point="TOPRIGHT" relativePoint="TOPLEFT" relativeTo="$parentReport"/>
+						</Anchors>
+						<NormalTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</NormalTexture>
+						<PushedTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</PushedTexture>
+						<DisabledTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check">
+						</DisabledTexture>
+						<HighlightTexture file="Interface\Addons\ZPerl_RaidAdmin\Images\XPerl_Check" alphaMode="ADD">
+						</HighlightTexture>
+						<Layers>
+							<Layer level="BACKGROUND">
+								<Texture>
+									<Anchors>
+										<Anchor point="TOPLEFT" x="4" y="-4"/>
+										<Anchor point="BOTTOMRIGHT" x="-4" y="4"/>
+									</Anchors>
+								</Texture>
+							</Layer>
+							<Layer level="BORDER">
+								<Texture name="$parentPortrait">
+									<Anchors>
+										<Anchor point="TOPLEFT" x="6" y="-6"/>
+										<Anchor point="BOTTOMRIGHT" x="-6" y="6"/>
+									</Anchors>
+								</Texture>
+							</Layer>
+						</Layers>
+						<Scripts>
+							<OnLoad>
+								self.tooltipText = "XPERL_CHECK_REPORTPLAYER_DESC"
+							</OnLoad>
+							<OnClick>
+								XPerl_Check_Report("player")
+							</OnClick>
+							<OnMouseDown>
+								if (arg1 == "LeftButton" and self:IsEnabled() == 1) then
+									_G[self:GetName().."Portrait"]:SetPoint("TOPLEFT", 7, -7)
+									_G[self:GetName().."Portrait"]:SetPoint("BOTTOMRIGHT", -5, 5)
+								end
+							</OnMouseDown>
+							<OnMouseUp>
+								_G[self:GetName().."Portrait"]:SetPoint("TOPLEFT", 6, -6)
+								_G[self:GetName().."Portrait"]:SetPoint("BOTTOMRIGHT", -6, 6)
+							</OnMouseUp>
+						</Scripts>
+					</Button>
+					<Frame name="$parentChannel" enableMouse="true">
+						<Anchors>
+							<Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="XPerl_CheckListPlayers" x="-40" y="-3"/>
+						</Anchors>
+						<Scripts>
+							<OnLoad>
+								XPerl_Check_Channels_OnLoad(self)
+							</OnLoad>
+							<OnEnter>
+								GameTooltip:SetOwner(self, "ANCHOR_RIGHT", -15, 0)
+								GameTooltip:SetText(XPERL_CHECK_REPORT_DROPDOWN_DESC, nil, nil, nil, nil, true)
+							</OnEnter>
+							<OnLeave>
+								GameTooltip:Hide()
+							</OnLeave>
+						</Scripts>
+					</Frame>
+				</Frames>
+				<Layers>
+					<Layer level="BACKGROUND">
+						<FontString name="$parentInfo" inherits="GameFontNormal" justifyH="LEFT" justifyV="CENTER">
+							<Anchors>
+								<Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$parentReport"/>
+								<Anchor point="BOTTOMRIGHT" x="-3" y="2"/>
+							</Anchors>
+						</FontString>
+					</Layer>
+				</Layers>
+			</Frame>
+		</Frames>
+	</Frame>
+</Ui>

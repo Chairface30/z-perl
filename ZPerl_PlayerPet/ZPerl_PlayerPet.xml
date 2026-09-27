@@ -1,0 +1,203 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
+
+	<Script file="ZPerl_PlayerPet.lua"/>
+
+	<Button name="XPerl_Player_Pet" inherits="XPerlBackdropTemplate,SecureUnitButtonTemplate" clampedToScreen="true" parent="UIParent" frameStrata="LOW" hidden="true" enableMouse="true" movable="true">
+		<Size x="140" y="50"/>
+		<Anchors>
+			<Anchor point="TOPLEFT" x="103" y="-89"/>
+		</Anchors>
+
+		<Scripts>
+			<OnLoad>
+				self:RegisterForClicks("AnyUp")
+				self:RegisterForDrag("LeftButton")
+				XPerl_Player_Pet_OnLoad(self)
+				self:SetScript("OnEnter", ZPerl_Unit_OnEnter)
+				self:SetScript("OnLeave", ZPerl_Unit_OnLeave)
+			</OnLoad>
+			<OnDragStart>
+				if (XPerlLocked == 0) then
+					XPerl_Player_Pet:StartMoving()
+				end
+			</OnDragStart>
+			<OnDragStop>
+				XPerl_Player_Pet:StopMovingOrSizing()
+				XPerl_SavePosition(self)
+			</OnDragStop>
+		</Scripts>
+
+		<Frames>
+			<Frame name="$parentportraitFrame" inherits="XPerlBackdropTemplate,XPerl_Portrait_Template">
+				<Size x="54" y="56"/>
+				<Anchors>
+					<Anchor point="TOPLEFT"/>
+				</Anchors>
+			</Frame>
+
+			<Button name="$parentnameFrame" inherits="XPerlBackdropTemplate,SecureUnitButtonTemplate">
+				<Scripts>
+					<OnLoad>
+						self:RegisterForClicks("AnyUp")
+						self:RegisterForDrag("LeftButton")
+						XPerl_RegisterUnitText(_G[self:GetName().."text"])
+						self:SetScript("OnEnter", function(self) ZPerl_Unit_OnEnter(self:GetParent()) end)
+						self:SetScript("OnLeave", function(self) ZPerl_Unit_OnLeave(self:GetParent()) end)
+					</OnLoad>
+					<OnDragStart>
+						if (XPerlLocked == 0) then
+							XPerl_Player_Pet:StartMoving()
+						end
+					</OnDragStart>
+					<OnDragStop>
+						XPerl_Player_Pet:StopMovingOrSizing()
+						XPerl_SavePosition(XPerl_Player_Pet)
+					</OnDragStop>
+				</Scripts>
+				<Size x="80" y="24"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parentportraitFrame" relativePoint="TOPRIGHT" x="-3" y="0"/>
+				</Anchors>
+				<KeyValues>
+					<KeyValue key="backdropInfo" value="XPerl_Frame_Backdrop_32_16_4444" type="global"/>
+				</KeyValues>
+				<Layers>
+					<Layer level="OVERLAY">
+						<Texture name="$parentcombatIcon" file="Interface\CharacterFrame\UI-StateIcon" hidden="true">
+							<Size x="32" y="31"/>
+							<Anchors>
+								<Anchor point="RIGHT"/>
+							</Anchors>
+						</Texture>
+
+						<Texture name="$parentwarningIcon" file="Interface\Minimap\Ping\ping6" alphaMode="ADD" hidden="true">
+							<Size x="32" y="31"/>
+							<Anchors>
+								<Anchor point="TOP" relativePoint="TOP" x="0" y="2"/>
+							</Anchors>
+						</Texture>
+
+						<FontString name="$parenttext" inherits="GameFontNormalSmall" justifyH="LEFT">
+							<Anchors>
+								<Anchor point="TOPLEFT" x="6" y="0"/>
+								<Anchor point="BOTTOMRIGHT" x="0" y="1"/>
+							</Anchors>
+						</FontString>
+
+					</Layer>
+				</Layers>
+			</Button>
+
+			<Frame name="$parentlevelFrame" inherits="XPerlBackdropTemplate,XPerl_BorderStyleTemplate">
+				<Size x="27" y="24"/>
+				<Anchors>
+					<Anchor point="TOPRIGHT" relativePoint="TOPLEFT" relativeTo="$parentportraitFrame" x="2" y="0"/>
+				</Anchors>
+				<Layers>
+					<Layer level="OVERLAY">
+						<FontString name="$parenttext" inherits="GameFontNormalSmall" setAllPoints="true"/>
+					</Layer>
+				</Layers>
+				<Scripts>
+					<OnLoad>
+						XPerl_RegisterUnitText(_G[self:GetName().."text"])
+					</OnLoad>
+				</Scripts>
+			</Frame>
+
+			<Frame name="$parenthappyFrame" inherits="XPerl_BorderStyleTemplate" hidden="true">
+				<Size x="34" y="34"/>
+				<Anchors>
+					<Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMLEFT" relativeTo="$parentportraitFrame" x="2" y="0"/>
+				</Anchors>
+				<Frames>
+					<Frame name="$parenticon">
+						<Size x="27" y="27"/>
+						<Anchors>
+							<Anchor point="CENTER" />
+						</Anchors>
+						<Layers>
+							<Layer level="BACKGROUND">
+								<Texture name="$parenttex" file="Interface\PetPaperDollFrame\UI-PetHappiness" setAllPoints="true">
+									<Size x="27" y="27"/>
+								</Texture>
+							</Layer>
+						</Layers>
+						<Scripts>
+							<OnLoad>
+								self:RegisterForDrag("LeftButton")
+							</OnLoad>
+							<OnDragStart>
+								if (XPerlLocked == 0) then
+									XPerl_Player_Pet:StartMoving()
+								end
+							</OnDragStart>
+							<OnDragStop>
+								XPerl_Player_Pet:StopMovingOrSizing()
+							</OnDragStop>
+							<OnEnter>
+								if (XPerlDB.tooltip.enable and self.tooltip) then
+									GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+									GameTooltip:SetText(self.tooltip)
+									if ( self.tooltipDamage ) then
+										GameTooltip:AddLine(self.tooltipDamage, "", 1, 1, 1)
+									end
+									if ( self.tooltipLoyalty ) then
+										GameTooltip:AddLine(self.tooltipLoyalty, "", 1, 1, 1)
+									end
+									GameTooltip:Show()
+								end
+							</OnEnter>
+							<OnLeave>
+								XPerl_PlayerTipHide()
+							</OnLeave>
+						</Scripts>
+					</Frame>
+				</Frames>
+			</Frame>
+
+			<Frame name="$parentstatsFrame" inherits="XPerlBackdropTemplate,XPerl_StatsXP_Template">
+				<Size x="80" y="34"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$parentnameFrame" x="0" y="2"/>
+				</Anchors>
+			</Frame>
+
+			<Frame name="$parentbuffFrame">
+				<Size x="100" y="34"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$parentportraitFrame" x="3" y="0"/>
+				</Anchors>
+			</Frame>
+
+			<Frame name="$parentdebuffFrame">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parentbuffFrame"/>
+					<Anchor point="BOTTOMRIGHT" relativeTo="$parentbuffFrame"/>
+				</Anchors>
+			</Frame>
+
+			<Frame name="$parenthighlight" inherits="XPerl_HighlightTemplate">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeTo="$parentportraitFrame"/>
+					<Anchor point="BOTTOMRIGHT" relativeTo="$parentstatsFrame"/>
+				</Anchors>
+			</Frame>
+
+			<Frame name="$parenthitIndicator" frameStrata="HIGH">
+				<Layers>
+					<Layer level="OVERLAY">
+						<FontString name="$parenttext" inherits="NumberFontNormalHuge" hidden="true">
+							<FontHeight>
+								<AbsValue val="30"/>
+							</FontHeight>
+							<Anchors>
+								<Anchor point="CENTER" relativePoint="CENTER" relativeTo="XPerl_Player_PetportraitFrame"/>
+							</Anchors>
+						</FontString>
+					</Layer>
+				</Layers>
+			</Frame>
+		</Frames>
+	</Button>
+</Ui>

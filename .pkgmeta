@@ -1,0 +1,25 @@
+# CurseForge packaging. The repo root is the ZPerl addon; each ZPerl_* folder
+# is its own addon and is moved out beside it, so the download unpacks to
+# ZPerl, ZPerl_Options, ZPerl_Player and the rest.
+package-as: ZPerl
+
+move-folders:
+  ZPerl/ZPerl_ArcaneBar: ZPerl_ArcaneBar
+  ZPerl/ZPerl_BigDebuffs: ZPerl_BigDebuffs
+  ZPerl/ZPerl_CustomHighlight: ZPerl_CustomHighlight
+  ZPerl/ZPerl_Options: ZPerl_Options
+  ZPerl/ZPerl_Party: ZPerl_Party
+  ZPerl/ZPerl_PartyPet: ZPerl_PartyPet
+  ZPerl/ZPerl_Player: ZPerl_Player
+  ZPerl/ZPerl_PlayerBuffs: ZPerl_PlayerBuffs
+  ZPerl/ZPerl_PlayerPet: ZPerl_PlayerPet
+  ZPerl/ZPerl_RaidAdmin: ZPerl_RaidAdmin
+  ZPerl/ZPerl_RaidFrames: ZPerl_RaidFrames
+  ZPerl/ZPerl_RaidHelper: ZPerl_RaidHelper
+  ZPerl/ZPerl_RaidMonitor: ZPerl_RaidMonitor
+  ZPerl/ZPerl_RaidPets: ZPerl_RaidPets
+  ZPerl/ZPerl_Target: ZPerl_Target
+  ZPerl/ZPerl_TargetTarget: ZPerl_TargetTarget
+
+ignore:
+  - .pkgmeta

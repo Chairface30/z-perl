@@ -1,0 +1,33 @@
+## Interface: 20505
+## Version: 7.7.5
+## Author: Chairface (originally Resike)
+## Title: Z-Perl Unit Frames BCC
+## Title-itIT: Z-Perl Unit Frames BCC
+## Title-ruRU: Z-Perl Unit Frames BCC
+## Title-deDE: Z-Perl Unit Frames BCC
+## Title-zhCN: Z-Perl Unit Frames BCC
+## Title-zhTW: Z-Perl Unit Frames BCC
+## Notes: Complete unit frame replacement with raid frames, raid tools, 3D portraits, buff/debuff tracking, and much more. Updated for TBC Classic Anniversary.
+## Notes-itIT: Sostituzione completa dei frame unità con frame raid, strumenti raid, ritratti 3D, tracciamento buff/debuff e molto altro.
+## Notes-ruRU: Полная замена фреймов юнитов с рейдовыми фреймами, инструментами рейда, 3D портретами, отслеживанием баффов/дебаффов и многим другим.
+## Notes-deDE: Kompletter Ersatz für Einheitenfenster mit Raid-Frames, Raid-Tools, 3D-Portraits, Buff/Debuff-Tracking und vielem mehr.
+## Notes-esES: Reemplazo completo de marcos de unidad con marcos de banda, herramientas de banda, retratos 3D, seguimiento de mejoras/perjuicios y mucho más.
+## Notes-zhCN: 完整的单位框架替换，包括团队框架、团队工具、3D头像、增益/减益追踪等更多功能。
+## Notes-zhTW: 完整的單位框架替換，包括團隊框架、團隊工具、3D頭像、增益/減益追蹤等更多功能。
+## SavedVariables: ZPerlConfig, ZPerlConfig_Global, ZPerlConfigNew, ZPerlConfigSavePerCharacter, ZPerlImportDone
+## OptionalDeps: Clique
+
+# TBC Anniversary Compatibility Layer - MUST load first
+ZPerl_Compat.lua
+
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
+Libs\LibClassicCasterino\LibClassicCasterino.lua
+Libs\LibClassicDurations\LibClassicDurations.xml
+Libs\LibHealComm-4.0\LibHealComm-4.0.xml
+Libs\MSA-DropDownMenu-1.0\MSA-DropDownMenu-1.0.lua
+
+Version.lua
+
+ZPerl_Globals.xml
+ZPerl.xml
