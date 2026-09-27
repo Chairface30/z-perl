@@ -22,6 +22,14 @@ end)()
 if not GetItemInfo and C_Item and C_Item.GetItemInfo then
     GetItemInfo = C_Item.GetItemInfo
 end
+-- MouseIsOver(frame) is gone from newer clients (WoW Forever among them);
+-- a frame's own IsMouseOver does the same job.
+function XPerl_MouseIsOver(frame)
+    if not frame then return false end
+    if MouseIsOver then return MouseIsOver(frame) end
+    return frame.IsMouseOver and frame:IsMouseOver() or false
+end
+
 if not GetSpellTexture and C_Spell and C_Spell.GetSpellTexture then
     GetSpellTexture = C_Spell.GetSpellTexture
 end

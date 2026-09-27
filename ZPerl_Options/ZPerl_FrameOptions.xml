@@ -1112,7 +1112,7 @@
 				XPerl_Options:SetFrameStrata("DIALOG")
 			</OnHide>
 			<OnUpdate>
-				if (not MouseIsOver(self) and GetMouseFocus() ~= self:GetParent()) then
+				if (not XPerl_MouseIsOver(self) and GetMouseFocus() ~= self:GetParent()) then
 					self:Hide()
 				end
 			</OnUpdate>

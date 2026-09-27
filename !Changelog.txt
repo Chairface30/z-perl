@@ -1,4 +1,5 @@
 **Unreleased** - WoW Forever support - By Chairface Chippendale
+* Options: the tooltip settings popup no longer errors every frame (MouseIsOver is gone from newer clients)
 * Options window: fixed errors from raid class rows with no saved class, the range finder's spell icon (GetSpellTexture from C_Spell on Forever), and locking frames with no player buff frame
 * Removed the ZPerl_BigDebuffs module (Z-Perl's own "big debuffs" option on each frame is unchanged)
 * The minimap button sits on the minimap's edge whatever size the minimap is, follows it when it changes, and drags around it correctly (it assumed the old 140px minimap)
