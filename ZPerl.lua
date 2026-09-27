@@ -1577,34 +1577,44 @@ function ZPerl_MinimapButton_Init(self)
 end
 
 -- XPerl_MinimapButton_UpdatePosition
+-- Placed from the minimap's centre, so it sits on the ring whatever size the
+-- minimap is (the old fixed offsets assumed a 140px minimap and left the
+-- button stranded on bigger ones). conf.minimap.pos is the angle, as before;
+-- conf.minimap.radius keeps its old meaning too, 70 being the minimap's edge.
+local function MinimapHalf()
+	local w = Minimap and Minimap:GetWidth()
+	return (w and w > 0) and (w / 2) or 70
+end
+
 function XPerl_MinimapButton_UpdatePosition(self)
 	if (not conf.minimap.radius) then
 		conf.minimap.radius = 78
 	end
+	local r = conf.minimap.radius - 70 + MinimapHalf()
 	self:ClearAllPoints()
-	self:SetPoint("TOPLEFT", "Minimap", "TOPLEFT", 54 - (conf.minimap.radius * cos(conf.minimap.pos)), (conf.minimap.radius * sin(conf.minimap.pos)) - 55)
+	self:SetPoint("CENTER", Minimap, "CENTER", -(r * cos(conf.minimap.pos)), r * sin(conf.minimap.pos))
+	if not self.followsMinimapSize and Minimap then
+		self.followsMinimapSize = true
+		Minimap:HookScript("OnSizeChanged", function() XPerl_MinimapButton_UpdatePosition(self) end)
+	end
 end
 
 -- XPerl_MinimapButton_Dragging
 function XPerl_MinimapButton_Dragging(self, elapsed)
-	local xpos, ypos = GetCursorPosition()
-	local xmin, ymin = Minimap:GetLeft(), Minimap:GetBottom()
-
-	xpos = xmin - xpos / UIParent:GetScale() + 70
-	ypos = ypos / UIParent:GetScale() - ymin - 70
+	local mx, my = Minimap:GetCenter()
+	if not (mx and my) then
+		return
+	end
+	local scale = Minimap:GetEffectiveScale()
+	local cx, cy = GetCursorPosition()
+	local dx, dy = cx / scale - mx, cy / scale - my
 
 	if (IsAltKeyDown()) then
-		local radius = (xpos ^ 2 + ypos ^ 2) ^ 0.5
-		if (radius < 78) then
-			radius = 78
-		end
-		if (radius > 148) then
-			radius = 148
-		end
-		conf.minimap.radius = radius
-		end
+		local radius = (dx ^ 2 + dy ^ 2) ^ 0.5 - MinimapHalf() + 70
+		conf.minimap.radius = max(78, min(148, radius))
+	end
 
-	local angle = deg(atan2(ypos, xpos))
+	local angle = deg(atan2(dy, -dx))
 	if (angle < 0) then
 		angle = angle + 360
 	end

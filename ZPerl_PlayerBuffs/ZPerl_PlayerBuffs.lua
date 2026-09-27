@@ -146,9 +146,19 @@ function XPerl_Player_BuffSetup(self)
 		return
 	end
 
-	if (not self.buffFrame) then
-		self.buffFrame = CreateFrame("Frame", self:GetName().."buffFrame", self, "SecureAuraHeaderTemplate")
-		self.debuffFrame = CreateFrame("Frame", self:GetName().."debuffFrame", self.buffFrame, "SecureAuraHeaderTemplate")
+	if (not self.buffFrame) and not self.noAuraHeader then
+		-- Built on Blizzard's SecureAuraHeaderTemplate, which some clients
+		-- (WoW Forever) don't have. Without it there are no Z-Perl player
+		-- buffs, and Blizzard's own stay up (see below).
+		local ok, header = pcall(CreateFrame, "Frame", self:GetName().."buffFrame", self, "SecureAuraHeaderTemplate")
+		if not ok then
+			self.noAuraHeader = true
+		else
+			self.buffFrame = header
+			self.debuffFrame = CreateFrame("Frame", self:GetName().."debuffFrame", self.buffFrame, "SecureAuraHeaderTemplate")
+		end
+	end
+	if (self.buffFrame) and not self.buffFrame.BuffFrameUpdateTime then
 
 
 		self.buffFrame:SetAttribute("frameStrata", "DIALOG")
@@ -195,7 +205,7 @@ function XPerl_Player_BuffSetup(self)
 	end
 
 	-- Blizzard's buffs go while Z-Perl shows yours (or when asked to anyway)
-	if (pconf.buffs.enable or pconf.buffs.hideBlizzard) then
+	if ((pconf.buffs.enable and self.buffFrame) or pconf.buffs.hideBlizzard) then
 		HideBlizzardAuraFrame(BuffFrame)
 		HideBlizzardAuraFrame(DebuffFrame)
 		HideBlizzardAuraFrame(TemporaryEnchantFrame)

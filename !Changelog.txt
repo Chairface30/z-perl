@@ -1,4 +1,6 @@
 **Unreleased** - WoW Forever support - By Chairface Chippendale
+* The minimap button sits on the minimap's edge whatever size the minimap is, follows it when it changes, and drags around it correctly (it assumed the old 140px minimap)
+* Forever: the combat log is not touched at all (unregistering it is refused too); without Blizzard's SecureAuraHeaderTemplate there are no Z-Perl player buffs, and Blizzard's own stay up
 * Forever: GetItemInfo and GetItemCount come from C_Item (fixes the range-spell list failing to load); the combat log, which Forever refuses to addons, is no longer registered (HoT highlights, big debuffs and own-damage combat text do without it); health updates use UNIT_HEALTH, as UNIT_HEALTH_FREQUENT doesn't exist there; incoming-heal prediction is skipped while LibHealComm isn't loaded
 * Forever reports itself as the retail game; Z-Perl now treats it as Classic (vanilla), so it no longer takes the retail paths whose retail-only spells broke loading ("table index is nil", then XPerl_Highlight missing in every frame)
 * Spell lists keyed by spell name no longer break when a client doesn't have one of the spells

@@ -27,11 +27,12 @@ if not GetItemCount and C_Item and C_Item.GetItemCount then
 end
 
 -- The combat log: WoW Forever refuses COMBAT_LOG_EVENT_UNFILTERED to addons
--- (ADDON_ACTION_FORBIDDEN, which a pcall can't catch), so it is never
--- registered there. What reads it (HoT highlights, big debuffs, own-damage
--- combat text) simply gets no combat log.
+-- (ADDON_ACTION_FORBIDDEN, which a pcall can't catch) -- registering it and
+-- unregistering it alike -- so there it is never touched. What reads it
+-- (HoT highlights, big debuffs, own-damage combat text) gets no combat log.
 function XPerl_RegisterCombatLog(frame, on)
-    if on and not XPerl_IsForever then
+    if XPerl_IsForever then return end
+    if on then
         frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
     else
         frame:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
