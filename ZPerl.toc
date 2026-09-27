@@ -1,5 +1,5 @@
 ## Interface: 16001
-## Version: 7.7.5
+## Version: 8.0.0
 ## Author: Chairface (originally Resike)
 ## Title: Z-Perl Unit Frames Forever
 ## Title-itIT: Z-Perl Unit Frames Forever

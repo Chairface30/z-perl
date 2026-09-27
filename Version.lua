@@ -61,7 +61,7 @@ function ZPerl:CHAT_MSG_ADDON(prefix, msg, channel, sender)
 	end
 
 	if self:CompareVersion(msg) then
-		print("|cFF50C0FFZ-Perl BCC|r:", XPERL_NEW_VERSION_DETECTED, "|cFFFF0000"..msg.."|r", XPERL_DOWNLOAD_LATEST, XPERL_DOWNLOAD_LOCATION)
+		print(XPerl_IsForever and "|cFF50C0FFZ-Perl Forever|r:" or "|cFF50C0FFZ-Perl BCC|r:", XPERL_NEW_VERSION_DETECTED, "|cFFFF0000"..msg.."|r", XPERL_DOWNLOAD_LATEST, XPERL_DOWNLOAD_LOCATION)
 
 		self.newVersion = msg
 
