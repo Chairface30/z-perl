@@ -134,7 +134,7 @@ function XPerl_Target_OnLoad(self, partyid)
 		"UNIT_CLASSIFICATION_CHANGED",
 		"UNIT_PORTRAIT_UPDATE",
 		"UNIT_AURA",
-		IsClassic and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
+		(IsClassic and not XPerl_IsForever) and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
 		"UNIT_MAXHEALTH",
 		"PET_BATTLE_HEALTH_CHANGED",
 		"UPDATE_SUMMONPETS_ACTION",
@@ -1846,9 +1846,9 @@ function XPerl_Target_Set_Bits(self)
 	XPerl_StatsFrameSetup(self)
 
 	if (self.conf.ownDamageOnly and (self.conf.hitIndicator and self.conf.portrait)) then
-		self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+		XPerl_RegisterCombatLog(self, true)
 	else
-		self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+		XPerl_RegisterCombatLog(self, false)
 	end
 
 	self.buffFrame:ClearAllPoints()

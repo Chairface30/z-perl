@@ -1829,9 +1829,9 @@ function xpHigh:OptionChange()
 
 	if (conf.highlight.enable and (conf.highlight.HOT or conf.highlight.SHIELD or conf.highlight.HEAL or conf.highlight.POM)) then
 		events = true
-		self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+		XPerl_RegisterCombatLog(self, true)
 	else
-		self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+		XPerl_RegisterCombatLog(self, false)
 	end
 
 	if (not conf.highlight.enable or not conf.highlight.HOT) then

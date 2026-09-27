@@ -1012,7 +1012,7 @@ function XPerl_RaidMonitor_Init(self)
 			"UNIT_POWER_FREQUENT",
 			"UNIT_MAXPOWER",
 			"UNIT_MANA",
-			IsClassic and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
+			(IsClassic and not XPerl_IsForever) and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
 			"UNIT_MAXHEALTH",
 			"UNIT_TARGET",
 			"UNIT_SPELLCAST_START",

@@ -668,7 +668,7 @@ function XPerl_RaidPets_HideShow()
 	if not IsClassic then
 		local on = ((IsInRaid() and rconf.enable) or (IsInGroup() and XPerl_Raid_GrpPets:GetAttribute("showParty") and rconf.enable))
 		local events = {
-			IsClassic and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
+			(IsClassic and not XPerl_IsForever) and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
 			"UNIT_MAXHEALTH",
 			"UNIT_NAME_UPDATE",
 			"UNIT_AURA",

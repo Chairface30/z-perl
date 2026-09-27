@@ -42,7 +42,7 @@ function XPerl_Party_Pet_OnLoadEvents(self)
 		"UNIT_FACTION",
 		"UNIT_AURA",
 		"UNIT_FLAGS",
-		IsClassic and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
+		(IsClassic and not XPerl_IsForever) and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
 		IsClassic and "UNIT_HEALTH",
 		"UNIT_MAXHEALTH",
 		"UNIT_PET",

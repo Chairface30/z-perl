@@ -132,7 +132,7 @@ function XPerl_Raid_OnLoad(self)
 		"UNIT_AURA",
 		"UNIT_POWER_FREQUENT",
 		"UNIT_MAXPOWER",
-		IsClassic and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
+		(IsClassic and not XPerl_IsForever) and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
 		"UNIT_MAXHEALTH",
 		"UNIT_NAME_UPDATE",
 		"PLAYER_FLAGS_CHANGED",

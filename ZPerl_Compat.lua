@@ -18,6 +18,26 @@ XPerl_IsForever = (function()
     return ok and type(toc) == "number" and toc >= 16000 and toc < 17000 or false
 end)()
 
+-- Item functions: WoW Forever has them only in C_Item.
+if not GetItemInfo and C_Item and C_Item.GetItemInfo then
+    GetItemInfo = C_Item.GetItemInfo
+end
+if not GetItemCount and C_Item and C_Item.GetItemCount then
+    GetItemCount = C_Item.GetItemCount
+end
+
+-- The combat log: WoW Forever refuses COMBAT_LOG_EVENT_UNFILTERED to addons
+-- (ADDON_ACTION_FORBIDDEN, which a pcall can't catch), so it is never
+-- registered there. What reads it (HoT highlights, big debuffs, own-damage
+-- combat text) simply gets no combat log.
+function XPerl_RegisterCombatLog(frame, on)
+    if on and not XPerl_IsForever then
+        frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+    else
+        frame:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+    end
+end
+
 -- A spell's name to key a table by, or "#spell<id>" when this client doesn't
 -- have the spell: a nil table key is an error that stops the whole file, and
 -- a placeholder simply never matches an aura.

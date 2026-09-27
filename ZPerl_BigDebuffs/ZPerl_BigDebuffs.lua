@@ -766,7 +766,7 @@ bootstrapFrame:SetScript("OnEvent", function(self, event, loadedAddon)
         ZPerl_BigDebuffs:RegisterEvent("PLAYER_ENTERING_WORLD")
         ZPerl_BigDebuffs:RegisterEvent("PLAYER_TARGET_CHANGED")
         ZPerl_BigDebuffs:RegisterEvent("GROUP_ROSTER_UPDATE")
-        ZPerl_BigDebuffs:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+        XPerl_RegisterCombatLog(ZPerl_BigDebuffs, true)
         ZPerl_BigDebuffs:RegisterEvent("UNIT_AURA")
         
         -- Focus is not in Classic Era

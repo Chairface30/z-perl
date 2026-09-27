@@ -4274,7 +4274,7 @@ function XPerl_SetExpectedHealth(self)
 		local amount
 		if not IsClassic then
 			amount = UnitGetIncomingHeals(unit)
-		else
+		elseif HealComm then
 			local guid = UnitGUID(unit)
 			amount = (HealComm:GetHealAmount(guid, HealComm.ALL_HEALS, GetTime() + 3) or 0) * HealComm:GetHealModifier(guid)
 		end
@@ -4453,7 +4453,7 @@ function XPerl_Register_Prediction(self, conf, g2u, ...)
 		else
 			self:UnregisterEvent("UNIT_ABSORB_AMOUNT_CHANGED")
 		end
-	else
+	elseif HealComm then -- LibHealComm doesn't load on every client (not on WoW Forever)
 		if (conf.healprediction) then
 			local UpdateHealth = function(event, ...)
 				-- Heal prediction only updates statusbars (not protected frames), so it is safe in combat

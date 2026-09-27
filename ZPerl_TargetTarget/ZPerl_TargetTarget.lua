@@ -67,7 +67,7 @@ function ZPerl_TargetTarget_OnLoad(self)
 	XPerl_SetChildMembers(self)
 
 	local events = {
-		IsClassic and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
+		(IsClassic and not XPerl_IsForever) and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
 		"UNIT_POWER_FREQUENT",
 		"UNIT_AURA",
 		"UNIT_TARGET",
@@ -83,7 +83,7 @@ function ZPerl_TargetTarget_OnLoad(self)
 		self.partyid = "targettarget"
 		self:RegisterEvent("PLAYER_TARGET_CHANGED")
 		for i, event in pairs(events) do
-			self:RegisterUnitEvent(event, "target")
+			pcall(self.RegisterUnitEvent, self, event, "target") -- skip any event this client lacks
 		end
 		XPerl_Register_Prediction(self, conf.targettarget, function(guid)
 			if guid == UnitGUID("targettarget") then
@@ -122,7 +122,7 @@ function ZPerl_TargetTarget_OnLoad(self)
 		self.parentid = "targettarget"
 		self.partyid = "targettargettarget"
 		for i, event in pairs(events) do
-			self:RegisterUnitEvent(event, "target")
+			pcall(self.RegisterUnitEvent, self, event, "target") -- skip any event this client lacks
 		end
 		XPerl_Register_Prediction(self, conf.targettarget, function(guid)
 			if guid == UnitGUID("targettargettarget") then

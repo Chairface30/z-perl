@@ -749,7 +749,7 @@ end
 -- Registration
 local function Registration()
 	local list = {
-		IsClassic and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
+		(IsClassic and not XPerl_IsForever) and "UNIT_HEALTH_FREQUENT" or "UNIT_HEALTH",
 		"UNIT_MAXHEALTH",
 		"UNIT_TARGET",
 		"UNIT_FACTION",
