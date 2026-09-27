@@ -493,7 +493,8 @@ function XPerl_ArcaneBar_Set()
 			end
 		end
 
-		overrideToggle(conf.player.castBar.original)
+		-- Blizzard's cast bar stays when asked for, or when Z-Perl's is off
+		overrideToggle(conf.player.castBar.original or not conf.player.castBar.enable)
 	end
 end
 

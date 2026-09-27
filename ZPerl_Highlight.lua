@@ -1654,8 +1654,12 @@ function xpHigh:UNIT_HEAL_PREDICTION(unit)
 	local guid = UnitGUID(unit)
 	if (conf.highlight and conf.highlight.HEAL) then
 		local amount = UnitGetIncomingHeals(unit) or 0
+		local health, healthmax = UnitIsGhost(unit) and 1 or (UnitIsDead(unit) and 0 or UnitHealth(unit)), UnitHealthMax(unit)
+		if XPerl_Secret(amount, health, healthmax) then
+			self:Remove(guid, "HEAL") -- can't tell how much is missing
+			return
+		end
 		if (amount and amount > 0 and not UnitIsDeadOrGhost(unit)) then
-			local health, healthmax = UnitIsGhost(unit) and 1 or (UnitIsDead(unit) and 0 or UnitHealth(unit)), UnitHealthMax(unit)
 			local missing = healthmax - health
 			if (missing > healthmax / 20) then -- More than 5% to heal
 				self:Add(guid, "HEAL", amount)

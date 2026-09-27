@@ -390,17 +390,26 @@ function XPerl_TargetTarget_OnUpdate(self, elapsed)
 	local newManaMax = UnitPowerMax(partyid)
 	local newAFK = UnitIsAFK(partyid)
 
-	if (conf.showAFK and newAFK ~= self.afk) or (newHP ~= self.targethp) or (newHPMax ~= self.targethpmax) then
-		XPerl_Target_UpdateHealth(self)
-	end
+	if XPerl_Secret(newHP, newHPMax, newMana, newManaMax) then
+		-- Forever: can't tell whether a secret value changed, so redraw on a timer
+		if XPerl_SecretPoll(self, elapsed) or (conf.showAFK and newAFK ~= self.afk) or (newManaType ~= self.targetmanatype) then
+			XPerl_Target_UpdateHealth(self)
+			XPerl_Target_SetManaType(self)
+			XPerl_Target_SetMana(self)
+		end
+	else
+		if (conf.showAFK and newAFK ~= self.afk) or (newHP ~= self.targethp) or (newHPMax ~= self.targethpmax) then
+			XPerl_Target_UpdateHealth(self)
+		end
 
-	if (newManaType ~= self.targetmanatype) then
-		XPerl_Target_SetManaType(self)
-		XPerl_Target_SetMana(self)
-	end
+		if (newManaType ~= self.targetmanatype) then
+			XPerl_Target_SetManaType(self)
+			XPerl_Target_SetMana(self)
+		end
 
-	if (newMana ~= self.targetmana) or (newManaMax ~= self.targetmanamax) then
-		XPerl_Target_SetMana(self)
+		if (newMana ~= self.targetmana) or (newManaMax ~= self.targetmanamax) then
+			XPerl_Target_SetMana(self)
+		end
 	end
 
 	--[[if conf.showFD then
@@ -445,17 +454,26 @@ function XPerl_TargetTargetTarget_OnUpdate(self, elapsed)
 	local newMana = UnitPower(partyid)
 	local newAFK = UnitIsAFK(partyid)
 
-	if (conf.showAFK and newAFK ~= self.afk) or (newHP ~= self.targethp) then
-		XPerl_Target_UpdateHealth(self)
-	end
+	if XPerl_Secret(newHP, newMana) then
+		-- Forever: can't tell whether a secret value changed, so redraw on a timer
+		if XPerl_SecretPoll(self, elapsed) or (conf.showAFK and newAFK ~= self.afk) or (newManaType ~= self.targetmanatype) then
+			XPerl_Target_UpdateHealth(self)
+			XPerl_Target_SetManaType(self)
+			XPerl_Target_SetMana(self)
+		end
+	else
+		if (conf.showAFK and newAFK ~= self.afk) or (newHP ~= self.targethp) then
+			XPerl_Target_UpdateHealth(self)
+		end
 
-	if (newManaType ~= self.targetmanatype) then
-		XPerl_Target_SetManaType(self)
-		XPerl_Target_SetMana(self)
-	end
+		if (newManaType ~= self.targetmanatype) then
+			XPerl_Target_SetManaType(self)
+			XPerl_Target_SetMana(self)
+		end
 
-	if (newMana ~= self.targetmana) then
-		XPerl_Target_SetMana(self)
+		if (newMana ~= self.targetmana) then
+			XPerl_Target_SetMana(self)
+		end
 	end
 
 	--[[if conf.showFD then

@@ -110,10 +110,21 @@ end
 -- ============================================================================
 
 -- Provide UnitAura wrapper if needed
+-- WoW Forever refuses every aura read from addon code while in combat
+-- ("Auras cannot be accessed when secret while tainted"): the read is made
+-- inside a pcall and a refusal reads as no aura, never an error.
+-- XPerl_AurasLocked(unit) tells the buff code to keep what it last showed.
+function XPerl_AurasLocked(unit)
+    return false
+end
 if not UnitAura and C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+    function XPerl_AurasLocked(unit)
+        return not pcall(C_UnitAuras.GetAuraDataByIndex, unit or "player", 1, "HELPFUL")
+    end
     UnitAura = function(unit, indexOrName, filter)
         if type(indexOrName) == "number" then
-            local auraData = C_UnitAuras.GetAuraDataByIndex(unit, indexOrName, filter)
+            local ok, auraData = pcall(C_UnitAuras.GetAuraDataByIndex, unit, indexOrName, filter)
+            if not ok then auraData = nil end
             if auraData then
                 return auraData.name,
                        auraData.icon,
@@ -153,6 +164,16 @@ if not UnitAura and C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
             finalFilter = "HARMFUL"
         end
         return UnitAura(unit, indexOrName, finalFilter)
+    end
+end
+
+-- IsSpellInRange: newer clients (WoW Forever) have only C_Spell.IsSpellInRange,
+-- which answers true/false/nil where the old one answered 1/0/nil.
+if not IsSpellInRange and C_Spell and C_Spell.IsSpellInRange then
+    IsSpellInRange = function(spell, unit)
+        local ok, inRange = pcall(C_Spell.IsSpellInRange, spell, unit)
+        if not ok or inRange == nil then return nil end
+        return inRange and 1 or 0
     end
 end
 

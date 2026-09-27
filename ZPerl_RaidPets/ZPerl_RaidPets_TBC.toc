@@ -1,4 +1,4 @@
-## Interface: 16001
+## Interface: 20505
 ## Author: Chairface (originally Resike)
 ## Title: Z-Perl |cffeda55fRaid Pets|r
 ## Title-itIT: Z-Perl |cffeda55fFamigli Incursione|r

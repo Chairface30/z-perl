@@ -170,6 +170,7 @@ function XPerl_Target_OnLoad(self, partyid)
 	if (partyid == "target") then
 		XPerl_BlizzFrameDisable(TargetFrame)
 		XPerl_BlizzFrameDisable(TargetofTargetFrame)
+		XPerl_BlizzFrameDisable(TargetFrameToT) -- its name on newer clients
 
 		self.statsFrame.focusTarget:SetVertexColor(0.7, 1, 1, 0.5)
 
@@ -807,7 +808,7 @@ end
 function XPerl_Target_SetManaType(self)
 	local targetmanamax = UnitPowerMax(self.partyid)
 
-	if (targetmanamax == 0 or not self.conf.mana) then
+	if ((not XPerl_Secret(targetmanamax) and targetmanamax == 0) or not self.conf.mana) then
 		if (self.statsFrame.manaBar:IsShown()) then
 			self.statsFrame.manaBar:Hide()
 
@@ -845,6 +846,11 @@ function XPerl_Target_SetMana(self)
 
 	self.targetmana = targetmana
 	self.targetmanamax = targetmanamax
+
+	if XPerl_Secret(targetmana, targetmanamax) then
+		XPerl_DrawSecretBar(mb, partyid, targetmana, targetmanamax, true, XPerl_GetDisplayedPowerType(partyid))
+		return
+	end
 
 	--Begin 4.3 division by 0 work around to ensure we don't divide if max is 0
 	local pmanaPct
@@ -991,7 +997,10 @@ function XPerl_Target_UpdateHealth(self)
 		end
 	end]]
 
-	if hp and hp >= 0 and hpMax and hpMax > 0 then
+	if XPerl_Secret(hp, hpMax) then
+		XPerl_SetHealthBar(self, hp, hpMax)
+		percent = nil
+	elseif hp and hp >= 0 and hpMax and hpMax > 0 then
 		XPerl_SetHealthBar(self, hp, hpMax)
 	end
 
@@ -1045,7 +1054,7 @@ function XPerl_Target_UpdateHealth(self)
 	end
 
 	if (color) then
-		if hp and hp >= 0 and hpMax and hpMax > 0 then
+		if not XPerl_Secret(hp, hpMax) and hp and hp >= 0 and hpMax and hpMax > 0 then
 			XPerl_ColourHealthBar(self, hp / hpMax)
 		end
 
@@ -1062,13 +1071,13 @@ end
 function XPerl_Target_GetHealth(self)
 	if XPerl_Unit_GetHealth then
 		local hp, hpMax = XPerl_Unit_GetHealth(self)
-		return hp, hpMax, hpMax == 100
+		return hp, hpMax, not XPerl_Secret(hpMax) and hpMax == 100
 	else
 		-- Fallback if XPerl_Unit_GetHealth not loaded yet
 		local partyid = self.partyid
 		local hp = UnitHealth(partyid) or 0
 		local hpMax = UnitHealthMax(partyid) or 1
-		return hp, hpMax, hpMax == 100
+		return hp, hpMax, not XPerl_Secret(hpMax) and hpMax == 100
 	end
 end
 

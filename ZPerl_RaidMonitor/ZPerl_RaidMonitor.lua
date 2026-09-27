@@ -214,7 +214,7 @@ local function UpdateUnit(self)
 			self.bar:SetStatusBarColor(0.5, 0.5, 0.5)
 			self.bar.bg:SetVertexColor(0.5, 0.5, 0.5, 0.5)
 		else
-			ScaleBarColour(self.bar, self.mana / self.manaMax, "rbg")
+			ScaleBarColour(self.bar, XPerl_Ratio(self.mana, self.manaMax) or 1, "rbg")
 		end
 
 		local _, class = UnitClass(id)
@@ -363,22 +363,26 @@ function XPerl_RaidMonitor_Init(self)
 				local unit = v:GetAttribute("unit")
 				if (UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit)) then
 					local perc
-					if (v.manaMax == 0) then
+					if XPerl_Secret(v.mana, v.manaMax) then
+						perc = nil -- mana unknown (Forever): left out of the totals
+					elseif (v.manaMax == 0) then
 						perc = 0
 					else
 						perc = 100 / v.manaMax * v.mana
 					end
 
-					if (perc >= config.HighMana) then
-						manaHigh = manaHigh + 1
-					end
+					if perc then
+						if (perc >= config.HighMana) then
+							manaHigh = manaHigh + 1
+						end
 
-					if (perc <= config.LowMana) then
-						manaLow = manaLow + 1
-					end
+						if (perc <= config.LowMana) then
+							manaLow = manaLow + 1
+						end
 
-					manaTotal = manaTotal + perc
-					count = count + 1
+						manaTotal = manaTotal + perc
+						count = count + 1
+					end
 				end
 			end
 			allTotal = allTotal + 1
@@ -422,7 +426,9 @@ function XPerl_RaidMonitor_Init(self)
 					local hp, hpMax = UnitIsGhost(id) and 1 or (UnitIsDead(id) and 0 or UnitHealth(id)), UnitHealthMax(id)
 					--Begin 4.3 anti /0 fix.
 					local percent
-					if UnitIsDeadOrGhost(id) or (hp == 0 and hpMax == 0) then--They are dead
+					if XPerl_Secret(hp, hpMax) then
+						percent = nil -- health unknown (Forever): left out of the average
+					elseif UnitIsDeadOrGhost(id) or (hp == 0 and hpMax == 0) then--They are dead
 						percent = 0
 					elseif hp > 0 and hpMax == 0 then --They have more then 1 HP so they have to be alive, so we need to fix hpmax being wrong.
 						hpMax = hp --Make max hp equal to current HP
@@ -431,8 +437,10 @@ function XPerl_RaidMonitor_Init(self)
 						percent = hp / hpMax
 					end
 					--end /0 fix.
-					totalHealth = totalHealth + (100 * percent)
-					total = total + 1
+					if percent then
+						totalHealth = totalHealth + (100 * percent)
+						total = total + 1
+					end
 				end
 			end
 		elseif GetNumSubgroupMembers() > 0 then--if not a raid see if it's a party
@@ -442,7 +450,9 @@ function XPerl_RaidMonitor_Init(self)
 					local hp, hpMax = UnitIsGhost(id) and 1 or (UnitIsDead(id) and 0 or UnitHealth(id)), UnitHealthMax(id)
 					--Begin 4.3 anti /0 fix.
 					local percent
-					if UnitIsDeadOrGhost(id) or (hp == 0 and hpMax == 0) then--They are dead
+					if XPerl_Secret(hp, hpMax) then
+						percent = nil -- health unknown (Forever): left out of the average
+					elseif UnitIsDeadOrGhost(id) or (hp == 0 and hpMax == 0) then--They are dead
 						percent = 0
 					elseif hp > 0 and hpMax == 0 then --They have more then 1 HP so they have to be alive, so we need to fix hpmax being wrong.
 						hpMax = hp --Make max hp equal to current HP
@@ -451,15 +461,19 @@ function XPerl_RaidMonitor_Init(self)
 						percent = hp / hpMax
 					end
 					--end /0 fix.
-					totalHealth = totalHealth + (100 * percent)
-					total = total + 1
+					if percent then
+						totalHealth = totalHealth + (100 * percent)
+						total = total + 1
+					end
 				end
 			end
 			--GetNumSubgroupMembers() doesn't return player, unlike GetNumGroupMembers which does, so we have to manually add player in for 5 mans
 			local hp, hpMax = UnitIsGhost("player") and 1 or (UnitIsDead("player") and 0 or UnitHealth("player")), UnitHealthMax("player")
 			--Begin 4.3 anti /0 fix.
 			local percent
-			if UnitIsDeadOrGhost("player") or (hp == 0 and hpMax == 0) then--They are dead
+			if XPerl_Secret(hp, hpMax) then
+						percent = nil -- health unknown (Forever): left out of the average
+					elseif UnitIsDeadOrGhost("player") or (hp == 0 and hpMax == 0) then--They are dead
 				percent = 0
 			elseif hp > 0 and hpMax == 0 then --They have more then 1 HP so they have to be alive, so we need to fix hpmax being wrong.
 				hpMax = hp --Make max hp equal to current HP
@@ -468,8 +482,10 @@ function XPerl_RaidMonitor_Init(self)
 				percent = hp / hpMax
 			end
 			--end /0 fix.
-			totalHealth = totalHealth + (100 * percent)
-			total = total + 1
+			if percent then
+				totalHealth = totalHealth + (100 * percent)
+				total = total + 1
+			end
 		end
 		if totalHealth ~= 0 and total ~= 0 then--Make sure neither is 0, if they are don't bother division, no one is alive.
 			totalHealth = totalHealth / total
@@ -497,7 +513,7 @@ function XPerl_RaidMonitor_Init(self)
 				u.mana, u.manaMax = UnitPower(id), UnitPowerMax(id)
 				u.bar:SetMinMaxValues(0, u.manaMax)
 				u.bar:SetValue(u.mana)
-				ScaleBarColour(u.bar, u.mana / u.manaMax, "rbg")
+				ScaleBarColour(u.bar, XPerl_Ratio(u.mana, u.manaMax) or 1, "rbg")
 				self.doneMana = false
 
 				if (self.lastManaUpdate or 0) >= GetTime() then
@@ -525,7 +541,7 @@ function XPerl_RaidMonitor_Init(self)
 				u.mana, u.manaMax = UnitPower(id), UnitPowerMax(id)
 				u.bar:SetMinMaxValues(0, u.manaMax)
 				u.bar:SetValue(u.mana)
-				ScaleBarColour(u.bar, u.mana / u.manaMax, "rbg")
+				ScaleBarColour(u.bar, XPerl_Ratio(u.mana, u.manaMax) or 1, "rbg")
 				self.doneMana = false
 
 				if (self.lastManaUpdate or 0) >= GetTime() then
@@ -553,7 +569,7 @@ function XPerl_RaidMonitor_Init(self)
 				u.mana, u.manaMax = UnitPower(id), UnitPowerMax(id)
 				u.bar:SetMinMaxValues(0, u.manaMax)
 				u.bar:SetValue(u.mana)
-				ScaleBarColour(u.bar, u.mana / u.manaMax, "rbg")
+				ScaleBarColour(u.bar, XPerl_Ratio(u.mana, u.manaMax) or 1, "rbg")
 				self.doneMana = false
 
 				if (self.lastManaUpdate or 0) >= GetTime() then

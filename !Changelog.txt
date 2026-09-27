@@ -1,3 +1,11 @@
+**Unreleased** - WoW Forever support - By Chairface Chippendale
+* Loads on WoW Forever: every Z-Perl addon has its own TOC for Forever (interface 16001) beside the TBC one (_TBC.toc)
+* Each Blizzard frame is hidden exactly while its Z-Perl stand-in is on, and comes back when you turn that off: player, pet, target, target of target (both its names), focus, party (old PartyMemberFrame1-4, the newer PartyFrame and Blizzard's raid-style party frames), raid (Blizzard's raid frames and manager, which were never hidden before), your cast bar (hidden while Z-Perl's player cast bar is on, instead of only when 'use original' was off) and your buffs (hidden while Z-Perl shows your buffs)
+* Blizzard frames are moved out of sight rather than made to run their own code, and a change made in combat waits for combat to end
+* Forever keeps health and power secret from addons: bars and 'current/max' text are drawn straight from the secret values, percentages come from the client, and what can't be worked out (health-shaded bar colours, deficits, low-health flash, raid health and mana averages, incoming heal and absorb overlays) is left plain or hidden instead of erroring
+* Forever refuses aura reads in combat: buff icons keep what they last showed instead of erroring or emptying
+* Range finder uses C_Spell.IsSpellInRange where the old IsSpellInRange is gone; specialization checks are skipped where GetSpecialization is gone
+
 **7.7.5** - TBC Classic Anniversary Edition
 * Fixed Blizzard's default buff icons reappearing next to ZPerl buffs after the latest patch (the new Edit Mode re-shows them), including expired buffs frozen at 0 until reload; hiding now survives Edit Mode, and the new separate debuff frame is hidden too
 * Fixed the Target Counters button appearing stranded at the center of the screen; counter buttons now re-attach to the player/target frames whenever they are shown

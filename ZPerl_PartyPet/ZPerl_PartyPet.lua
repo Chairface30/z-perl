@@ -318,6 +318,13 @@ local function XPerl_Party_Pet_UpdateHealth(self)
 	self.pethp = health
 	self.pethpmax = healthmax
 
+	if XPerl_Secret(health, healthmax) then
+		XPerl_DrawSecretBar(self.statsFrame.healthBar, partyid, health, healthmax)
+		XPerl_SetSecretPercent(self.statsFrame.healthBar.text, partyid)
+		self.statsFrame.healthBar.text:Show()
+		return
+	end
+
 	-- PTR region fix
 	if not healthmax or healthmax <= 0 then
 		if health > 0 then
@@ -383,6 +390,11 @@ local function XPerl_Party_Pet_UpdateMana(self)
 
 	self.petmana = unitPower
 	self.petmanamax = unitPowerMax
+
+	if XPerl_Secret(unitPower, unitPowerMax) then
+		XPerl_DrawSecretBar(self.statsFrame.manaBar, partyid, unitPower, unitPowerMax, true)
+		return
+	end
 
 	-- PTR region fix
 	if not unitPowerMax or unitPowerMax <= 0 then
@@ -553,11 +565,16 @@ local function XPerl_Party_Pet_OnUpdate(self, elapsed)
 			XPerl_Party_Pet_UpdateName(self)
 		end
 
-		if (newHP ~= self.pethp or newHPMax ~= self.pethpmax) then
+		if XPerl_Secret(newHP, newHPMax) then
+			if XPerl_SecretPoll(self, elapsed) then
+				XPerl_Party_Pet_UpdateHealth(self)
+				XPerl_Party_Pet_UpdateMana(self)
+			end
+		elseif (newHP ~= self.pethp or newHPMax ~= self.pethpmax) then
 			XPerl_Party_Pet_UpdateHealth(self)
 		end
 
-		if (newMana ~= self.petmana or newManaMax ~= self.petmanamax) then
+		if not XPerl_Secret(newMana, newManaMax) and (newMana ~= self.petmana or newManaMax ~= self.petmanamax) then
 			XPerl_Party_Pet_UpdateMana(self)
 		end
 

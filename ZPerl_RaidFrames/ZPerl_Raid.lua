@@ -267,7 +267,14 @@ function XPerl_Raid_OnLoad(self)
 		end
 	end]]
 
+	-- Blizzard's raid frames go while Z-Perl's raid frames are on. (The old
+	-- code for this, above, drove Blizzard's raid manager and was switched
+	-- off; this only moves the frames out of sight and back.)
+	local BLIZZARD_RAID_FRAMES = { "CompactRaidFrameManager", "CompactRaidFrameContainer" }
+	XPerl_SetBlizzardShown(BLIZZARD_RAID_FRAMES, not XPerlDB.raid.enable)
+
 	XPerl_RegisterOptionChanger(function()
+		XPerl_SetBlizzardShown(BLIZZARD_RAID_FRAMES, not XPerlDB.raid.enable)
 		if (raidLoaded) then
 			XPerl_RaidTitles()
 		end
@@ -542,7 +549,7 @@ local function XPerl_Raid_UpdateHealth(self)
 	end--]]
 
 	self.statsFrame.healthBar:SetMinMaxValues(0, healthmax)
-	if (conf.bar.inverse) then
+	if (conf.bar.inverse and not XPerl_Secret(health, healthmax)) then
 		self.statsFrame.healthBar:SetValue(healthmax - health)
 	else
 		self.statsFrame.healthBar:SetValue(health)
@@ -601,36 +608,45 @@ local function XPerl_Raid_UpdateHealth(self)
 			end
 			self.dead = nil
 
-			-- Begin 4.3 division by 0 work around to ensure we don't divide if max is 0
-			local percentHp
-			if health > 0 and healthmax == 0 then -- We have current hp but max hp failed.
-				healthmax = health -- Make max hp at least equal to current health
-				percentHp = 1 -- And percent 100% cause a number divided by itself is 1, duh.
-			elseif health == 0 and healthmax == 0 then -- Probably dead target
-				percentHp = 0 -- So just automatically set percent to 0 and avoid division of 0/0 all together in this situation.
-			else
-				percentHp = health / healthmax -- Everything is dandy, so just do it right way.
-			end
-			--end division by 0 check
-			if (rconf.healerMode.enable) then
-				self.statsFrame.healthBar.text:SetText(-(healthmax - health))
-			else
+			if XPerl_Secret(health, healthmax) then
 				if rconf.values then
-					self.statsFrame.healthBar.text:SetFormattedText("%d/%d", health, healthmax)
-				elseif rconf.precisionPercent then
-					self.statsFrame.healthBar.text:SetFormattedText(perc1F, percentHp == 1 and 100 or percentHp * 100 + 0.05)
+					pcall(self.statsFrame.healthBar.text.SetFormattedText, self.statsFrame.healthBar.text, "%d/%d", health, healthmax)
 				else
-					local show = percentHp * 100
-					if show < 10 then
-						self.statsFrame.healthBar.text:SetFormattedText(perc1F or "%.1f%%", percentHp == 1 and 100 or percentHp * 100 + 0.05)
+					XPerl_SetSecretPercent(self.statsFrame.healthBar.text, partyid)
+				end
+				XPerl_ColourHealthBar(self, 1, partyid)
+			else
+				-- Begin 4.3 division by 0 work around to ensure we don't divide if max is 0
+				local percentHp
+				if health > 0 and healthmax == 0 then -- We have current hp but max hp failed.
+					healthmax = health -- Make max hp at least equal to current health
+					percentHp = 1 -- And percent 100% cause a number divided by itself is 1, duh.
+				elseif health == 0 and healthmax == 0 then -- Probably dead target
+					percentHp = 0 -- So just automatically set percent to 0 and avoid division of 0/0 all together in this situation.
+				else
+					percentHp = health / healthmax -- Everything is dandy, so just do it right way.
+				end
+				--end division by 0 check
+				if (rconf.healerMode.enable) then
+					self.statsFrame.healthBar.text:SetText(-(healthmax - health))
+				else
+					if rconf.values then
+						self.statsFrame.healthBar.text:SetFormattedText("%d/%d", health, healthmax)
+					elseif rconf.precisionPercent then
+						self.statsFrame.healthBar.text:SetFormattedText(perc1F, percentHp == 1 and 100 or percentHp * 100 + 0.05)
 					else
-						self.statsFrame.healthBar.text:SetFormattedText(percD or "%d%%", percentHp == 1 and 100 or percentHp * 100 + 0.5)
+						local show = percentHp * 100
+						if show < 10 then
+							self.statsFrame.healthBar.text:SetFormattedText(perc1F or "%.1f%%", percentHp == 1 and 100 or percentHp * 100 + 0.05)
+						else
+							self.statsFrame.healthBar.text:SetFormattedText(percD or "%d%%", percentHp == 1 and 100 or percentHp * 100 + 0.5)
+						end
 					end
 				end
-			end
 
-			-- XPerl_SetSmoothBarColor(self.statsFrame.healthBar, percentHp)
-			XPerl_ColourHealthBar(self, percentHp, partyid)
+				-- XPerl_SetSmoothBarColor(self.statsFrame.healthBar, percentHp)
+				XPerl_ColourHealthBar(self, percentHp, partyid)
+			end
 
 			if (self.statsFrame.greyMana) then
 				self.statsFrame.greyMana = nil
@@ -671,34 +687,48 @@ local function XPerl_Raid_UpdateMana(self)
 		local mana = UnitPower(partyid, pType)
 		local manamax = UnitPowerMax(partyid, pType)
 
-		if (rconf.manaPercent and XPerl_GetDisplayedPowerType(partyid) == 0 and not self.pet) then
-			if (rconf.values) then -- TODO rconf.manavalues
-				self.statsFrame.manaBar.text:SetFormattedText("%d/%d", mana, manamax)
+		if XPerl_Secret(mana, manamax) then
+			self.statsFrame.manaBar:SetMinMaxValues(0, manamax)
+			self.statsFrame.manaBar:SetValue(mana)
+			if (rconf.manaPercent and pType == 0 and not self.pet) then
+				if (rconf.values) then
+					pcall(self.statsFrame.manaBar.text.SetFormattedText, self.statsFrame.manaBar.text, "%d/%d", mana, manamax)
+				else
+					XPerl_SetSecretPercent(self.statsFrame.manaBar.text, partyid, true, pType)
+				end
 			else
-				--Begin 4.3 division by 0 work around to ensure we don't divide if max is 0
-				local pmanaPct
-				if mana > 0 and manamax == 0 then -- We have current mana but max mana failed.
-					manamax = mana -- Make max mana at least equal to current health
-					pmanaPct = 1 -- And percent 100% cause a number divided by itself is 1, duh.
-				elseif mana == 0 and manamax == 0 then--Probably doesn't use mana or is oom?
-					pmanaPct = 0 -- So just automatically set percent to 0 and avoid division of 0/0 all together in this situation.
-				else
-					pmanaPct = mana / manamax -- Everything is dandy, so just do it right way.
-				end
-				-- end division by 0 check
-
-				if rconf.precisionManaPercent then
-					self.statsFrame.manaBar.text:SetFormattedText(perc1F, pmanaPct * 100)
-				else
-					self.statsFrame.manaBar.text:SetFormattedText(percD, pmanaPct * 100)
-				end
+				self.statsFrame.manaBar.text:SetText("")
 			end
 		else
-			self.statsFrame.manaBar.text:SetText("")
-		end
+			if (rconf.manaPercent and XPerl_GetDisplayedPowerType(partyid) == 0 and not self.pet) then
+				if (rconf.values) then -- TODO rconf.manavalues
+					self.statsFrame.manaBar.text:SetFormattedText("%d/%d", mana, manamax)
+				else
+					--Begin 4.3 division by 0 work around to ensure we don't divide if max is 0
+					local pmanaPct
+					if mana > 0 and manamax == 0 then -- We have current mana but max mana failed.
+						manamax = mana -- Make max mana at least equal to current health
+						pmanaPct = 1 -- And percent 100% cause a number divided by itself is 1, duh.
+					elseif mana == 0 and manamax == 0 then--Probably doesn't use mana or is oom?
+						pmanaPct = 0 -- So just automatically set percent to 0 and avoid division of 0/0 all together in this situation.
+					else
+						pmanaPct = mana / manamax -- Everything is dandy, so just do it right way.
+					end
+					-- end division by 0 check
 
-		self.statsFrame.manaBar:SetMinMaxValues(0, manamax)
-		self.statsFrame.manaBar:SetValue(mana)
+					if rconf.precisionManaPercent then
+						self.statsFrame.manaBar.text:SetFormattedText(perc1F, pmanaPct * 100)
+					else
+						self.statsFrame.manaBar.text:SetFormattedText(percD, pmanaPct * 100)
+					end
+				end
+			else
+				self.statsFrame.manaBar.text:SetText("")
+			end
+
+			self.statsFrame.manaBar:SetMinMaxValues(0, manamax)
+			self.statsFrame.manaBar:SetValue(mana)
+		end
 	end
 end
 

@@ -1,4 +1,4 @@
-## Interface: 16001
+## Interface: 20505
 ## Author: Chairface (originally Resike)
 ## Title: Z-Perl |cffeda55fArcane Bars|r
 ## Title-itIT: Z-Perl |cffeda55fBarre Arcane|r

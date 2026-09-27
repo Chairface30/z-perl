@@ -349,6 +349,81 @@ end
 
 local SpiritRealm = GetSpellInfo(235621)
 
+-- WoW Forever keeps unit health and power secret from addons: UnitHealth,
+-- UnitPower and UnitHealthPercent return values that still answer
+-- type() == "number", then throw the moment they are compared or used in
+-- math. A StatusBar and a FontString's SetFormattedText take them as they
+-- are, so bars and "current/max" text can still be drawn; percentages,
+-- health colours and deficits cannot be worked out. Every read of health or
+-- power checks XPerl_Secret first and, when it is, draws with
+-- XPerl_DrawSecretBar instead of doing its sums. Other clients never see a
+-- secret, so they take their old path unchanged.
+local issecret = issecretvalue
+function XPerl_Secret(...)
+	if not issecret then return false end
+	for i = 1, select("#", ...) do
+		if issecret((select(i, ...))) then return true end
+	end
+	return false
+end
+
+-- A secret 0-100 percentage for display, or nil when this client can't give one.
+local function SecretPercent(unit, power, pType)
+	local curve = CurveConstants and CurveConstants.ScaleTo100
+	if not (unit and curve) then return nil end
+	local ok, pct
+	if power then
+		if not UnitPowerPercent then return nil end
+		ok, pct = pcall(UnitPowerPercent, unit, pType, false, curve)
+	else
+		if not UnitHealthPercent then return nil end
+		ok, pct = pcall(UnitHealthPercent, unit, true, curve)
+	end
+	if ok then return pct end
+end
+
+-- a / b, or nil when either is secret or b isn't above 0
+function XPerl_Ratio(a, b)
+	if XPerl_Secret(a, b) or not (a and b) or b <= 0 then return nil end
+	return a / b
+end
+
+-- A font string shows a unit's secret percentage, or nothing.
+function XPerl_SetSecretPercent(fontString, unit, power, pType)
+	if not fontString then return end
+	local pct = SecretPercent(unit, power, pType)
+	if pct == nil or not pcall(fontString.SetFormattedText, fontString, "%d%%", pct) then
+		fontString:SetText("")
+	end
+end
+
+-- True every quarter second, for frames that poll health and can't tell
+-- whether a secret value has changed.
+function XPerl_SecretPoll(self, elapsed)
+	self.secretPollTime = (self.secretPollTime or 0) + (elapsed or 0)
+	if self.secretPollTime >= 0.25 then
+		self.secretPollTime = 0
+		return true
+	end
+end
+
+-- Draw a health or power bar, its "current/max" text and its percentage
+-- straight from secret values, with no sums.
+function XPerl_DrawSecretBar(bar, unit, value, maximum, power, pType)
+	if not bar then return end
+	pcall(bar.SetMinMaxValues, bar, 0, maximum)
+	pcall(bar.SetValue, bar, value)
+	if bar.tex then pcall(bar.tex.SetTexCoord, bar.tex, 0, 1, 0, 1) end
+	if bar.text then
+		if not pcall(bar.text.SetFormattedText, bar.text, "%d/%d", value, maximum) then
+			bar.text:SetText("")
+		end
+	end
+	if bar.percent then
+		XPerl_SetSecretPercent(bar.percent, unit, power, pType)
+	end
+end
+
 -- DoRangeCheck
 local function DoRangeCheck(unit, opt)
 	local range
@@ -356,7 +431,9 @@ local function DoRangeCheck(unit, opt)
 		local hp, hpMax = UnitIsGhost(unit) and 1 or (UnitIsDead(unit) and 0 or UnitHealth(unit)), UnitHealthMax(unit)
 		-- Begin 4.3 divide by 0 work around.
 		local percent
-		if UnitIsDeadOrGhost(unit) or (hp == 0 and hpMax == 0) then -- Probably dead target
+		if XPerl_Secret(hp, hpMax) then
+			percent = 0 -- health unknown (Forever): never counts as above the low point
+		elseif UnitIsDeadOrGhost(unit) or (hp == 0 and hpMax == 0) then -- Probably dead target
 			percent = 0 -- So just automatically set percent to 0 and avoid division of 0/0 all together in this situation.
 		elseif hp > 0 and hpMax == 0 then -- We have current HP but max hp failed.
 			hpMax = hp -- Make max hp at least equal to current health
@@ -905,6 +982,45 @@ function XPerl_BlizzFrameEnable(self)
 	end
 end
 
+-- XPerl_SetBlizzardShown - hide or bring back Blizzard's own frames, by name,
+-- for the Z-Perl frames that stand in for them. Hiding moves a frame under a
+-- hidden parent; bringing it back returns it to the parent it had. Nothing
+-- of Blizzard's is made to run (no Show, no update calls), which on newer
+-- clients taints its frames and throws on their secret values. A protected
+-- frame can't be moved in combat, so that waits for combat to end. Frames a
+-- client doesn't have are skipped.
+local blizzShownPending = {}
+local blizzOriginalParent = {}
+local blizzShownQueue = CreateFrame("Frame")
+blizzShownQueue:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+	local pending = blizzShownPending
+	blizzShownPending = {}
+	for name, shown in pairs(pending) do
+		XPerl_SetBlizzardShown({name}, shown)
+	end
+end)
+
+function XPerl_SetBlizzardShown(names, shown)
+	for _, name in ipairs(names) do
+		local frame = _G[name]
+		if type(frame) == "table" and frame.SetParent then
+			local protected = frame.IsProtected and frame:IsProtected()
+			if protected and InCombatLockdown() then
+				blizzShownPending[name] = shown
+				blizzShownQueue:RegisterEvent("PLAYER_REGEN_ENABLED")
+			elseif shown then
+				if frame:GetParent() == hiddenParent then
+					pcall(frame.SetParent, frame, blizzOriginalParent[name] or UIParent)
+				end
+			elseif frame:GetParent() ~= hiddenParent then
+				blizzOriginalParent[name] = frame:GetParent()
+				pcall(frame.SetParent, frame, hiddenParent)
+			end
+		end
+	end
+end
+
 -- smoothColor
 local function smoothColor(percentage)
 	local r, g, b
@@ -1108,6 +1224,11 @@ local SetValuedText = XPerl_SetValuedText
 -- XPerl_SetHealthBar
 function XPerl_SetHealthBar(self, hp, Max)
 	local bar = self.statsFrame.healthBar
+	if XPerl_Secret(hp, Max) then
+		XPerl_DrawSecretBar(bar, self.partyid, hp, Max)
+		XPerl_ColourHealthBar(self, 1) -- no health colour without a readable percentage
+		return
+	end
 	bar:SetMinMaxValues(0, Max)
 	local percent
 	if hp >= 1 and Max == 0 then -- For some dumb reason max HP is 0, normal HP is not, so lets use normal HP as max
@@ -1886,7 +2007,7 @@ local MagicCureTalents = {
 
 local function CanClassCureMagic(class)
 	if (MagicCureTalents[class]) then
-		return not IsClassic and GetSpecialization() == MagicCureTalents[class] or (MagicCureTalentsClassic[class] and IsSpellKnown(MagicCureTalentsClassic[class]))
+		return not IsClassic and (GetSpecialization and GetSpecialization()) == MagicCureTalents[class] or (MagicCureTalentsClassic[class] and IsSpellKnown(MagicCureTalentsClassic[class]))
 	end
 end
 
@@ -3155,7 +3276,7 @@ end
 
 -- XPerl_Unit_BuffPositions
 function XPerl_Unit_BuffPositions(self, buffList1, buffList2, size1, size2)
-	local optMix = format("%d%d%d%d%d%d%d", self.perlBuffs or 0, self.perlDebuffs or 0, self.perlBuffsMine or 0, self.perlDebuffsMine or 0, UnitCanAttack("player", self.partyid) and 1 or 0, (UnitPowerMax(self.partyid) > 0) and 1 or 0, (self.creatureTypeFrame and self.creatureTypeFrame:IsVisible()) and 1 or 0)
+	local optMix = format("%d%d%d%d%d%d%d", self.perlBuffs or 0, self.perlDebuffs or 0, self.perlBuffsMine or 0, self.perlDebuffsMine or 0, UnitCanAttack("player", self.partyid) and 1 or 0, (XPerl_Secret(UnitPowerMax(self.partyid)) or UnitPowerMax(self.partyid) > 0) and 1 or 0, (self.creatureTypeFrame and self.creatureTypeFrame:IsVisible()) and 1 or 0)
 	if (optMix ~= self.buffOptMix) then
 		WieghAnchor(self)
 
@@ -3220,6 +3341,10 @@ end]]
 function XPerl_Unit_UpdateBuffs(self, maxBuffs, maxDebuffs, castableOnly, curableOnly)
 	local buffs, debuffs, buffsMine, debuffsMine = 0, 0, 0, 0
 	local partyid = self.partyid
+	-- auras unreadable (Forever, in combat): keep the icons last shown
+	if XPerl_AurasLocked and XPerl_AurasLocked(partyid) then
+		return
+	end
 
 	if (self.conf and UnitExists(partyid)) then
 		if (not maxBuffs) then
@@ -3734,6 +3859,9 @@ function XPerl_Unit_GetHealth(self)
 	local partyid = self.partyid
 	local hp, hpMax = UnitIsGhost(partyid) and 1 or (UnitIsDead(partyid) and 0 or UnitHealth(partyid)), UnitHealthMax(partyid)
 
+	if XPerl_Secret(hp, hpMax) then
+		return hp, hpMax, false
+	end
 	if (hp > hpMax) then
 		if (UnitIsGhost(partyid)) then
 			hp = 1
@@ -4080,6 +4208,10 @@ function XPerl_SetExpectedAbsorbs(self)
 		end
 
 		local amount = not IsClassic and UnitGetTotalAbsorbs(unit)
+		if XPerl_Secret(amount, UnitHealth(unit), UnitHealthMax(unit)) then
+			bar:Hide()
+			return
+		end
 		if (amount and amount > 0 and not UnitIsDeadOrGhost(unit)) then
 			local healthMax = UnitHealthMax(unit)
 			local health = UnitIsGhost(unit) and 1 or (UnitIsDead(unit) and 0 or UnitHealth(unit))
@@ -4145,6 +4277,10 @@ function XPerl_SetExpectedHealth(self)
 		else
 			local guid = UnitGUID(unit)
 			amount = (HealComm:GetHealAmount(guid, HealComm.ALL_HEALS, GetTime() + 3) or 0) * HealComm:GetHealModifier(guid)
+		end
+		if XPerl_Secret(amount, UnitHealth(unit), UnitHealthMax(unit)) then
+			bar:Hide()
+			return
 		end
 		if (amount and amount > 0 and not UnitIsDeadOrGhost(unit)) then
 			local healthMax = UnitHealthMax(unit)

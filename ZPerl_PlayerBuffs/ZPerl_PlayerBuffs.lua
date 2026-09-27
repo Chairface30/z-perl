@@ -102,7 +102,7 @@ function XPerl_Player_Buffs_Position(self)
 			local _, playerClass = UnitClass("player")
 			local extraBar
 
-			if (playerClass == "DRUID" and UnitPowerType(self.partyid) > 0 and not pconf.noDruidBar) or (playerClass == "SHAMAN" and not IsClassic and GetSpecialization() == 1 and GetShapeshiftForm() == 0 and not pconf.noDruidBar) or (playerClass == "PRIEST" and UnitPowerType(self.partyid) > 0 and not pconf.noDruidBar) then
+			if (playerClass == "DRUID" and UnitPowerType(self.partyid) > 0 and not pconf.noDruidBar) or (playerClass == "SHAMAN" and not IsClassic and (GetSpecialization and GetSpecialization()) == 1 and GetShapeshiftForm() == 0 and not pconf.noDruidBar) or (playerClass == "PRIEST" and UnitPowerType(self.partyid) > 0 and not pconf.noDruidBar) then
 				extraBar = 1
 			else
 				extraBar = 0
@@ -194,7 +194,8 @@ function XPerl_Player_BuffSetup(self)
 		end
 	end
 
-	if (pconf.buffs.hideBlizzard) then
+	-- Blizzard's buffs go while Z-Perl shows yours (or when asked to anyway)
+	if (pconf.buffs.enable or pconf.buffs.hideBlizzard) then
 		HideBlizzardAuraFrame(BuffFrame)
 		HideBlizzardAuraFrame(DebuffFrame)
 		HideBlizzardAuraFrame(TemporaryEnchantFrame)

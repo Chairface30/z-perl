@@ -1,4 +1,4 @@
-## Interface: 16001
+## Interface: 20505
 ## Author: Chairface (originally Resike)
 ## Title: Z-Perl |cffeda55fRaid Helper|r
 ## Title-itIT: Z-Perl |cffeda55fAiutante Incursione|r

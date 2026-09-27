@@ -161,6 +161,13 @@ local function XPerl_RaidPets_UpdateHealth(self)
 	self.pethp = health
 	self.pethpmax = healthmax
 
+	if XPerl_Secret(health, healthmax) then
+		XPerl_DrawSecretBar(self.healthBar, partyid, health, healthmax)
+		XPerl_SetSecretPercent(self.healthBar.text, partyid)
+		self.healthBar.text:Show()
+		return
+	end
+
 	-- PTR region fix
 	if not healthmax or healthmax <= 0 then
 		if health and health > 0 then
@@ -247,7 +254,11 @@ local function XPerl_RaidPets_OnUpdate(self, elapsed)
 			XPerl_RaidPets_UpdateName(self)
 		end
 
-		if (newHP ~= self.pethp or newHPMax ~= self.pethpmax) then
+		if XPerl_Secret(newHP, newHPMax) then
+			if XPerl_SecretPoll(self, elapsed) then
+				XPerl_RaidPets_UpdateHealth(self)
+			end
+		elseif (newHP ~= self.pethp or newHPMax ~= self.pethpmax) then
 			XPerl_RaidPets_UpdateHealth(self)
 		end
 

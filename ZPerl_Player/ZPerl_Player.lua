@@ -603,18 +603,21 @@ local function XPerl_Player_DruidBarUpdate(self)
 	end
 
 	local maxMana = UnitPowerMax("player", 0)
-	if maxMana == 0 then
-		maxMana = nil
-	end
 	local currMana = UnitPower("player", 0)
-
-	druidBar:SetMinMaxValues(0, maxMana or 1)
-	druidBar:SetValue(currMana or 0)
-	druidBar.text:SetFormattedText("%d/%d", ceil(currMana or 0), maxMana or 1)
-	druidBar.percent:SetFormattedText(percD, (currMana or 0) * 100 / (maxMana or 1))
+	if XPerl_Secret(currMana, maxMana) then
+		XPerl_DrawSecretBar(druidBar, "player", currMana, maxMana, true, 0)
+	else
+		if maxMana == 0 then
+			maxMana = nil
+		end
+		druidBar:SetMinMaxValues(0, maxMana or 1)
+		druidBar:SetValue(currMana or 0)
+		druidBar.text:SetFormattedText("%d/%d", ceil(currMana or 0), maxMana or 1)
+		druidBar.percent:SetFormattedText(percD, (currMana or 0) * 100 / (maxMana or 1))
+	end
 
 	--local druidBarExtra
-	if ((playerClass == "DRUID" or playerClass == "PRIEST") and UnitPowerType(self.partyid) > 0) or (playerClass == "SHAMAN" and not IsClassic and GetSpecialization() == 1 and GetShapeshiftForm() == 0) then -- Shaman's UnitPowerType is buggy
+	if ((playerClass == "DRUID" or playerClass == "PRIEST") and UnitPowerType(self.partyid) > 0) or (playerClass == "SHAMAN" and not IsClassic and (GetSpecialization and GetSpecialization()) == 1 and GetShapeshiftForm() == 0) then -- Shaman's UnitPowerType is buggy
 		if (pconf.values) then
 			druidBar.text:Show()
 		else
@@ -679,6 +682,22 @@ local function XPerl_Player_UpdateMana(self)
 	local pType = XPerl_GetDisplayedPowerType(self.partyid)
 	local playermana = UnitPower(self.partyid, pType)
 	local playermanamax = UnitPowerMax(self.partyid, pType)
+
+	if XPerl_Secret(playermana, playermanamax) then
+		XPerl_DrawSecretBar(mb, self.partyid, playermana, playermanamax, true, pType)
+		if (not self.statsFrame.greyMana) then
+			if (pconf.values) then
+				mb.text:Show()
+			end
+			if (pconf.percent) then
+				mb.percent:Show()
+			end
+		end
+		if (playerClass == "DRUID") or (playerClass == "SHAMAN") or (playerClass == "PRIEST") then
+			XPerl_Player_DruidBarUpdate(self)
+		end
+		return
+	end
 
 	mb:SetMinMaxValues(0, playermanamax)
 	mb:SetValue(playermana)
@@ -823,6 +842,9 @@ end
 
 -- XPerl_PlayerStatus_OnUpdate
 function XPerl_PlayerStatus_OnUpdate(self, val, max)
+	if XPerl_Secret(val, max) then
+		val, max = nil, nil -- no low-health flash without a readable health
+	end
 	if (pconf.fullScreen.enable) then
 		local testLow = pconf.fullScreen.lowHP / 100
 		local testHigh = pconf.fullScreen.highHP / 100
@@ -979,7 +1001,7 @@ function XPerl_Player_Events:PLAYER_ENTERING_WORLD(event, initialLogin, reloadin
 
 		self.state:SetAttribute("playerClass", classFileName)
 		if not IsClassic then
-			self.state:SetAttribute("playerSpec", GetSpecialization())
+			self.state:SetAttribute("playerSpec", (GetSpecialization and GetSpecialization()))
 		end
 		self.state:SetAttribute("extendedPortrait", pconf.extendPortrait)
 		self.state:SetAttribute("druidBarOff", pconf.noDruidBar)
@@ -1772,7 +1794,7 @@ end
 function XPerl_Player_Events:PLAYER_SPECIALIZATION_CHANGED()
 	if not InCombatLockdown() then
 		if not IsClassic then
-			self.state:SetAttribute("playerSpec", GetSpecialization())
+			self.state:SetAttribute("playerSpec", (GetSpecialization and GetSpecialization()))
 		end
 		XPerl_Player_Set_Bits(self)
 
@@ -2050,7 +2072,7 @@ function XPerl_Player_Set_Bits(self)
 
 		if (pconf.extendPortrait --[[or (self.runes and pconf.showRunes and pconf.dockRunes)]]) then
 			local druidBarExtra
-			if ((UnitPowerType(self.partyid) or 0) > 0 and not pconf.noDruidBar) and ((playerClass == "DRUID") or (playerClass == "PRIEST") or (playerClass == "SHAMAN" and not IsClassic and GetSpecialization() == 1 and GetShapeshiftForm() == 0)) then
+			if ((UnitPowerType(self.partyid) or 0) > 0 and not pconf.noDruidBar) and ((playerClass == "DRUID") or (playerClass == "PRIEST") or (playerClass == "SHAMAN" and not IsClassic and (GetSpecialization and GetSpecialization()) == 1 and GetShapeshiftForm() == 0)) then
 				druidBarExtra = 1
 			else
 				druidBarExtra = 0

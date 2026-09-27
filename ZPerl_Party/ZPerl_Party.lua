@@ -42,6 +42,12 @@ local feignDeath = GetSpellInfo(5384)
 ----------------------
 -- Loading Function --
 ----------------------
+
+-- Blizzard's party frames, by every name they have had: one frame each on
+-- older clients, one PartyFrame on newer ones, and the raid-style party.
+local BLIZZARD_PARTY_FRAMES = { "PartyMemberFrame1", "PartyMemberFrame2", "PartyMemberFrame3",
+	"PartyMemberFrame4", "PartyFrame", "CompactPartyFrame" }
+
 function XPerl_Party_Events_OnLoad(self)
 	local events = {
 		"PLAYER_ENTERING_WORLD",
@@ -86,20 +92,9 @@ function XPerl_Party_Events_OnLoad(self)
 
 	UIParent:UnregisterEvent("GROUP_ROSTER_UPDATE") -- IMPORTANT! Stops raid framerate lagging when members join/leave/zone
 
-	-- Hide Blizzard party frames if Z-Perl party is enabled (simple alpha approach)
+	-- Blizzard's party frames go while Z-Perl's party frames are on
 	local partyEnabled = (XPerlDB and XPerlDB.party and XPerlDB.party.enable) or (pconf and pconf.enable)
-	for i = 1, 4 do
-		local blizzFrame = _G["PartyMemberFrame"..i]
-		if blizzFrame then
-			if partyEnabled then
-				blizzFrame:SetAlpha(0)
-				blizzFrame:EnableMouse(false)
-			else
-				blizzFrame:SetAlpha(1)
-				blizzFrame:EnableMouse(true)
-			end
-		end
-	end
+	XPerl_SetBlizzardShown(BLIZZARD_PARTY_FRAMES, not partyEnabled)
 
 	self:SetScript("OnEvent", XPerl_Party_OnEvent)
 	XPerl_RegisterOptionChanger(XPerl_Party_Set_Bits)
@@ -383,7 +378,7 @@ local function XPerl_Party_UpdateHealth(self)
 			reason = XPERL_LOC_DEAD
 		elseif (UnitIsGhost(partyid)) then
 			reason = XPERL_LOC_GHOST
-		elseif ((Partyhealth == 1) and (Partyhealthmax == 1)) then
+		elseif (not XPerl_Secret(Partyhealth, Partyhealthmax) and (Partyhealth == 1) and (Partyhealthmax == 1)) then
 			reason = XPERL_LOC_UPDATING
 		--[[elseif (UnitBuff(partyid, spiritOfRedemption)) then
 			reason = XPERL_LOC_DEAD--]]
@@ -846,38 +841,42 @@ local function XPerl_Party_UpdateMana(self)
 	local Partymana = UnitPower(partyid, pType)
 	local Partymanamax = UnitPowerMax(partyid, pType)
 
-	--Begin 4.3 division by 0 work around to ensure we don't divide if max is 0
-	local percent
-	if Partymana > 0 and Partymanamax == 0 then --We have current mana but max mana failed.
-		Partymanamax = Partymana --Make max mana at least equal to current health
-		percent = 1 --And percent 100% cause a number divided by itself is 1, duh.
-	elseif Partymana == 0 and Partymanamax == 0 then--Probably doesn't use mana or is oom?
-		percent = 0 --So just automatically set percent to 0 and avoid division of 0/0 all together in this situation.
+	if XPerl_Secret(Partymana, Partymanamax) then
+		XPerl_DrawSecretBar(self.statsFrame.manaBar, partyid, Partymana, Partymanamax, true, pType)
 	else
-		percent = Partymana / Partymanamax--Everything is dandy, so just do it right way.
+		--Begin 4.3 division by 0 work around to ensure we don't divide if max is 0
+		local percent
+		if Partymana > 0 and Partymanamax == 0 then --We have current mana but max mana failed.
+			Partymanamax = Partymana --Make max mana at least equal to current health
+			percent = 1 --And percent 100% cause a number divided by itself is 1, duh.
+		elseif Partymana == 0 and Partymanamax == 0 then--Probably doesn't use mana or is oom?
+			percent = 0 --So just automatically set percent to 0 and avoid division of 0/0 all together in this situation.
+		else
+			percent = Partymana / Partymanamax--Everything is dandy, so just do it right way.
+		end
+		--end division by 0 check
+
+		--[[if (Partymanamax == 1 and Partymana > Partymanamax) then
+			Partymanamax = Partymana
+		end--]]
+
+		self.statsFrame.manaBar:SetMinMaxValues(0, Partymanamax)
+		self.statsFrame.manaBar:SetValue(Partymana)
+
+		if (XPerl_GetDisplayedPowerType(partyid) >= 1) then
+			self.statsFrame.manaBar.percent:SetText(Partymana)
+		else
+			self.statsFrame.manaBar.percent:SetFormattedText(percD, 100 * percent)
+		end
+
+		--[[if (pconf.values) then
+			self.statsFrame.manaBar.text:Show()
+		else
+			self.statsFrame.manaBar.text:Hide()
+		end]]
+
+		self.statsFrame.manaBar.text:SetFormattedText("%d/%d", Partymana, Partymanamax)
 	end
-	--end division by 0 check
-
-	--[[if (Partymanamax == 1 and Partymana > Partymanamax) then
-		Partymanamax = Partymana
-	end--]]
-
-	self.statsFrame.manaBar:SetMinMaxValues(0, Partymanamax)
-	self.statsFrame.manaBar:SetValue(Partymana)
-
-	if (XPerl_GetDisplayedPowerType(partyid) >= 1) then
-		self.statsFrame.manaBar.percent:SetText(Partymana)
-	else
-		self.statsFrame.manaBar.percent:SetFormattedText(percD, 100 * percent)
-	end
-
-	--[[if (pconf.values) then
-		self.statsFrame.manaBar.text:Show()
-	else
-		self.statsFrame.manaBar.text:Hide()
-	end]]
-
-	self.statsFrame.manaBar.text:SetFormattedText("%d/%d", Partymana, Partymanamax)
 
 	if (not UnitIsConnected(partyid)) then
 		self.statsFrame.healthBar.text:SetText(XPERL_LOC_OFFLINE)
@@ -988,23 +987,27 @@ local function XPerl_Party_TargetUpdateHealth(self)
 	--tf.healthBar:SetMinMaxValues(0, hpMax)
 	--tf.healthBar:SetValue(hp)
 	-- Begin 4.3 division by 0 work around to ensure we don't divide if max is 0
-	local percent
-	if UnitIsDeadOrGhost(targetid) then -- Probably dead target
-		percent = 0 -- So just automatically set percent to 0 and avoid division of 0/0 all together in this situation.
-	elseif hp > 0 and hpMax == 0 then -- We have current ho but max hp failed.
-		hpMax = hp -- Make max hp at least equal to current health
-		percent = 1 -- And percent 100% cause a number divided by itself is 1, duh.
+	if XPerl_Secret(hp, hpMax) then
+		XPerl_DrawSecretBar(tf.healthBar, targetid, hp, hpMax)
 	else
-		if hpMax > 0 then
-			percent = hp / hpMax--Everything is dandy, so just do it right way.
+		local percent
+		if UnitIsDeadOrGhost(targetid) then -- Probably dead target
+			percent = 0 -- So just automatically set percent to 0 and avoid division of 0/0 all together in this situation.
+		elseif hp > 0 and hpMax == 0 then -- We have current ho but max hp failed.
+			hpMax = hp -- Make max hp at least equal to current health
+			percent = 1 -- And percent 100% cause a number divided by itself is 1, duh.
+		else
+			if hpMax > 0 then
+				percent = hp / hpMax--Everything is dandy, so just do it right way.
+			end
 		end
-	end
-	--tf.healthBar:SetAlpha(1)
-	-- end division by 0 check
-	if (hpMax > 0) then
-		tf.healthBar.text:SetFormattedText(percD, 100 * percent)	-- XPerl_Percent[floor(100 * hp / hpMax)])
-		tf.healthBar:SetMinMaxValues(0, hpMax)
-		tf.healthBar:SetValue(hp)
+		--tf.healthBar:SetAlpha(1)
+		-- end division by 0 check
+		if (hpMax > 0) then
+			tf.healthBar.text:SetFormattedText(percD, 100 * percent)	-- XPerl_Percent[floor(100 * hp / hpMax)])
+			tf.healthBar:SetMinMaxValues(0, hpMax)
+			tf.healthBar:SetValue(hp)
+		end
 	end
 	tf.healthBar.text:Show()
 
@@ -1021,7 +1024,7 @@ local function XPerl_Party_TargetUpdateHealth(self)
 		end
 	else
 		--XPerl_ColourHealthBar(self.targetFrame, hp / hpMax, targetid)
-		if hpMax > 0 then
+		if not XPerl_Secret(hp, hpMax) and hpMax > 0 then
 			XPerl_SetSmoothBarColor(self.targetFrame.healthBar, percent)
 		end
 	end
@@ -1095,7 +1098,11 @@ function XPerl_Party_OnUpdate(self, elapsed)
 
 		if (pconf.target.large and self.targetFrame:IsShown()) then
 			local hp, hpMax, heal, absorb = UnitIsGhost(targetid) and 1 or (UnitIsDead(targetid) and 0 or UnitHealth(targetid)), UnitHealthMax(targetid), not IsClassic and UnitGetIncomingHeals(targetid), not IsClassic and UnitGetTotalAbsorbs(targetid)
-			if (hp ~= self.targetFrame.lastHP or hpMax ~= self.targetFrame.lastHPMax or heal ~= self.targetFrame.lastHeal or absorb ~= self.targetFrame.lastAbsorb or GetTime() > self.targetFrame.lastUpdate + 5000) then
+			if XPerl_Secret(hp, hpMax, heal, absorb) then
+				if XPerl_SecretPoll(self.targetFrame, elapsed) then
+					XPerl_Party_TargetUpdateHealth(self)
+				end
+			elseif (hp ~= self.targetFrame.lastHP or hpMax ~= self.targetFrame.lastHPMax or heal ~= self.targetFrame.lastHeal or absorb ~= self.targetFrame.lastAbsorb or GetTime() > self.targetFrame.lastUpdate + 5000) then
 				XPerl_Party_TargetUpdateHealth(self)
 			end
 		end
@@ -1355,19 +1362,8 @@ function XPerl_Party_Events:PLAYER_ENTERING_WORLD()
 		CheckRaid()
 	end
 
-	-- Toggle Blizzard party frames (simple alpha approach)
-	for i = 1, 4 do
-		local blizzFrame = _G["PartyMemberFrame"..i]
-		if blizzFrame then
-			if pconf and pconf.enable then
-				blizzFrame:SetAlpha(0)
-				blizzFrame:EnableMouse(false)
-			else
-				blizzFrame:SetAlpha(1)
-				blizzFrame:EnableMouse(true)
-			end
-		end
-	end
+	-- Blizzard's party frames go while Z-Perl's party frames are on
+	XPerl_SetBlizzardShown(BLIZZARD_PARTY_FRAMES, not (pconf and pconf.enable))
 
 	XPerl_Party_UpdateDisplayAll()
 end
@@ -1415,19 +1411,8 @@ function XPerl_Party_Events:GROUP_ROSTER_UPDATE()
 	XPerl_SetHighlights()
 	XPerl_Party_UpdateDisplayAll()
 	
-	-- Toggle Blizzard party frames (simple alpha approach)
-	for i = 1, 4 do
-		local blizzFrame = _G["PartyMemberFrame"..i]
-		if blizzFrame then
-			if pconf and pconf.enable then
-				blizzFrame:SetAlpha(0)
-				blizzFrame:EnableMouse(false)
-			else
-				blizzFrame:SetAlpha(1)
-				blizzFrame:EnableMouse(true)
-			end
-		end
-	end
+	-- Blizzard's party frames go while Z-Perl's party frames are on
+	XPerl_SetBlizzardShown(BLIZZARD_PARTY_FRAMES, not (pconf and pconf.enable))
 end
 
 XPerl_Party_Events.PLAYER_LOGIN = XPerl_Party_Events.GROUP_ROSTER_UPDATE
@@ -1967,22 +1952,8 @@ function XPerl_Party_Set_Bits()
 		ZPerl_Party_SecureHeader:Hide()
 	end
 
-	-- Toggle Blizzard party frames based on Z-Perl party enable state
-	-- Simple approach: just hide/show with alpha
-	for i = 1, 4 do
-		local blizzFrame = _G["PartyMemberFrame"..i]
-		if blizzFrame then
-			if pconf.enable then
-				-- Hide Blizzard frames when Z-Perl party is enabled
-				blizzFrame:SetAlpha(0)
-				blizzFrame:EnableMouse(false)
-			else
-				-- Show Blizzard frames when Z-Perl party is disabled
-				blizzFrame:SetAlpha(1)
-				blizzFrame:EnableMouse(true)
-			end
-		end
-	end
+	-- Blizzard's party frames go while Z-Perl's party frames are on
+	XPerl_SetBlizzardShown(BLIZZARD_PARTY_FRAMES, not pconf.enable)
 
 	for k, v in pairs(PartyFrames) do
 		v.conf = pconf
