@@ -25,8 +25,8 @@ XPerl_RequestConfig(function(new)
 	end
 end, "$Revision: 33d78e5ce33228a1cf8cb5f354abf0b5e577621f $")
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
-local IsVanillaClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
+local IsVanillaClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC or XPerl_IsForever)
 local LCD = IsVanillaClassic and LibStub and LibStub("LibClassicDurations", true)
 if LCD then
 	LCD.RegisterCallback("ZPerl", "UNIT_BUFF", function(event, unit)

@@ -40,7 +40,7 @@ end
 
 --local new, del, copy = XPerl_GetReusableTable, XPerl_FreeTable, XPerl_CopyTable
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
 
 local format = format
 local strsub = strsub
@@ -92,23 +92,23 @@ end
 local resSpells
 if IsClassic then
 	resSpells = {
-		[GetSpellInfo(2006)] = true,			-- Resurrection
-		[GetSpellInfo(2008)] = true,			-- Ancestral Spirit
-		[GetSpellInfo(20484)] = true,			-- Rebirth
-		[GetSpellInfo(7328)] = true,			-- Redemption
-		--[GetSpellInfo(50769)] = true,			-- Revive
-		--[GetSpellInfo(83968)] = true,			-- Mass Resurrection
-		--[GetSpellInfo(115178)] = true,			-- Resuscitate
+		[XPerl_SpellKey(2006)] = true,			-- Resurrection
+		[XPerl_SpellKey(2008)] = true,			-- Ancestral Spirit
+		[XPerl_SpellKey(20484)] = true,			-- Rebirth
+		[XPerl_SpellKey(7328)] = true,			-- Redemption
+		--[XPerl_SpellKey(50769)] = true,			-- Revive
+		--[XPerl_SpellKey(83968)] = true,			-- Mass Resurrection
+		--[XPerl_SpellKey(115178)] = true,			-- Resuscitate
 	}
 else
 	resSpells = {
-		[GetSpellInfo(2006)] = true,			-- Resurrection
-		[GetSpellInfo(2008)] = true,			-- Ancestral Spirit
-		[GetSpellInfo(20484)] = true,			-- Rebirth
-		[GetSpellInfo(7328)] = true,			-- Redemption
-		[GetSpellInfo(50769)] = true,			-- Revive
-		--[GetSpellInfo(83968)] = true,			-- Mass Resurrection
-		[GetSpellInfo(115178)] = true,			-- Resuscitate
+		[XPerl_SpellKey(2006)] = true,			-- Resurrection
+		[XPerl_SpellKey(2008)] = true,			-- Ancestral Spirit
+		[XPerl_SpellKey(20484)] = true,			-- Rebirth
+		[XPerl_SpellKey(7328)] = true,			-- Redemption
+		[XPerl_SpellKey(50769)] = true,			-- Revive
+		--[XPerl_SpellKey(83968)] = true,			-- Mass Resurrection
+		[XPerl_SpellKey(115178)] = true,			-- Resuscitate
 	}
 end
 

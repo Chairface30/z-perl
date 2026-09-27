@@ -4,7 +4,7 @@
 
 XPerl_SetModuleRevision("$Revision: cd469ddf009de44eb4c4cd248a7ab1a7cf618486 $")
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
 
 local localGroups = LOCALIZED_CLASS_NAMES_MALE
 local WoWclassCount = 0

@@ -17,7 +17,7 @@ local function d(fmt, ...)
 end
 --@end-debug@]===]
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
 
 -- Edit Mode (and UIParent frame management) re-Show()s BuffFrame/DebuffFrame after
 -- a plain Hide(), leaving a visible frame with no UNIT_AURA events (stale icons stuck

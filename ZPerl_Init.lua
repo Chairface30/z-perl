@@ -8,7 +8,7 @@ XPerl_RequestConfig(function(new)
 	conf = new
 end, "$Revision: 00a3cadfbbc8615840794db77581992f54190a2b $")
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
 
 local GetNumSubgroupMembers = GetNumSubgroupMembers
 local GetNumGroupMembers = GetNumGroupMembers
@@ -203,22 +203,22 @@ local function GetNamesWithoutBuff(spellName, with, filter)
 		local cet = {}
 
 		if (class == "PRIEST" or UnitIsGroupAssistant("player")) then
-			--cet[GetSpellInfo(21562)] = 2			-- Fortitudeh
-			--cet[GetSpellInfo(27683)] = 2			-- Shadow Protection
+			--cet[XPerl_SpellKey(21562)] = 2			-- Fortitudeh
+			--cet[XPerl_SpellKey(27683)] = 2			-- Shadow Protection
 		end
 
 		if (class == "DRUID" or UnitIsGroupAssistant("player")) then
-			--cet[GetSpellInfo(1126)] = 2				-- Mark of the Wild
-			--cet[GetSpellInfo(467)] = 1			-- Thorns
+			--cet[XPerl_SpellKey(1126)] = 2				-- Mark of the Wild
+			--cet[XPerl_SpellKey(467)] = 1			-- Thorns
 		end
 
 		if (class == "MAGE" or UnitIsGroupAssistant("player")) then
-			--cet[GetSpellInfo(1459)] = 2				-- Intellect
+			--cet[XPerl_SpellKey(1459)] = 2				-- Intellect
 		end
 
 		if (class == "PALADIN" or UnitIsGroupAssistant("player")) then
-			--cet[GetSpellInfo(19740)] = 2			-- Blessing of Might
-			--cet[GetSpellInfo(20217)] = 2			-- Blessing of Kings
+			--cet[XPerl_SpellKey(19740)] = 2			-- Blessing of Might
+			--cet[XPerl_SpellKey(20217)] = 2			-- Blessing of Kings
 		end
 
 		checkExpiring = cet

@@ -8,8 +8,8 @@ XPerl_RequestConfig(function(new)
 	conf = new
 end, "$Revision: ba83e40f9d15e0884b12cfb141a24c54c2032260 $")
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
-local IsVanillaClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
+local IsVanillaClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC or XPerl_IsForever)
 local UnitCastingInfo = UnitCastingInfo
 local UnitChannelInfo = UnitChannelInfo
 local LCC = IsVanillaClassic and LibStub("LibClassicCasterino", true)
@@ -124,7 +124,7 @@ end
 
 local absorbSpells = {
 	-- Shield Barrier
-	--[[[GetSpellInfo(174926)] = {
+	--[[[XPerl_SpellKey(174926)] = {
 		ranks = {
 			[174926] = 4459 --level 85 (4459 + $SPFR * 0.807)
 		},
@@ -134,7 +134,7 @@ local absorbSpells = {
 		GetRankAmount = getRankAmount,
 	},]]
 	-- Ice Barrier (TBC base absorb values per rank, verified against Wowhead TBC)
-	[GetSpellInfo(11426)] = {
+	[XPerl_SpellKey(11426)] = {
 		ranks = {
 			[11426] = 438,	-- Rank 1
 			[13031] = 549,	-- Rank 2
@@ -149,7 +149,7 @@ local absorbSpells = {
 		GetRankAmount = getRankAmount,
 	},
 	-- Power Word: Shield (TBC base absorb values per rank, verified against Wowhead TBC)
-	[GetSpellInfo(17)] = {
+	[XPerl_SpellKey(17)] = {
 		ranks = {
 			[17] = 44,		-- Rank 1
 			[592] = 88,		-- Rank 2

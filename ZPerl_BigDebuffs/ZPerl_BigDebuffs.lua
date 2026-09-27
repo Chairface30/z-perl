@@ -770,7 +770,7 @@ bootstrapFrame:SetScript("OnEvent", function(self, event, loadedAddon)
         ZPerl_BigDebuffs:RegisterEvent("UNIT_AURA")
         
         -- Focus is not in Classic Era
-        if WOW_PROJECT_ID ~= WOW_PROJECT_CLASSIC then
+        if (WOW_PROJECT_ID ~= WOW_PROJECT_CLASSIC and not XPerl_IsForever) then
             ZPerl_BigDebuffs:RegisterEvent("PLAYER_FOCUS_CHANGED")
         end
         

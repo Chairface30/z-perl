@@ -2,8 +2,8 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 18 October 2014
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
-local IsVanillaClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
+local IsVanillaClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC or XPerl_IsForever)
 
 local max = max
 local pairs = pairs

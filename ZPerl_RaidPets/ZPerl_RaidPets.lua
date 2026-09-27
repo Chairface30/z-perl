@@ -13,7 +13,7 @@ end, "$Revision: ba83e40f9d15e0884b12cfb141a24c54c2032260 $")
 
 --local new, del, copy = XPerl_GetReusableTable, XPerl_FreeTable, XPerl_CopyTable
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
 
 local pairs = pairs
 local strfind = strfind

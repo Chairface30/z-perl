@@ -2,7 +2,7 @@
 	Localisation file
 ]]
 
-local IsRetail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
+local IsRetail = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE and not XPerl_IsForever)
 local IsBCClassic = WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC
 
 -- Tabs

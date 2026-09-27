@@ -17,7 +17,7 @@ end, "$Revision: 33d78e5ce33228a1cf8cb5f354abf0b5e577621f $")
 
 local percD = "%d"..PERCENT_SYMBOL
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
 
 local format = format
 

@@ -11,8 +11,8 @@ XPerl_RequestConfig(function(New)
 end, "$Revision: 7d46aa983d59503d2aadb61651f43557df27458d $")
 XPerl_SetModuleRevision("$Revision: 7d46aa983d59503d2aadb61651f43557df27458d $")
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
-local IsVanillaClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
+local IsVanillaClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC or XPerl_IsForever)
 local LCD = IsVanillaClassic and LibStub and LibStub("LibClassicDurations", true)
 local UnitAuraDirect
 if LCD then
@@ -2374,171 +2374,171 @@ local RaidFrameIgnores
 if IsClassic then
 	BuffExceptions = {
 		PRIEST = {
-			[GetSpellInfo(774)] = true,					-- Rejuvenation
-			[GetSpellInfo(8936)] = true,				-- Regrowth
-			--[GetSpellInfo(33076)] = true,				-- Prayer of Mending
-			--[GetSpellInfo(81749)] = true,				-- Atonement
+			[XPerl_SpellKey(774)] = true,					-- Rejuvenation
+			[XPerl_SpellKey(8936)] = true,				-- Regrowth
+			--[XPerl_SpellKey(33076)] = true,				-- Prayer of Mending
+			--[XPerl_SpellKey(81749)] = true,				-- Atonement
 		},
 		DRUID = {
-			[GetSpellInfo(139)] = true,					-- Renew
+			[XPerl_SpellKey(139)] = true,					-- Renew
 		},
 		WARLOCK = {
-			[GetSpellInfo(20707)] = true,				-- Soulstone Resurrection
+			[XPerl_SpellKey(20707)] = true,				-- Soulstone Resurrection
 		},
 		HUNTER = {
-			[GetSpellInfo(13165)] = true,				-- Aspect of the Hawk
-			[GetSpellInfo(5118)] = true,				-- Aspect of the Cheetah
-			[GetSpellInfo(13159)] = true,				-- Aspect of the Pack
-			--[GetSpellInfo(61648)] = true,				-- Aspect of the Beast
-			[GetSpellInfo(13163)] = true,			-- Aspect of the Monkey
-			[GetSpellInfo(19506)] = true,				-- Trueshot Aura
-			[GetSpellInfo(5384)] = true,				-- Feign Death
+			[XPerl_SpellKey(13165)] = true,				-- Aspect of the Hawk
+			[XPerl_SpellKey(5118)] = true,				-- Aspect of the Cheetah
+			[XPerl_SpellKey(13159)] = true,				-- Aspect of the Pack
+			--[XPerl_SpellKey(61648)] = true,				-- Aspect of the Beast
+			[XPerl_SpellKey(13163)] = true,			-- Aspect of the Monkey
+			[XPerl_SpellKey(19506)] = true,				-- Trueshot Aura
+			[XPerl_SpellKey(5384)] = true,				-- Feign Death
 		},
 		ROGUE = {
-			[GetSpellInfo(1784)] = true,				-- Stealth
-			[GetSpellInfo(1856)] = true,				-- Vanish
-			[GetSpellInfo(2983)] = true,				-- Sprint
-			[GetSpellInfo(13750)] = true,				-- Adrenaline Rush
-			[GetSpellInfo(13877)] = true,				-- Blade Flurry
+			[XPerl_SpellKey(1784)] = true,				-- Stealth
+			[XPerl_SpellKey(1856)] = true,				-- Vanish
+			[XPerl_SpellKey(2983)] = true,				-- Sprint
+			[XPerl_SpellKey(13750)] = true,				-- Adrenaline Rush
+			[XPerl_SpellKey(13877)] = true,				-- Blade Flurry
 		},
 		PALADIN = {
-			[GetSpellInfo(20154)] = true,				-- Seal of Righteousness
-			[GetSpellInfo(20165)] = true,				-- Seal of Insight
-			[GetSpellInfo(20164)] = true,				-- Seal of Justice
-			--[GetSpellInfo(31801)] = true,				-- Seal of Truth
-			[GetSpellInfo(20375)] = true,				-- Seal of Command
-			[GetSpellInfo(20166)] = true,				-- Seal of Wisdom
-			[GetSpellInfo(20165)] = true,				-- Seal of Light
-			--[GetSpellInfo(53736)] = true,				-- Seal of Corruption
-			--[GetSpellInfo(31892)] = true,				-- Seal of Blood
-			--[GetSpellInfo(31801)] = true,				-- Seal of Vengeance
-			[GetSpellInfo(25780)] = true,				-- Righteous Fury
-			[GetSpellInfo(20925)] = true,				-- Holy Shield
-			--[GetSpellInfo(54428)] = true,				-- Divine Plea
+			[XPerl_SpellKey(20154)] = true,				-- Seal of Righteousness
+			[XPerl_SpellKey(20165)] = true,				-- Seal of Insight
+			[XPerl_SpellKey(20164)] = true,				-- Seal of Justice
+			--[XPerl_SpellKey(31801)] = true,				-- Seal of Truth
+			[XPerl_SpellKey(20375)] = true,				-- Seal of Command
+			[XPerl_SpellKey(20166)] = true,				-- Seal of Wisdom
+			[XPerl_SpellKey(20165)] = true,				-- Seal of Light
+			--[XPerl_SpellKey(53736)] = true,				-- Seal of Corruption
+			--[XPerl_SpellKey(31892)] = true,				-- Seal of Blood
+			--[XPerl_SpellKey(31801)] = true,				-- Seal of Vengeance
+			[XPerl_SpellKey(25780)] = true,				-- Righteous Fury
+			[XPerl_SpellKey(20925)] = true,				-- Holy Shield
+			--[XPerl_SpellKey(54428)] = true,				-- Divine Plea
 		},
 	}
 	DebuffExceptions = {
 		ALL = {
-			[GetSpellInfo(11196)] = true,				-- Recently Bandaged
+			[XPerl_SpellKey(11196)] = true,				-- Recently Bandaged
 		},
 		PRIEST = {
-			[GetSpellInfo(6788)] = true,				-- Weakened Soul
+			[XPerl_SpellKey(6788)] = true,				-- Weakened Soul
 		},
 		PALADIN = {
-			[GetSpellInfo(25771)] = true				-- Forbearance
+			[XPerl_SpellKey(25771)] = true				-- Forbearance
 		}
 	}
 
 	SeasonalDebuffs = {
-		[GetSpellInfo(26004)] = true,					-- Mistletoe
-		[GetSpellInfo(26680)] = true,					-- Adored
-		[GetSpellInfo(26898)] = true,					-- Heartbroken
-		--[GetSpellInfo(64805)] = true,					-- Bested Darnassus
-		--[GetSpellInfo(64808)] = true,					-- Bested the Exodar
-		--[GetSpellInfo(64809)] = true,					-- Bested Gnomeregan
-		--[GetSpellInfo(64810)] = true,					-- Bested Ironforge
-		--[GetSpellInfo(64811)] = true,					-- Bested Orgrimmar
-		--[GetSpellInfo(64812)] = true,					-- Bested Sen'jin
-		--[GetSpellInfo(64813)] = true,					-- Bested Silvermoon City
-		--[GetSpellInfo(64814)] = true,					-- Bested Stormwind
-		--[GetSpellInfo(64815)] = true,					-- Bested Thunder Bluff
-		--[GetSpellInfo(64816)] = true,					-- Bested the Undercity
-		--[GetSpellInfo(36900)] = true,					-- Soul Split: Evil!
-		--[GetSpellInfo(36901)] = true,					-- Soul Split: Good
-		--[GetSpellInfo(36899)] = true,					-- Transporter Malfunction
-		[GetSpellInfo(24755)] = true,					-- Tricked or Treated
-		--[GetSpellInfo(69127)] = true,					-- Chill of the Throne
-		--[GetSpellInfo(69438)] = true,					-- Sample Satisfaction
+		[XPerl_SpellKey(26004)] = true,					-- Mistletoe
+		[XPerl_SpellKey(26680)] = true,					-- Adored
+		[XPerl_SpellKey(26898)] = true,					-- Heartbroken
+		--[XPerl_SpellKey(64805)] = true,					-- Bested Darnassus
+		--[XPerl_SpellKey(64808)] = true,					-- Bested the Exodar
+		--[XPerl_SpellKey(64809)] = true,					-- Bested Gnomeregan
+		--[XPerl_SpellKey(64810)] = true,					-- Bested Ironforge
+		--[XPerl_SpellKey(64811)] = true,					-- Bested Orgrimmar
+		--[XPerl_SpellKey(64812)] = true,					-- Bested Sen'jin
+		--[XPerl_SpellKey(64813)] = true,					-- Bested Silvermoon City
+		--[XPerl_SpellKey(64814)] = true,					-- Bested Stormwind
+		--[XPerl_SpellKey(64815)] = true,					-- Bested Thunder Bluff
+		--[XPerl_SpellKey(64816)] = true,					-- Bested the Undercity
+		--[XPerl_SpellKey(36900)] = true,					-- Soul Split: Evil!
+		--[XPerl_SpellKey(36901)] = true,					-- Soul Split: Good
+		--[XPerl_SpellKey(36899)] = true,					-- Transporter Malfunction
+		[XPerl_SpellKey(24755)] = true,					-- Tricked or Treated
+		--[XPerl_SpellKey(69127)] = true,					-- Chill of the Throne
+		--[XPerl_SpellKey(69438)] = true,					-- Sample Satisfaction
 	}
 
 	RaidFrameIgnores = {
-		[GetSpellInfo(26013)] = true,					-- Deserter
-		--[GetSpellInfo(71041)] = true,					-- Dungeon Deserter
-		--[GetSpellInfo(71328)] = true,					-- Dungeon Cooldown
+		[XPerl_SpellKey(26013)] = true,					-- Deserter
+		--[XPerl_SpellKey(71041)] = true,					-- Dungeon Deserter
+		--[XPerl_SpellKey(71328)] = true,					-- Dungeon Cooldown
 	}
 else
 	BuffExceptions = {
 		PRIEST = {
-			[GetSpellInfo(774)] = true,					-- Rejuvenation
-			[GetSpellInfo(8936)] = true,				-- Regrowth
-			[GetSpellInfo(33076)] = true,				-- Prayer of Mending
-			[GetSpellInfo(81749)] = true,				-- Atonement
+			[XPerl_SpellKey(774)] = true,					-- Rejuvenation
+			[XPerl_SpellKey(8936)] = true,				-- Regrowth
+			[XPerl_SpellKey(33076)] = true,				-- Prayer of Mending
+			[XPerl_SpellKey(81749)] = true,				-- Atonement
 		},
 		DRUID = {
-			[GetSpellInfo(139)] = true,					-- Renew
+			[XPerl_SpellKey(139)] = true,					-- Renew
 		},
 		WARLOCK = {
-			[GetSpellInfo(20707)] = true,				-- Soulstone Resurrection
+			[XPerl_SpellKey(20707)] = true,				-- Soulstone Resurrection
 		},
 		HUNTER = {
-			--[GetSpellInfo(13165)] = true,				-- Aspect of the Hawk
-			--[GetSpellInfo(5118)] = true,				-- Aspect of the Cheetah
-			--[GetSpellInfo(13159)] = true,				-- Aspect of the Pack
-			[GetSpellInfo(61648)] = true,				-- Aspect of the Beast
-			-- [GetSpellInfo(13163)] = true,			-- Aspect of the Monkey
-			--[GetSpellInfo(19506)] = true,				-- Trueshot Aura
-			[GetSpellInfo(5384)] = true,				-- Feign Death
+			--[XPerl_SpellKey(13165)] = true,				-- Aspect of the Hawk
+			--[XPerl_SpellKey(5118)] = true,				-- Aspect of the Cheetah
+			--[XPerl_SpellKey(13159)] = true,				-- Aspect of the Pack
+			[XPerl_SpellKey(61648)] = true,				-- Aspect of the Beast
+			-- [XPerl_SpellKey(13163)] = true,			-- Aspect of the Monkey
+			--[XPerl_SpellKey(19506)] = true,				-- Trueshot Aura
+			[XPerl_SpellKey(5384)] = true,				-- Feign Death
 		},
 		ROGUE = {
-			[GetSpellInfo(1784)] = true,				-- Stealth
-			[GetSpellInfo(1856)] = true,				-- Vanish
-			[GetSpellInfo(2983)] = true,				-- Sprint
-			[GetSpellInfo(13750)] = true,				-- Adrenaline Rush
-			[GetSpellInfo(13877)] = true,				-- Blade Flurry
+			[XPerl_SpellKey(1784)] = true,				-- Stealth
+			[XPerl_SpellKey(1856)] = true,				-- Vanish
+			[XPerl_SpellKey(2983)] = true,				-- Sprint
+			[XPerl_SpellKey(13750)] = true,				-- Adrenaline Rush
+			[XPerl_SpellKey(13877)] = true,				-- Blade Flurry
 		},
 		PALADIN = {
-			--[GetSpellInfo(20154)] = true,				-- Seal of Righteousness
-			--[GetSpellInfo(20165)] = true,				-- Seal of Insight
-			--[GetSpellInfo(20164)] = true,				-- Seal of Justice
-			--[GetSpellInfo(31801)] = true,				-- Seal of Truth
-			--[GetSpellInfo(20375)] = true,				-- Seal of Command
-			--[GetSpellInfo(20166)] = true,				-- Seal of Wisdom
-			--[GetSpellInfo(20165)] = true,				-- Seal of Light
-			--[GetSpellInfo(53736)] = true,				-- Seal of Corruption
-			--[GetSpellInfo(31892)] = true,				-- Seal of Blood
-			--[GetSpellInfo(31801)] = true,				-- Seal of Vengeance
-			[GetSpellInfo(25780)] = true,				-- Righteous Fury
-			--[GetSpellInfo(20925)] = true,				-- Holy Shield
-			--[GetSpellInfo(54428)] = true,				-- Divine Plea
+			--[XPerl_SpellKey(20154)] = true,				-- Seal of Righteousness
+			--[XPerl_SpellKey(20165)] = true,				-- Seal of Insight
+			--[XPerl_SpellKey(20164)] = true,				-- Seal of Justice
+			--[XPerl_SpellKey(31801)] = true,				-- Seal of Truth
+			--[XPerl_SpellKey(20375)] = true,				-- Seal of Command
+			--[XPerl_SpellKey(20166)] = true,				-- Seal of Wisdom
+			--[XPerl_SpellKey(20165)] = true,				-- Seal of Light
+			--[XPerl_SpellKey(53736)] = true,				-- Seal of Corruption
+			--[XPerl_SpellKey(31892)] = true,				-- Seal of Blood
+			--[XPerl_SpellKey(31801)] = true,				-- Seal of Vengeance
+			[XPerl_SpellKey(25780)] = true,				-- Righteous Fury
+			--[XPerl_SpellKey(20925)] = true,				-- Holy Shield
+			--[XPerl_SpellKey(54428)] = true,				-- Divine Plea
 		},
 	}
 	DebuffExceptions = {
 		ALL = {
-			[GetSpellInfo(11196)] = true,				-- Recently Bandaged
+			[XPerl_SpellKey(11196)] = true,				-- Recently Bandaged
 		},
 		PRIEST = {
-			[GetSpellInfo(6788)] = true,				-- Weakened Soul
+			[XPerl_SpellKey(6788)] = true,				-- Weakened Soul
 		},
 		PALADIN = {
-			[GetSpellInfo(25771)] = true				-- Forbearance
+			[XPerl_SpellKey(25771)] = true				-- Forbearance
 		}
 	}
 	SeasonalDebuffs = {
-		[GetSpellInfo(26004)] = true,					-- Mistletoe
-		[GetSpellInfo(26680)] = true,					-- Adored
-		[GetSpellInfo(26898)] = true,					-- Heartbroken
-		[GetSpellInfo(64805)] = true,					-- Bested Darnassus
-		[GetSpellInfo(64808)] = true,					-- Bested the Exodar
-		[GetSpellInfo(64809)] = true,					-- Bested Gnomeregan
-		[GetSpellInfo(64810)] = true,					-- Bested Ironforge
-		[GetSpellInfo(64811)] = true,					-- Bested Orgrimmar
-		[GetSpellInfo(64812)] = true,					-- Bested Sen'jin
-		[GetSpellInfo(64813)] = true,					-- Bested Silvermoon City
-		[GetSpellInfo(64814)] = true,					-- Bested Stormwind
-		[GetSpellInfo(64815)] = true,					-- Bested Thunder Bluff
-		[GetSpellInfo(64816)] = true,					-- Bested the Undercity
-		[GetSpellInfo(36900)] = true,					-- Soul Split: Evil!
-		[GetSpellInfo(36901)] = true,					-- Soul Split: Good
-		[GetSpellInfo(36899)] = true,					-- Transporter Malfunction
-		[GetSpellInfo(24755)] = true,					-- Tricked or Treated
-		[GetSpellInfo(69127)] = true,					-- Chill of the Throne
-		[GetSpellInfo(69438)] = true,					-- Sample Satisfaction
+		[XPerl_SpellKey(26004)] = true,					-- Mistletoe
+		[XPerl_SpellKey(26680)] = true,					-- Adored
+		[XPerl_SpellKey(26898)] = true,					-- Heartbroken
+		[XPerl_SpellKey(64805)] = true,					-- Bested Darnassus
+		[XPerl_SpellKey(64808)] = true,					-- Bested the Exodar
+		[XPerl_SpellKey(64809)] = true,					-- Bested Gnomeregan
+		[XPerl_SpellKey(64810)] = true,					-- Bested Ironforge
+		[XPerl_SpellKey(64811)] = true,					-- Bested Orgrimmar
+		[XPerl_SpellKey(64812)] = true,					-- Bested Sen'jin
+		[XPerl_SpellKey(64813)] = true,					-- Bested Silvermoon City
+		[XPerl_SpellKey(64814)] = true,					-- Bested Stormwind
+		[XPerl_SpellKey(64815)] = true,					-- Bested Thunder Bluff
+		[XPerl_SpellKey(64816)] = true,					-- Bested the Undercity
+		[XPerl_SpellKey(36900)] = true,					-- Soul Split: Evil!
+		[XPerl_SpellKey(36901)] = true,					-- Soul Split: Good
+		[XPerl_SpellKey(36899)] = true,					-- Transporter Malfunction
+		[XPerl_SpellKey(24755)] = true,					-- Tricked or Treated
+		[XPerl_SpellKey(69127)] = true,					-- Chill of the Throne
+		[XPerl_SpellKey(69438)] = true,					-- Sample Satisfaction
 	}
 
 	RaidFrameIgnores = {
-		[GetSpellInfo(26013)] = true,					-- Deserter
-		[GetSpellInfo(71041)] = true,					-- Dungeon Deserter
-		[GetSpellInfo(71328)] = true,					-- Dungeon Cooldown
+		[XPerl_SpellKey(26013)] = true,					-- Deserter
+		[XPerl_SpellKey(71041)] = true,					-- Dungeon Deserter
+		[XPerl_SpellKey(71328)] = true,					-- Dungeon Cooldown
 	}
 end
 

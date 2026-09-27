@@ -11,7 +11,7 @@ XPerl_RequestConfig(function(new)
 	conf = new.custom
 end, "$Revision: 00a3cadfbbc8615840794db77581992f54190a2b $")
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
 
 local pairs = pairs
 local tinsert = tinsert

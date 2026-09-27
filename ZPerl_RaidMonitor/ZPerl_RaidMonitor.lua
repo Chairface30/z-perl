@@ -15,7 +15,7 @@ if LCC then
 	UnitChannelInfo = function(unit) return LCC:UnitChannelInfo(unit); end
 end
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
 -- the 2.5.5 Anniversary client removed this legacy FrameXML global; 0.05 is the classic value
 local CASTING_BAR_ALPHA_STEP = CASTING_BAR_ALPHA_STEP or 0.05
 

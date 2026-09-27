@@ -16,8 +16,8 @@ XPerl_RequestConfig(function(new)
 	conf = new
 end, "$Revision: 102581258f484fb67e7d0745bdf77296453ad6fe $")
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
-local IsVanillaClassic = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
+local IsVanillaClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC or XPerl_IsForever)
 -- the 2.5.5 Anniversary client removed this legacy FrameXML global; 1.0 is the classic value
 local CASTING_BAR_HOLD_TIME = CASTING_BAR_HOLD_TIME or 1.0
 local UnitCastingInfo = UnitCastingInfo

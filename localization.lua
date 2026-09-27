@@ -2,7 +2,7 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
-local IsClassic = WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC
+local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
 local IsBCClassic = WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC
 
 XPerl_ProductName		= "|cFFD00000Z-Perl|r UnitFrames"
@@ -152,85 +152,85 @@ XPERL_DOWNLOAD_LOCATION = "https://mods.curse.com/addons/wow/zperl"
 if IsClassic then
 	XPERL_HIGHLIGHT_SPELLS = {
 		hotSpells  = {
-			[GetSpellInfo(774)] = 12,			-- Rejuvenation (old id 26982)
-			--[GetSpellInfo(155777)] = 12,		-- Rejuvenation Germination
-			[GetSpellInfo(8936)] = 6,			-- Regrowth (old id 26980)
-			[GetSpellInfo(139)] = 12,			-- Renew (old id 25222)
-			--[GetSpellInfo(48438)] = 7,			-- Wild Growth
-			--[GetSpellInfo(33763)] = 8,			-- Lifebloom
-			--[GetSpellInfo(28880)] = 15,			-- Gift of the Naaru (Racial)
-			--[GetSpellInfo(61295)] = 15,			-- Riptide
-			--[GetSpellInfo(119611)] = 18,		-- Renewing Mist
-			--[GetSpellInfo(115175)] = 8,			-- Soothing Mist
-			--[GetSpellInfo(124682)] = 6,			-- Enveloping Mist
-			--[GetSpellInfo(114163)] = 30			-- Eternal Flame
+			[XPerl_SpellKey(774)] = 12,			-- Rejuvenation (old id 26982)
+			--[XPerl_SpellKey(155777)] = 12,		-- Rejuvenation Germination
+			[XPerl_SpellKey(8936)] = 6,			-- Regrowth (old id 26980)
+			[XPerl_SpellKey(139)] = 12,			-- Renew (old id 25222)
+			--[XPerl_SpellKey(48438)] = 7,			-- Wild Growth
+			--[XPerl_SpellKey(33763)] = 8,			-- Lifebloom
+			--[XPerl_SpellKey(28880)] = 15,			-- Gift of the Naaru (Racial)
+			--[XPerl_SpellKey(61295)] = 15,			-- Riptide
+			--[XPerl_SpellKey(119611)] = 18,		-- Renewing Mist
+			--[XPerl_SpellKey(115175)] = 8,			-- Soothing Mist
+			--[XPerl_SpellKey(124682)] = 6,			-- Enveloping Mist
+			--[XPerl_SpellKey(114163)] = 30			-- Eternal Flame
 		},
 		pomSpells = {
-			--[GetSpellInfo(33076)] = 30,			-- Prayer of Mending
-			--[GetSpellInfo(81749)] = 15,			-- Atonement
-			--[GetSpellInfo(115151)] = 18,		-- Renewing Mist
-			--[GetSpellInfo(157007)] = 60,		-- Beacon of Insight
+			--[XPerl_SpellKey(33076)] = 30,			-- Prayer of Mending
+			--[XPerl_SpellKey(81749)] = 15,			-- Atonement
+			--[XPerl_SpellKey(115151)] = 18,		-- Renewing Mist
+			--[XPerl_SpellKey(157007)] = 60,		-- Beacon of Insight
 		},
 		shieldSpells = {
-			[GetSpellInfo(17)] = 15,			-- Power Word: Shield
-			--[GetSpellInfo(76669)] = 15,			-- Illuminated Healing
-			--[GetSpellInfo(974)] = 600			-- Earth Shield	(old id 32594)
+			[XPerl_SpellKey(17)] = 15,			-- Power Word: Shield
+			--[XPerl_SpellKey(76669)] = 15,			-- Illuminated Healing
+			--[XPerl_SpellKey(974)] = 600			-- Earth Shield	(old id 32594)
 		},
 	}
 elseif IsBCClassic then
 	XPERL_HIGHLIGHT_SPELLS = {
 		hotSpells  = {
-			[GetSpellInfo(774)] = 12,			-- Rejuvenation (old id 26982)
-			--[GetSpellInfo(155777)] = 12,		-- Rejuvenation Germination
-			[GetSpellInfo(8936)] = 6,			-- Regrowth (old id 26980)
-			[GetSpellInfo(139)] = 12,			-- Renew (old id 25222)
-			--[GetSpellInfo(48438)] = 7,			-- Wild Growth
-			[GetSpellInfo(33763)] = 8,			-- Lifebloom
-			[GetSpellInfo(28880)] = 15,			-- Gift of the Naaru (Racial)
-			--[GetSpellInfo(61295)] = 15,			-- Riptide
-			--[GetSpellInfo(119611)] = 18,		-- Renewing Mist
-			--[GetSpellInfo(115175)] = 8,			-- Soothing Mist
-			--[GetSpellInfo(124682)] = 6,			-- Enveloping Mist
-			--[GetSpellInfo(114163)] = 30			-- Eternal Flame
+			[XPerl_SpellKey(774)] = 12,			-- Rejuvenation (old id 26982)
+			--[XPerl_SpellKey(155777)] = 12,		-- Rejuvenation Germination
+			[XPerl_SpellKey(8936)] = 6,			-- Regrowth (old id 26980)
+			[XPerl_SpellKey(139)] = 12,			-- Renew (old id 25222)
+			--[XPerl_SpellKey(48438)] = 7,			-- Wild Growth
+			[XPerl_SpellKey(33763)] = 8,			-- Lifebloom
+			[XPerl_SpellKey(28880)] = 15,			-- Gift of the Naaru (Racial)
+			--[XPerl_SpellKey(61295)] = 15,			-- Riptide
+			--[XPerl_SpellKey(119611)] = 18,		-- Renewing Mist
+			--[XPerl_SpellKey(115175)] = 8,			-- Soothing Mist
+			--[XPerl_SpellKey(124682)] = 6,			-- Enveloping Mist
+			--[XPerl_SpellKey(114163)] = 30			-- Eternal Flame
 		},
 		pomSpells = {
-			[GetSpellInfo(33076)] = 30,			-- Prayer of Mending
-			--[GetSpellInfo(81749)] = 15,			-- Atonement
-			--[GetSpellInfo(115151)] = 18,		-- Renewing Mist
-			--[GetSpellInfo(157007)] = 60,		-- Beacon of Insight
+			[XPerl_SpellKey(33076)] = 30,			-- Prayer of Mending
+			--[XPerl_SpellKey(81749)] = 15,			-- Atonement
+			--[XPerl_SpellKey(115151)] = 18,		-- Renewing Mist
+			--[XPerl_SpellKey(157007)] = 60,		-- Beacon of Insight
 		},
 		shieldSpells = {
-			[GetSpellInfo(17)] = 15,			-- Power Word: Shield
-			--[GetSpellInfo(76669)] = 15,			-- Illuminated Healing
-			--[GetSpellInfo(974)] = 600			-- Earth Shield	(old id 32594)
+			[XPerl_SpellKey(17)] = 15,			-- Power Word: Shield
+			--[XPerl_SpellKey(76669)] = 15,			-- Illuminated Healing
+			--[XPerl_SpellKey(974)] = 600			-- Earth Shield	(old id 32594)
 		},
 	}
 else
 	XPERL_HIGHLIGHT_SPELLS = {
 		hotSpells  = {
-			[GetSpellInfo(774)] = 12,			-- Rejuvenation (old id 26982)
-			[GetSpellInfo(155777)] = 12,		-- Rejuvenation Germination
-			[GetSpellInfo(8936)] = 6,			-- Regrowth (old id 26980)
-			[GetSpellInfo(139)] = 12,			-- Renew (old id 25222)
-			[GetSpellInfo(48438)] = 7,			-- Wild Growth
-			[GetSpellInfo(33763)] = 8,			-- Lifebloom
-			[GetSpellInfo(28880)] = 15,			-- Gift of the Naaru (Racial)
-			[GetSpellInfo(61295)] = 15,			-- Riptide
-			[GetSpellInfo(119611)] = 18,		-- Renewing Mist
-			[GetSpellInfo(115175)] = 8,			-- Soothing Mist
-			[GetSpellInfo(124682)] = 6,			-- Enveloping Mist
-			--[GetSpellInfo(114163)] = 30			-- Eternal Flame
+			[XPerl_SpellKey(774)] = 12,			-- Rejuvenation (old id 26982)
+			[XPerl_SpellKey(155777)] = 12,		-- Rejuvenation Germination
+			[XPerl_SpellKey(8936)] = 6,			-- Regrowth (old id 26980)
+			[XPerl_SpellKey(139)] = 12,			-- Renew (old id 25222)
+			[XPerl_SpellKey(48438)] = 7,			-- Wild Growth
+			[XPerl_SpellKey(33763)] = 8,			-- Lifebloom
+			[XPerl_SpellKey(28880)] = 15,			-- Gift of the Naaru (Racial)
+			[XPerl_SpellKey(61295)] = 15,			-- Riptide
+			[XPerl_SpellKey(119611)] = 18,		-- Renewing Mist
+			[XPerl_SpellKey(115175)] = 8,			-- Soothing Mist
+			[XPerl_SpellKey(124682)] = 6,			-- Enveloping Mist
+			--[XPerl_SpellKey(114163)] = 30			-- Eternal Flame
 		},
 		pomSpells = {
-			[GetSpellInfo(33076)] = 30,			-- Prayer of Mending
-			[GetSpellInfo(81749)] = 15,			-- Atonement
-			[GetSpellInfo(115151)] = 18,		-- Renewing Mist
-			--[GetSpellInfo(157007)] = 60,		-- Beacon of Insight
+			[XPerl_SpellKey(33076)] = 30,			-- Prayer of Mending
+			[XPerl_SpellKey(81749)] = 15,			-- Atonement
+			[XPerl_SpellKey(115151)] = 18,		-- Renewing Mist
+			--[XPerl_SpellKey(157007)] = 60,		-- Beacon of Insight
 		},
 		shieldSpells = {
-			[GetSpellInfo(17)] = 15,			-- Power Word: Shield
-			--[GetSpellInfo(76669)] = 15,			-- Illuminated Healing
-			--[GetSpellInfo(974)] = 600			-- Earth Shield	(old id 32594)
+			[XPerl_SpellKey(17)] = 15,			-- Power Word: Shield
+			--[XPerl_SpellKey(76669)] = 15,			-- Illuminated Healing
+			--[XPerl_SpellKey(974)] = 600			-- Earth Shield	(old id 32594)
 		},
 	}
 end
@@ -275,68 +275,68 @@ end
 -- Don't highlight these magical debuffs
 if IsClassic then
 	XPerl_ArcaneExclusions = {
-		--[GetSpellInfo(63559)] = true,						-- Bind Life
-		--[GetSpellInfo(30451)] = true,						-- Arcane Blast (again) (old 42897)
-		--[GetSpellInfo(30108)] = true,						-- Unstable Affliction (old 30405)
-		--[GetSpellInfo(15822)] = true,						-- Dreamless Sleep
-		--[GetSpellInfo(24360)] = true,						-- Greater Dreamless Sleep
-		--[GetSpellInfo(28504)] = true,						-- Major Dreamless Sleep
-		--[GetSpellInfo(31257)] = true,						-- Chilled
-		[GetSpellInfo(710)] = true,							-- Banish
-		--[GetSpellInfo(44836)] = true,						-- Also Banish !?
-		--[GetSpellInfo(24306)] = true,						-- Delusions of Jin'do
-		--[GetSpellInfo(46543)] = {ROGUE = true, WARRIOR = true},	-- Ignite Mana
-		--[GetSpellInfo(16567)] = {ROGUE = true, WARRIOR = true},	-- Tainted Mind
-		--[GetSpellInfo(39052)] = {ROGUE = true},				-- Sonic Burst
-		--[GetSpellInfo(41190)] = {ROGUE = true, WARRIOR = true}, -- Mind-numbing Poison
-		[GetSpellInfo(25195)] = {ROGUE = true},				-- Curse of Tongues
-		--[GetSpellInfo(30129)] = true,						-- Charred Earth - Nightbane debuff, can't be cleansed, but shows as magic
-		--[GetSpellInfo(31651)] = {MAGE = true, WARLOCK = true, PRIEST = true},	-- Banshee Curse, Melee hit rating debuff
-		--[GetSpellInfo(38913)] = {ROGUE = true},				-- Silence
-		--[GetSpellInfo(31555)] = {ROGUE = true, WARRIOR = true},	-- Decayed Intellect
+		--[XPerl_SpellKey(63559)] = true,						-- Bind Life
+		--[XPerl_SpellKey(30451)] = true,						-- Arcane Blast (again) (old 42897)
+		--[XPerl_SpellKey(30108)] = true,						-- Unstable Affliction (old 30405)
+		--[XPerl_SpellKey(15822)] = true,						-- Dreamless Sleep
+		--[XPerl_SpellKey(24360)] = true,						-- Greater Dreamless Sleep
+		--[XPerl_SpellKey(28504)] = true,						-- Major Dreamless Sleep
+		--[XPerl_SpellKey(31257)] = true,						-- Chilled
+		[XPerl_SpellKey(710)] = true,							-- Banish
+		--[XPerl_SpellKey(44836)] = true,						-- Also Banish !?
+		--[XPerl_SpellKey(24306)] = true,						-- Delusions of Jin'do
+		--[XPerl_SpellKey(46543)] = {ROGUE = true, WARRIOR = true},	-- Ignite Mana
+		--[XPerl_SpellKey(16567)] = {ROGUE = true, WARRIOR = true},	-- Tainted Mind
+		--[XPerl_SpellKey(39052)] = {ROGUE = true},				-- Sonic Burst
+		--[XPerl_SpellKey(41190)] = {ROGUE = true, WARRIOR = true}, -- Mind-numbing Poison
+		[XPerl_SpellKey(25195)] = {ROGUE = true},				-- Curse of Tongues
+		--[XPerl_SpellKey(30129)] = true,						-- Charred Earth - Nightbane debuff, can't be cleansed, but shows as magic
+		--[XPerl_SpellKey(31651)] = {MAGE = true, WARLOCK = true, PRIEST = true},	-- Banshee Curse, Melee hit rating debuff
+		--[XPerl_SpellKey(38913)] = {ROGUE = true},				-- Silence
+		--[XPerl_SpellKey(31555)] = {ROGUE = true, WARRIOR = true},	-- Decayed Intellect
 	}
 elseif IsBCClassic then
 	XPerl_ArcaneExclusions = {
-		--[GetSpellInfo(63559)] = true,						-- Bind Life
-		--[GetSpellInfo(30451)] = true,						-- Arcane Blast (again) (old 42897)
-		--[GetSpellInfo(30108)] = true,						-- Unstable Affliction (old 30405)
-		--[GetSpellInfo(15822)] = true,						-- Dreamless Sleep
-		--[GetSpellInfo(24360)] = true,						-- Greater Dreamless Sleep
-		--[GetSpellInfo(28504)] = true,						-- Major Dreamless Sleep
-		--[GetSpellInfo(31257)] = true,						-- Chilled
-		[GetSpellInfo(710)] = true,							-- Banish
-		--[GetSpellInfo(44836)] = true,						-- Also Banish !?
-		--[GetSpellInfo(24306)] = true,						-- Delusions of Jin'do
-		--[GetSpellInfo(46543)] = {ROGUE = true, WARRIOR = true},	-- Ignite Mana
-		--[GetSpellInfo(16567)] = {ROGUE = true, WARRIOR = true},	-- Tainted Mind
-		--[GetSpellInfo(39052)] = {ROGUE = true},				-- Sonic Burst
-		--[GetSpellInfo(41190)] = {ROGUE = true, WARRIOR = true}, -- Mind-numbing Poison
-		[GetSpellInfo(25195)] = {ROGUE = true},				-- Curse of Tongues
-		--[GetSpellInfo(30129)] = true,						-- Charred Earth - Nightbane debuff, can't be cleansed, but shows as magic
-		--[GetSpellInfo(31651)] = {MAGE = true, WARLOCK = true, PRIEST = true},	-- Banshee Curse, Melee hit rating debuff
-		--[GetSpellInfo(38913)] = {ROGUE = true},				-- Silence
-		--[GetSpellInfo(31555)] = {ROGUE = true, WARRIOR = true},	-- Decayed Intellect
+		--[XPerl_SpellKey(63559)] = true,						-- Bind Life
+		--[XPerl_SpellKey(30451)] = true,						-- Arcane Blast (again) (old 42897)
+		--[XPerl_SpellKey(30108)] = true,						-- Unstable Affliction (old 30405)
+		--[XPerl_SpellKey(15822)] = true,						-- Dreamless Sleep
+		--[XPerl_SpellKey(24360)] = true,						-- Greater Dreamless Sleep
+		--[XPerl_SpellKey(28504)] = true,						-- Major Dreamless Sleep
+		--[XPerl_SpellKey(31257)] = true,						-- Chilled
+		[XPerl_SpellKey(710)] = true,							-- Banish
+		--[XPerl_SpellKey(44836)] = true,						-- Also Banish !?
+		--[XPerl_SpellKey(24306)] = true,						-- Delusions of Jin'do
+		--[XPerl_SpellKey(46543)] = {ROGUE = true, WARRIOR = true},	-- Ignite Mana
+		--[XPerl_SpellKey(16567)] = {ROGUE = true, WARRIOR = true},	-- Tainted Mind
+		--[XPerl_SpellKey(39052)] = {ROGUE = true},				-- Sonic Burst
+		--[XPerl_SpellKey(41190)] = {ROGUE = true, WARRIOR = true}, -- Mind-numbing Poison
+		[XPerl_SpellKey(25195)] = {ROGUE = true},				-- Curse of Tongues
+		--[XPerl_SpellKey(30129)] = true,						-- Charred Earth - Nightbane debuff, can't be cleansed, but shows as magic
+		--[XPerl_SpellKey(31651)] = {MAGE = true, WARLOCK = true, PRIEST = true},	-- Banshee Curse, Melee hit rating debuff
+		--[XPerl_SpellKey(38913)] = {ROGUE = true},				-- Silence
+		--[XPerl_SpellKey(31555)] = {ROGUE = true, WARRIOR = true},	-- Decayed Intellect
 	}
 else
 	XPerl_ArcaneExclusions = {
-		[GetSpellInfo(63559)] = true,						-- Bind Life
-		[GetSpellInfo(30451)] = true,						-- Arcane Blast (again) (old 42897)
-		[GetSpellInfo(30108)] = true,						-- Unstable Affliction (old 30405)
-		[GetSpellInfo(15822)] = true,						-- Dreamless Sleep
-		[GetSpellInfo(24360)] = true,						-- Greater Dreamless Sleep
-		[GetSpellInfo(28504)] = true,						-- Major Dreamless Sleep
-		[GetSpellInfo(31257)] = true,						-- Chilled
-		[GetSpellInfo(710)] = true,							-- Banish
-		[GetSpellInfo(44836)] = true,						-- Also Banish !?
-		[GetSpellInfo(24306)] = true,						-- Delusions of Jin'do
-		[GetSpellInfo(46543)] = {ROGUE = true, WARRIOR = true},	-- Ignite Mana
-		[GetSpellInfo(16567)] = {ROGUE = true, WARRIOR = true},	-- Tainted Mind
-		[GetSpellInfo(39052)] = {ROGUE = true},				-- Sonic Burst
-		[GetSpellInfo(41190)] = {ROGUE = true, WARRIOR = true}, -- Mind-numbing Poison
-		[GetSpellInfo(25195)] = {ROGUE = true},				-- Curse of Tongues
-		[GetSpellInfo(30129)] = true,						-- Charred Earth - Nightbane debuff, can't be cleansed, but shows as magic
-		[GetSpellInfo(31651)] = {MAGE = true, WARLOCK = true, PRIEST = true},	-- Banshee Curse, Melee hit rating debuff
-		[GetSpellInfo(38913)] = {ROGUE = true},				-- Silence
-		[GetSpellInfo(31555)] = {ROGUE = true, WARRIOR = true},	-- Decayed Intellect
+		[XPerl_SpellKey(63559)] = true,						-- Bind Life
+		[XPerl_SpellKey(30451)] = true,						-- Arcane Blast (again) (old 42897)
+		[XPerl_SpellKey(30108)] = true,						-- Unstable Affliction (old 30405)
+		[XPerl_SpellKey(15822)] = true,						-- Dreamless Sleep
+		[XPerl_SpellKey(24360)] = true,						-- Greater Dreamless Sleep
+		[XPerl_SpellKey(28504)] = true,						-- Major Dreamless Sleep
+		[XPerl_SpellKey(31257)] = true,						-- Chilled
+		[XPerl_SpellKey(710)] = true,							-- Banish
+		[XPerl_SpellKey(44836)] = true,						-- Also Banish !?
+		[XPerl_SpellKey(24306)] = true,						-- Delusions of Jin'do
+		[XPerl_SpellKey(46543)] = {ROGUE = true, WARRIOR = true},	-- Ignite Mana
+		[XPerl_SpellKey(16567)] = {ROGUE = true, WARRIOR = true},	-- Tainted Mind
+		[XPerl_SpellKey(39052)] = {ROGUE = true},				-- Sonic Burst
+		[XPerl_SpellKey(41190)] = {ROGUE = true, WARRIOR = true}, -- Mind-numbing Poison
+		[XPerl_SpellKey(25195)] = {ROGUE = true},				-- Curse of Tongues
+		[XPerl_SpellKey(30129)] = true,						-- Charred Earth - Nightbane debuff, can't be cleansed, but shows as magic
+		[XPerl_SpellKey(31651)] = {MAGE = true, WARLOCK = true, PRIEST = true},	-- Banshee Curse, Melee hit rating debuff
+		[XPerl_SpellKey(38913)] = {ROGUE = true},				-- Silence
+		[XPerl_SpellKey(31555)] = {ROGUE = true, WARRIOR = true},	-- Decayed Intellect
 	}
 end

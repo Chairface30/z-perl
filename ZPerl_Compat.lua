@@ -9,6 +9,27 @@ ZPerl.Compat = {}
 -- Detect TBC Anniversary Edition (WOW_PROJECT_BURNING_CRUSADE_CLASSIC == 5, interface 20505+)
 local isTBCAnniversary = (WOW_PROJECT_ID == 5)
 
+-- WoW Forever (interface 16xxx) reports itself as the retail game in
+-- WOW_PROJECT_ID, but it is a vanilla-era game: its spells, its level cap,
+-- no focus frame. Every Z-Perl file that asks "is this Classic?" or "is this
+-- vanilla?" also asks this, so Forever takes the Classic/vanilla paths.
+XPerl_IsForever = (function()
+    local ok, _, _, _, toc = pcall(GetBuildInfo)
+    return ok and type(toc) == "number" and toc >= 16000 and toc < 17000 or false
+end)()
+
+-- A spell's name to key a table by, or "#spell<id>" when this client doesn't
+-- have the spell: a nil table key is an error that stops the whole file, and
+-- a placeholder simply never matches an aura.
+function XPerl_SpellKey(spellID)
+    local name = GetSpellInfo and GetSpellInfo(spellID)
+    if name == nil and C_Spell and C_Spell.GetSpellName then
+        local ok, n = pcall(C_Spell.GetSpellName, spellID)
+        if ok then name = n end
+    end
+    return name or ("#spell" .. tostring(spellID))
+end
+
 -- ============================================================================
 -- UI API Compatibility
 -- ============================================================================
