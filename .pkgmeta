@@ -5,7 +5,6 @@ package-as: ZPerl
 
 move-folders:
   ZPerl/ZPerl_ArcaneBar: ZPerl_ArcaneBar
-  ZPerl/ZPerl_BigDebuffs: ZPerl_BigDebuffs
   ZPerl/ZPerl_CustomHighlight: ZPerl_CustomHighlight
   ZPerl/ZPerl_Options: ZPerl_Options
   ZPerl/ZPerl_Party: ZPerl_Party
