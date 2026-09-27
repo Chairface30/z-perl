@@ -227,7 +227,10 @@ local function XPerl_Player_Buffs_Set_Bits(self)
 
 	XPerl_Player_BuffSetup(self)
 
-	self.state:SetFrameRef("ZPerlPlayerBuffs", self.buffFrame)
+	-- no buff frame without SecureAuraHeaderTemplate (Forever); a nil frame ref is an error
+	if self.buffFrame then
+		self.state:SetFrameRef("ZPerlPlayerBuffs", self.buffFrame)
+	end
 	self.state:SetAttribute("buffsAbove", pconf.buffs.above)
 
 	local buffs = self.buffFrame

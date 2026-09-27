@@ -22,6 +22,9 @@ end)()
 if not GetItemInfo and C_Item and C_Item.GetItemInfo then
     GetItemInfo = C_Item.GetItemInfo
 end
+if not GetSpellTexture and C_Spell and C_Spell.GetSpellTexture then
+    GetSpellTexture = C_Spell.GetSpellTexture
+end
 if not GetItemCount and C_Item and C_Item.GetItemCount then
     GetItemCount = C_Item.GetItemCount
 end

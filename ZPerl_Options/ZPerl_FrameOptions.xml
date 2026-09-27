@@ -969,7 +969,12 @@
 						XPerl_Options_RegisterProtected(self)
 					</OnLoad>
 					<OnShow>
-						local class = XPerlDB.raid.class[self:GetID()].name
+						local entry = XPerlDB.raid.class[self:GetID()]
+						if not entry then
+							self:Hide() -- no such class in the saved list
+							return
+						end
+						local class = entry.name
 						local textFrame = _G[self:GetName().."Text"]
 						textFrame:SetText(LOCALIZED_CLASS_NAMES_MALE[class])
 						self:SetHitRectInsets(0, -(textFrame:GetStringWidth()), 0, 0)
