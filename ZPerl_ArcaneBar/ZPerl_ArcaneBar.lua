@@ -32,6 +32,24 @@ if LCC then
 	end
 end
 
+-- Forever keeps other units' casts secret: name, times and cast ID all
+-- arrive as secrets, and the bar can do no sums with them. Such a cast reads
+-- as no cast at all, so the frame keeps its name showing instead of erroring.
+-- Your own casts are readable and draw as before.
+if XPerl_Secret then
+	local castingInfo, channelInfo = UnitCastingInfo, UnitChannelInfo
+	local function Readable(...)
+		if XPerl_Secret(...) then return end
+		return ...
+	end
+	UnitCastingInfo = function(unit)
+		return Readable(castingInfo(unit))
+	end
+	UnitChannelInfo = function(unit)
+		return Readable(channelInfo(unit))
+	end
+end
+
 -- Registers frame to spellcast events.
 local barColours = {
 	main = {r = 1.0, g = 0.7, b = 0.0},

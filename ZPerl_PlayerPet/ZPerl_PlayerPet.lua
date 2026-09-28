@@ -333,7 +333,8 @@ end
 -- Happiness --
 ---------------
 local function XPerl_Player_Pet_SetHappiness(self)
-	if not IsClassic then
+	-- Forever runs as Classic but has no pet happiness
+	if not IsClassic or not GetPetHappiness then
 		return
 	end
 

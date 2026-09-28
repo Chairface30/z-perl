@@ -1,3 +1,7 @@
+**Unreleased**
+* Forever: other players' and mobs' casts no longer error in the target, focus and party cast bars (the client keeps them secret, so those bars stay hidden and the name shows); your own cast bar is unchanged
+* Forever: the hunter pet frame no longer errors looking up pet happiness, which Forever doesn't have
+
 **8.0.0** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Options: the tooltip settings popup no longer errors every frame (MouseIsOver is gone from newer clients)
 * Options window: fixed errors from raid class rows with no saved class, the range finder's spell icon (GetSpellTexture from C_Spell on Forever), and locking frames with no player buff frame
