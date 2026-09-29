@@ -4,6 +4,7 @@
 * Forever: the party frame's target box no longer errors in a group when a party member's target has a secret name, PvP flag or faction (the name still shows; the PvP icon stays hidden)
 * Forever: fixed a flood of combat errors across the player, target, target of target, party, pet, raid and raid helper frames. In combat the client keeps AFK, PvP and combat flags, creature type, classification and unit GUIDs secret; Z-Perl now reads a secret flag or type as unknown instead of erroring, and frames whose unit's GUID is secret refresh twice a second
 * Forever: the target of target frames no longer error when a frame has no settings (the focus target)
+* Forever: highlights (heals, HoTs, aggro, shields) no longer error when a frame's unit has a secret GUID, such as a new target picked with Tab in combat; that frame shows no highlight until its GUID is readable
 
 **8.0.1** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: target, target of target, pet, party, party pet, raid and raid helper frames no longer error checking whether a unit is charmed (the client can keep that secret; the charmed warning icon then stays hidden)

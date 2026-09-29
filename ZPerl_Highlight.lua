@@ -213,7 +213,8 @@ end
 
 -- XPerl_Highlight:Add
 function xpHigh:Add(guid, highlightType, duration, source)
-	if (not guid) then
+	-- Forever: a secret GUID or name can't be a table key; nothing to track
+	if (not guid) or XPerl_Secret(guid) then
 		return
 	end
 	if (not strfind(guid, "-")) then
@@ -263,6 +264,9 @@ end
 
 -- xpHigh:TooltipInfo
 function xpHigh:TooltipInfo(guid)
+	if (not guid) or XPerl_Secret(guid) then
+		return
+	end
 	local effects = self.list[guid]
 	if (effects) then
 		local str = ""
@@ -285,7 +289,8 @@ end
 
 -- xpHigh:Remove
 function xpHigh:Remove(guid, highlightType)
-	if (not guid) then
+	-- Forever: a secret GUID or name can't be a table key; nothing to track
+	if (not guid) or XPerl_Secret(guid) then
 		return
 	end
 	if (not strfind(guid, "-")) then
@@ -301,7 +306,8 @@ end
 
 -- xpHigh:HasEffect
 function xpHigh:HasEffect(guid, effect)
-	if (not guid) then
+	-- Forever: a secret GUID or name can't be a table key; nothing to track
+	if (not guid) or XPerl_Secret(guid) then
 		return
 	end
 	if (not strfind(guid, "-")) then
@@ -385,6 +391,11 @@ function xpHigh:SetHighlight(frame, guid)
 		else
 			return
 		end
+	end
+
+	-- Forever: a secret GUID can't be looked up, so it shows no highlight
+	if XPerl_Secret(guid) then
+		guid = nil
 	end
 
 	self:OnUpdate(0)
@@ -583,6 +594,9 @@ end
 
 -- TotalShield
 function xpHigh:TotalShield(guid)
+	if (not guid) or XPerl_Secret(guid) then
+		return
+	end
 	local list = self.shields[guid]
 	if (list) then
 		local total, maxAmount = 0, 0
@@ -1621,6 +1635,9 @@ end
 
 -- Damage
 function xpHigh:Damage(guid, absorbed)
+	if (not guid) or XPerl_Secret(guid) then
+		return
+	end
 	local list = self.shields[guid]
 	if (list) then
 		local s = list[1]
