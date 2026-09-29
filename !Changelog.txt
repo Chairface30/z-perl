@@ -1,3 +1,7 @@
+**Unreleased**
+* Raid Helper: Target Counters, Count Healers Only for self and Enemy Targeting are now off by default (characters that already saved these settings keep them)
+* Forever: the party frame no longer errors when a member shows as Offline, Dead or Ghost (the client can keep the percent text's width secret)
+
 **8.0.1** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: target, target of target, pet, party, party pet, raid and raid helper frames no longer error checking whether a unit is charmed (the client can keep that secret; the charmed warning icon then stays hidden)
 * Forever: the pet frame's threat readout no longer errors when you attack (your pet's threat is secret; the readout is left off)

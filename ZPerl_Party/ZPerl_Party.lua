@@ -391,7 +391,11 @@ local function XPerl_Party_UpdateHealth(self)
 			local old = self.statsFrame.healthBar.percent:GetText()
 			self.statsFrame.healthBar.percent:SetText(reason)
 
-			if (self.statsFrame.healthBar.percent:GetStringWidth() > (self.statsFrame:GetWidth() - self.statsFrame.healthBar:GetWidth() - 8)) then
+			-- On Forever the percent text keeps a secret width after drawing a
+			-- secret value; an unknown width counts as fitting, so the status
+			-- ("Offline", "Dead") replaces the stale percentage.
+			local width = self.statsFrame.healthBar.percent:GetStringWidth()
+			if (not XPerl_Secret(width) and width >(self.statsFrame:GetWidth() - self.statsFrame.healthBar:GetWidth() - 8)) then
 				self.statsFrame.healthBar.percent:SetText(old)
 				self.statsFrame.healthBar.text:SetText(reason)
 				self.statsFrame.healthBar.text:Show()

@@ -153,9 +153,9 @@ local function XPerl_Defaults()
 	DefaultVar("HealerMode",		0)		-- 2.1.0
 	DefaultVar("HealerModeType",		1)		-- 2.1.0
 
-	DefaultVar("TargetCounters",		1)
-	DefaultVar("TargetCountersSelf",	1)
-	DefaultVar("TargetCountersEnemy",	1)
+	DefaultVar("TargetCounters",		0)
+	DefaultVar("TargetCountersSelf",	0)
+	DefaultVar("TargetCountersEnemy",	0)
 	DefaultVar("ShowTargetCounters",	0)		-- 2.2.4 - Disabled by default
 	DefaultVar("AssistsFrame",		1)
 	DefaultVar("TargettingFrame",		1)
