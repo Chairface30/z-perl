@@ -377,6 +377,15 @@ function XPerl_UnitIsCharmed(unit)
 	return charmed and true or false
 end
 
+-- A yes/no unit query (UnitIsPVP, UnitAffectingCombat, ...) that may come back
+-- secret on WoW Forever. Unknown reads as false.
+function XPerl_UnitFlag(func, unit)
+	if not (func and unit) then return false end
+	local ok, value = pcall(func, unit)
+	if not ok or XPerl_Secret(value) then return false end
+	return value and true or false
+end
+
 -- A secret 0-100 percentage for display, or nil when this client can't give one.
 local function SecretPercent(unit, power, pType)
 	local curve = CurveConstants and CurveConstants.ScaleTo100

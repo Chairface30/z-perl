@@ -1033,14 +1033,20 @@ local function XPerl_Party_TargetUpdateHealth(self)
 		end
 	end
 
-	if (UnitAffectingCombat(targetid)) then
+	if (XPerl_UnitFlag(UnitAffectingCombat, targetid)) then
 		tf.combatIcon:SetTexCoord(0.49, 1.0, 0.0, 0.49)
 		tf.combatIcon:Show()
 	else
 		tf.combatIcon:Hide()
 	end
 
-	local pvp = pconf.pvpIcon and ((UnitIsPVPFreeForAll(targetid) and "FFA") or (UnitIsPVP(targetid) and (UnitFactionGroup(targetid) ~= "Neutral") and UnitFactionGroup(targetid)))
+	-- On Forever the target's PvP flags and faction can be secret; unknown
+	-- means no icon.
+	local faction = UnitFactionGroup(targetid)
+	if XPerl_Secret(faction) then
+		faction = nil
+	end
+	local pvp = pconf.pvpIcon and ((XPerl_UnitFlag(UnitIsPVPFreeForAll, targetid) and "FFA") or (faction and faction ~= "Neutral" and XPerl_UnitFlag(UnitIsPVP, targetid) and faction))
 	if (pvp) then
 		tf.pvpIcon:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..pvp)
 		tf.pvpIcon:Show()
@@ -1063,12 +1069,15 @@ local function XPerl_Party_UpdateTarget(self)
 		local partyid = self.partyid
 		if (targetid and UnitIsConnected(partyid) and UnitExists(partyid) and UnitIsVisible(partyid)) then
 			local targetname = UnitName(targetid)
-			if (targetname and targetname ~= UNKNOWNOBJECT) then
+			-- A secret name can't be compared, but it can still be shown.
+			if (XPerl_Secret(targetname) or (targetname and targetname ~= UNKNOWNOBJECT)) then
 				--self.targetFrame:SetAlpha(1)
 				self.targetFrame.text:SetText(targetname)
-				XPerl_SetUnitNameColor(self.targetFrame.text, targetid)
+				-- The name color and raid mark test flags that can be secret for
+				-- a party member's target; unknown keeps the last color / no mark.
+				pcall(XPerl_SetUnitNameColor, self.targetFrame.text, targetid)
 				XPerl_Party_TargetUpdateHealth(self)
-				XPerl_Party_TargetRaidIcon(self)
+				pcall(XPerl_Party_TargetRaidIcon, self)
 			end
 		end
 	end
