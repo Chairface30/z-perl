@@ -1,3 +1,11 @@
+**Unreleased**
+* Forever: a sweep for the errors still waiting to happen. A static check of every Z-Perl file found each place a value the client can keep secret is compared, tested, added up, joined into text or used as a table key; all of them are now guarded. What changes when the client hides something:
+  * Range checks: a unit the client won't give a distance for is treated as in range, so frames don't fade wrongly
+  * Connected and visible: an unknown answer counts as yes, so group members aren't greyed out as Offline
+  * Other players' casts, and a raid roster row the client hides, read as nothing (as cast bars already did)
+  * Names, levels, reactions and power types still show; they just aren't compared, colored or used to look things up
+  * The XP bar still fills if your XP is hidden, without the text
+
 **8.0.2** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Raid Helper: Target Counters, Count Healers Only for self and Enemy Targeting are now off by default (characters that already saved these settings keep them)
 * Forever: the party frame no longer errors when a member shows as Offline, Dead or Ghost (the client can keep the percent text's width secret)

@@ -10,8 +10,8 @@ end, "$Revision: ba83e40f9d15e0884b12cfb141a24c54c2032260 $")
 
 local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
 local IsVanillaClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC or XPerl_IsForever)
-local UnitCastingInfo = UnitCastingInfo
-local UnitChannelInfo = UnitChannelInfo
+local UnitCastingInfo = XPerl_SafeCastAPI(UnitCastingInfo)
+local UnitChannelInfo = XPerl_SafeCastAPI(UnitChannelInfo)
 local LCC = IsVanillaClassic and LibStub("LibClassicCasterino", true)
 if LCC then
 	UnitCastingInfo = function(unit)
@@ -1471,7 +1471,9 @@ function xpHigh.clEvents:SPELL_PERIODIC_HEAL(timestamp, event, srcGUID, srcName,
 					if (not UnitInParty(dstName) and not UnitPlayerOrPetInRaid(dstName) and not UnitPlayerOrPetInParty(dstName)) then
 						-- ok, now figure out which it is, target or focus?
 						-- NOTE: The first GetUnitName should handle cross-realm raid/bg (i think) but this should be double checked
-						if (GetUnitName("target", true) == dstName or GetUnitName("target", false) == dstName) then
+						-- Names can be secret on Forever; an unreadable one matches nothing.
+						local t1, t2 = XPerl_Plain(GetUnitName("target", true)), XPerl_Plain(GetUnitName("target", false))
+						if (not XPerl_Secret(dstName) and (t1 == dstName or t2 == dstName)) then
 							checkName = "target"
 						else
 							checkName = "focus"
@@ -1733,7 +1735,7 @@ end
 
 -- RemoveAllFromGUID
 function xpHigh:RemoveAllFromGUID(unit)
-	local guid = UnitGUID(unit)
+	local guid = XPerl_Plain(UnitGUID(unit))
 	if (guid and self.list[guid]) then
 		self.list[guid] = nil
 		self:Send(guid)

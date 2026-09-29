@@ -2,6 +2,12 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+local UnitIsPlayer = XPerl_SafeUnitAPI(UnitIsPlayer)
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
+local UnitInParty = XPerl_SafeUnitAPI(UnitInParty)
+local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
+
 local init_done, gradient, conf, doneOptions
 local errorCount = 0
 XPerl_RequestConfig(function(new)
@@ -356,6 +362,10 @@ end
 
 local function UnitFullName(unit)
 	local name, realm = UnitName(unit)
+	-- A secret name still shows; it just can't have the realm joined on.
+	if XPerl_Secret(name, realm) then
+		return name
+	end
 	if (name) then
 		if (realm and realm ~= "") then
 			return name .. "-" .. realm

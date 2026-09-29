@@ -9,6 +9,15 @@ if type(C_ChatInfo.RegisterAddonMessagePrefix) == "function" then
 end
 
 ZPerl_CheckItems = {}
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+
+local UnitIsConnected = XPerl_SafeTrueAPI(UnitIsConnected)
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
+local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
+local CheckInteractDistance = XPerl_SafeRangeAPI(CheckInteractDistance)
+
 local XPerl_ItemResults = {["type"] = "item"}
 local XPerl_ResistResults = {["type"] = "res", count = 0}
 local XPerl_DurResults = {["type"] = "dur", count = 0}
@@ -228,8 +237,8 @@ function XPerl_CheckOnEvent(self, event, a1, a2, a3, a4)
 			end
 		end
 	elseif (event == "UNIT_INVENTORY_CHANGED" or event == "UNIT_MODEL_CHANGED") then
-		local n = UnitName(a1)
-		if (XPerl_ActiveScan and XPerl_ActiveScan[n]) then
+		local n = XPerl_Plain(UnitName(a1)) -- a key; nil when secret
+		if (n and XPerl_ActiveScan and XPerl_ActiveScan[n]) then
 			XPerl_ActiveScan[n].changed = true
 			XPerl_ActiveScan[n].offline = nil
 			XPerl_ActiveScan[n].wrongZone = nil
@@ -643,7 +652,7 @@ local function GetOnlineMembers()
 			end
 
 			if (ZPerl_Roster) then
-				local stats = ZPerl_Roster[UnitName("raid"..i)]
+				local stats = ZPerl_Roster[XPerl_Plain(UnitName("raid"..i)) or ""]
 				if (stats) then
 					if (stats.version) then
 						count = count + 1
@@ -960,12 +969,14 @@ function XPerl_Check_MakePlayerList()
 
 		for i = 1, GetNumGroupMembers() do
 			local name = UnitName("raid"..i)
+			-- The name is shown as it is; lookups use a readable copy (nil when secret).
+			local plainName = XPerl_Plain(name)
 			local _, class = UnitClass("raid"..i)
 			local count = 0
 			local noCTRA
 
 			if (ZPerl_Roster) then
-				local stats = ZPerl_Roster[name]
+				local stats = ZPerl_Roster[plainName or ""]
 				if (stats) then
 					if (not stats.version) then
 						noCTRA = true
@@ -975,7 +986,7 @@ function XPerl_Check_MakePlayerList()
 
 			if (resType == "item") then
 				for k,v in ipairs(results) do
-					if (v.name == name) then	-- type(v) == "table" and
+					if (v.name == plainName) then	-- type(v) == "table" and
 						count = v.count
 						if (count > 0) then
 							noCTRA = nil
@@ -987,8 +998,8 @@ function XPerl_Check_MakePlayerList()
 				tinsert(XPerl_PlayerList, {["name"] = name, unit = "raid"..i, ["count"] = count, ["class"] = class, connected = (UnitIsConnected("raid"..i) == 1), ["noCTRA"] = noCTRA})
 
 			elseif (resType == "reg") then
-				if (reagentClasses[class] or results[name]) then
-					local p = results[name]
+				if (reagentClasses[class] or results[plainName or ""]) then
+					local p = results[plainName or ""]
 					local reg = 0
 					if (p) then
 						reg = p.count
@@ -1001,7 +1012,7 @@ function XPerl_Check_MakePlayerList()
 				end
 
 			elseif (resType == "res") then
-				local p = results[name]
+				local p = results[plainName or ""]
 				local fr, frr, nr, sr, ar = 0, 0, 0, 0, 0
 				if (p) then
 					fr, frr, nr, sr, ar = p.fr, p.frr, p.nr, p.sr, p.ar
@@ -1013,7 +1024,7 @@ function XPerl_Check_MakePlayerList()
 				tinsert(XPerl_PlayerList, {["name"] = name, unit = "raid"..i, ["fr"] = fr, ["frr"] = frr, ["nr"] = nr, ["sr"] = sr, ["ar"] = ar, ["class"] = class, connected = (UnitIsConnected("raid"..i) == 1), ["noCTRA"] = noCTRA})
 
 			elseif (resType == "dur") then
-				local p = results[name]
+				local p = results[plainName or ""]
 				local dur, broken = 0, 0
 				if (p) then
 					dur, broken = p.dur, p.broken
@@ -1878,7 +1889,10 @@ function XPerl_Check_ActiveScan()
 	local function CheckSlot(unit, slot)
 		local link = GetInventoryItemLink(unit, slot)
 		local eq
-		local name = UnitName(unit)
+		local name = XPerl_Plain(UnitName(unit)) -- a key; secret ones aren't tracked
+		if (not name) then
+			return
+		end
 
 		if (link) then
 			local itemId = strmatch(link, "item:(%d+):")
@@ -1913,6 +1927,7 @@ function XPerl_Check_ActiveScan()
 	for i = 1, GetNumGroupMembers() do
 		local name, _, _, _, _, _, zone = GetRaidRosterInfo(i)
 		local unit = "raid"..i
+		name = name or unit -- a row the client keeps secret is keyed by its slot
 		local new
 		local myScan = XPerl_ActiveScan[name]
 

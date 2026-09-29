@@ -219,7 +219,7 @@ local function XPerl_Player_Pet_UpdateName(self)
 	local partyid = self.partyid
 	local petname = UnitName(partyid)
 
-	if (petname == UNKNOWN) then
+	if (XPerl_Plain(petname) == UNKNOWN) then
 		self.nameFrame.text:SetText("")
 	else
 		self.nameFrame.text:SetText(petname)

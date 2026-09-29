@@ -2,6 +2,13 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+
+local UnitIsGroupLeader = XPerl_SafeUnitAPI(UnitIsGroupLeader)
+local UnitIsGroupAssistant = XPerl_SafeUnitAPI(UnitIsGroupAssistant)
+
 local AddonName, Addon = ...
 
 XPerl_SetModuleRevision("$Revision: cd469ddf009de44eb4c4cd248a7ab1a7cf618486 $")
@@ -141,7 +148,7 @@ function XPerl_AdminCheckMyRank()
 			local me = UnitName("player")
 			for i = 1,GetNumGroupMembers() do
 				local name, rank = GetRaidRosterInfo(i)
-				if (name == me) then
+				if (XPerl_Plain(name) == me) then
 					if (rank > 0) then
 						XPerl_AdminFrame:Show()
 					else
@@ -178,7 +185,9 @@ function XPerl_SaveRoster(saveName)
 
 	for i = 1,GetNumGroupMembers() do
 		local name, _, subgroup, _, _, fileName = GetRaidRosterInfo(i)
-		Roster[name] = {group = subgroup, class = fileName}
+		if (name) then -- nil when the client keeps the row secret
+			Roster[name] = {group = subgroup, class = fileName}
+		end
 	end
 
 	if (not ZPerl_Admin.SavedRosters) then
@@ -201,6 +210,8 @@ local function LoadRoster()
 	-- Store the current raid roster, and a list of players in the raid, but not in the saved roster
 	for i = 1,GetNumGroupMembers() do
 		local name, _, subgroup, _, _, fileName = GetRaidRosterInfo(i)
+		-- A row the client keeps secret has no name; key it by its slot instead.
+		name = name or ("raid"..i)
 		CurrentRoster[name] = {index = i, group = subgroup, class = fileName}
 
 		if (not SavedRoster[name]) then

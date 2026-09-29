@@ -3,6 +3,9 @@
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
 -- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+
 local UnitIsPVP = XPerl_SafeUnitAPI(UnitIsPVP)
 local UnitIsPVPFreeForAll = XPerl_SafeUnitAPI(UnitIsPVPFreeForAll)
 local UnitFactionGroup = XPerl_SafeUnitAPI(UnitFactionGroup)
@@ -43,7 +46,7 @@ local format = format
 
 local GetDifficultyColor = GetDifficultyColor or GetQuestDifficultyColor
 local GetNumGroupMembers = GetNumGroupMembers
-local UnitGroupRolesAssigned = UnitGroupRolesAssigned
+local UnitGroupRolesAssigned = XPerl_SafeUnitAPI(UnitGroupRolesAssigned)
 local UnitHealth = UnitHealth
 local UnitIsAFK = XPerl_SafeUnitAPI(UnitIsAFK)
 local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
@@ -447,6 +450,15 @@ local function XPerl_Player_UpdateXP(self)
 			local playerxp = UnitXP("player")
 			local playerxpmax = UnitXPMax("player")
 			local playerxprest = GetXPExhaustion() or 0
+			-- Forever: if the numbers are secret, the bar still fills (a status
+			-- bar takes a secret) but no sums or text can be made from them.
+			if XPerl_Secret(playerxp, playerxpmax, playerxprest) then
+				pcall(xpBar.SetMinMaxValues, xpBar, 0, playerxpmax)
+				pcall(xpBar.SetValue, xpBar, playerxp)
+				xpBar.text:SetText("")
+				xpBar.percent:SetText("")
+				return
+			end
 			xpBar:SetMinMaxValues(0, playerxpmax)
 			restBar:SetMinMaxValues(0, playerxpmax)
 			xpBar:SetValue(playerxp)
@@ -630,7 +642,7 @@ local function XPerl_Player_DruidBarUpdate(self)
 	end
 
 	--local druidBarExtra
-	if ((playerClass == "DRUID" or playerClass == "PRIEST") and UnitPowerType(self.partyid) > 0) or (playerClass == "SHAMAN" and not IsClassic and (GetSpecialization and GetSpecialization()) == 1 and GetShapeshiftForm() == 0) then -- Shaman's UnitPowerType is buggy
+	if ((playerClass == "DRUID" or playerClass == "PRIEST") and (XPerl_Plain(UnitPowerType(self.partyid)) or 0) > 0) or (playerClass == "SHAMAN" and not IsClassic and (GetSpecialization and GetSpecialization()) == 1 and GetShapeshiftForm() == 0) then -- Shaman's UnitPowerType is buggy
 		if (pconf.values) then
 			druidBar.text:Show()
 		else
@@ -730,7 +742,7 @@ local function XPerl_Player_UpdateMana(self)
 	--mb.text:SetFormattedText("%d/%d", playermana, playermanamax)
 	XPerl_SetValuedText(mb.text, playermana, playermanamax)
 
-	if (pType >= 1 or UnitPowerMax(self.partyid, pType) < 1) then
+	if (pType >= 1 or (XPerl_Plain(UnitPowerMax(self.partyid, pType)) or 0) < 1) then
 		mb.percent:SetText(playermana)
 	else
 		mb.percent:SetFormattedText(percD, percent * 100)

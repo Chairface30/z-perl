@@ -3,6 +3,13 @@
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
 -- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+local UnitGroupRolesAssigned = XPerl_SafeUnitAPI(UnitGroupRolesAssigned)
+local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+
+local CheckInteractDistance = XPerl_SafeRangeAPI(CheckInteractDistance)
+
 local UnitIsAFK = XPerl_SafeUnitAPI(UnitIsAFK)
 local UnitIsDND = XPerl_SafeUnitAPI(UnitIsDND)
 local UnitIsPVP = XPerl_SafeUnitAPI(UnitIsPVP)
@@ -11,7 +18,7 @@ local UnitFactionGroup = XPerl_SafeUnitAPI(UnitFactionGroup)
 local UnitAffectingCombat = XPerl_SafeUnitAPI(UnitAffectingCombat)
 local UnitIsPlayer = XPerl_SafeUnitAPI(UnitIsPlayer)
 local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
-local UnitIsVisible = XPerl_SafeUnitAPI(UnitIsVisible)
+local UnitIsVisible = XPerl_SafeTrueAPI(UnitIsVisible)
 local UnitClass = XPerl_SafeUnitAPI(UnitClass)
 local UnitIsGroupLeader = XPerl_SafeUnitAPI(UnitIsGroupLeader)
 local UnitIsMercenary = XPerl_SafeUnitAPI(UnitIsMercenary)
@@ -38,7 +45,7 @@ local format = format
 
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
-local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitIsConnected = XPerl_SafeTrueAPI(UnitIsConnected)
 local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
 local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
 local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
@@ -170,7 +177,7 @@ local function onAttrChanged(self, name, value)
 	if (name == "unit") then
 		if (value and value ~= "party0") then
 			SetFrameArray(self, value)
-			if (self.partyid ~= value or self.lastName ~= UnitName(value) or XPerl_GUIDDiffers(self.lastGUID, UnitGUID(value), true)) then
+			if (self.partyid ~= value or self.lastName ~= XPerl_Plain(UnitName(value)) or XPerl_GUIDDiffers(self.lastGUID, UnitGUID(value), true)) then
 				if (conf) then
 					XPerl_Party_UpdateDisplay(self, true)
 				end
@@ -643,7 +650,7 @@ end
 local function XPerl_Party_UpdateName(self)
 	local partyid = self.partyid
 	local Partyname = UnitName(partyid)
-	self.lastName = Partyname
+	self.lastName = XPerl_Plain(Partyname) -- for comparing; nil when secret
 	self.lastGUID = UnitGUID(partyid)
 	if (Partyname) then
 		self.nameFrame.text:SetFontObject(GameFontNormal)
@@ -930,7 +937,7 @@ function XPerl_Party_SingleGroup()
 	end
 	for i = 1, num do
 		local _, _, subgroup = GetRaidRosterInfo(i)
-		if (subgroup > 1) then
+		if ((subgroup or 1) > 1) then
 			return
 		end
 	end
@@ -1415,13 +1422,13 @@ local function BuildGuidMap()
 		--rosterGuids = XPerl_GetReusableTable()
 		wipe(rosterGuids)
 		if partyHeader:GetAttribute("showPlayer") then
-			local guid = UnitGUID("player")
+			local guid = XPerl_Plain(UnitGUID("player"))
 			if (guid) then
 				rosterGuids[guid] = "player"
 			end
 		end
 		for i = 1, GetNumSubgroupMembers() do
-			local guid = UnitGUID("party"..i)
+			local guid = XPerl_Plain(UnitGUID("party"..i))
 			if (guid) then
 				rosterGuids[guid] = "party"..i
 			end

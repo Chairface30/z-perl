@@ -2,13 +2,25 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+
+local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
+local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
+local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
+local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
+local UnitIsConnected = XPerl_SafeTrueAPI(UnitIsConnected)
+local UnitIsVisible = XPerl_SafeTrueAPI(UnitIsVisible)
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
+local UnitInParty = XPerl_SafeUnitAPI(UnitInParty)
+
 local cast
 local MonUnits = {}			-- Fixed list of all monitor units
 local TableUnits = {}			-- Dynamic list of units indexed by raid id, changed on attr change
 ZPerlRaidMonConfig = {}
 local config = ZPerlRaidMonConfig
 
-local UnitCastingInfo, UnitChannelInfo = UnitCastingInfo, UnitChannelInfo
+local UnitCastingInfo, UnitChannelInfo = XPerl_SafeCastAPI(UnitCastingInfo), XPerl_SafeCastAPI(UnitChannelInfo)
 local LCC = LibStub("LibClassicCasterino", true)
 if LCC then
 	UnitCastingInfo = function(unit) return LCC:UnitCastingInfo(unit); end

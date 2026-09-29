@@ -5,7 +5,7 @@
 -- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
 local UnitAffectingCombat = XPerl_SafeUnitAPI(UnitAffectingCombat)
 local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
-local UnitIsVisible = XPerl_SafeUnitAPI(UnitIsVisible)
+local UnitIsVisible = XPerl_SafeTrueAPI(UnitIsVisible)
 
 local XPerl_Party_Pet_Events = { }
 local conf, pconf, petconf
@@ -29,7 +29,7 @@ local UnitExists = UnitExists
 local UnitGUID = UnitGUID
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
-local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitIsConnected = XPerl_SafeTrueAPI(UnitIsConnected)
 local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
 local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
 local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
@@ -83,15 +83,17 @@ local function XPerl_Party_Pet_UpdateGUIDs()
 	--guids = new()
 	wipe(guids)
 	if pconf.showPlayer and UnitExists("pet") then
-		local petGUID = UnitGUID("pet")
+		local petGUID = XPerl_Plain(UnitGUID("pet"))
 		if petGUID then
 			guids[petGUID] = PartyPetFrames["pet"]
 		end
 	end
 	for i = 1, GetNumSubgroupMembers() do
 		local id = "partypet"..i
-		if (UnitExists(id)) then
-			guids[UnitGUID(id)] = PartyPetFrames[id]
+		-- A secret GUID can't be a key; that pet is skipped.
+		local guid = UnitExists(id) and XPerl_Plain(UnitGUID(id))
+		if (guid) then
+			guids[guid] = PartyPetFrames[id]
 		end
 	end
 end
@@ -265,7 +267,7 @@ local function XPerl_Party_Pet_UpdateName(self)
 		return
 	end
 
-	self.petName = UnitName(self.partyid)
+	self.petName = XPerl_Plain(UnitName(self.partyid)) -- for comparing; nil when secret
 
 	if not petconf.name then
 		return
@@ -565,7 +567,7 @@ local function XPerl_Party_Pet_OnUpdate(self, elapsed)
 			end
 		end
 
-		if newName ~= self.petName then
+		if XPerl_Plain(newName) ~= self.petName then
 			XPerl_Party_Pet_UpdateGUIDs()
 			XPerl_Party_Pet_UpdateName(self)
 		end

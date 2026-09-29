@@ -101,8 +101,10 @@ local function XPerl_RaidPet_UpdateGUIDs()
 	guids = { }
 	for i = 1, GetNumGroupMembers() do
 		local id = "raidpet"..i
-		if (UnitExists(id)) then
-			guids[UnitGUID(id)] = RaidPetFrameArray[id]
+		-- A secret GUID can't be a key; that pet is skipped.
+		local guid = UnitExists(id) and XPerl_Plain(UnitGUID(id))
+		if (guid) then
+			guids[guid] = RaidPetFrameArray[id]
 		end
 	end
 end
@@ -132,7 +134,7 @@ local function XPerl_RaidPets_UpdateName(self)
 
 	self.petGUID = UnitGUID(partyid)
 	self.petID = partyid
-	self.petName = name
+	self.petName = XPerl_Plain(name) -- for comparing; nil when secret
 	self:SetAlpha(conf.transparency.frame)
 
 	if (self.ownerid) then
@@ -249,7 +251,7 @@ local function XPerl_RaidPets_OnUpdate(self, elapsed)
 			end
 		end
 
-		if newName ~= self.petName then
+		if XPerl_Plain(newName) ~= self.petName then
 			XPerl_RaidPet_UpdateGUIDs()
 			XPerl_RaidPets_UpdateName(self)
 		end

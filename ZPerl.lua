@@ -51,7 +51,7 @@ local tremove = tremove
 local type = type
 local unpack = unpack
 
-local CheckInteractDistance = CheckInteractDistance
+local CheckInteractDistance = XPerl_SafeRangeAPI(CheckInteractDistance)
 -- the 2.5.5 Anniversary client removed the legacy FrameXML DebuffTypeColor global;
 -- recreate it with the classic values (published as a global on purpose: ZPerl core
 -- loads first and ZPerl_PlayerBuffs reads the global directly)
@@ -74,7 +74,7 @@ local GetLocale = GetLocale
 local GetNumAddOns = GetNumAddOns
 local GetNumGroupMembers = GetNumGroupMembers
 local GetNumSubgroupMembers = GetNumSubgroupMembers
-local GetRaidRosterInfo = GetRaidRosterInfo
+local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
 local GetRaidTargetIndex = XPerl_SafeUnitAPI(GetRaidTargetIndex)
 local GetReadyCheckStatus = GetReadyCheckStatus
 local GetRealmName = GetRealmName
@@ -87,9 +87,9 @@ local IsAddOnLoaded = IsAddOnLoaded
 local IsAltKeyDown = IsAltKeyDown
 local IsControlKeyDown = IsControlKeyDown
 local IsInRaid = IsInRaid
-local IsItemInRange = IsItemInRange
+local IsItemInRange = XPerl_SafeRangeAPI(IsItemInRange)
 local IsShiftKeyDown = IsShiftKeyDown
-local IsSpellInRange = IsSpellInRange
+local IsSpellInRange = XPerl_SafeRangeAPI(IsSpellInRange)
 local SecureButton_GetUnit = SecureButton_GetUnit
 local SetCursor = SetCursor
 local SetPortraitTexture = SetPortraitTexture
@@ -112,10 +112,10 @@ local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
 local UnitInParty = XPerl_SafeUnitAPI(UnitInParty)
 local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
-local UnitInRange = XPerl_SafeUnitAPI(UnitInRange)
+local UnitInRange = XPerl_SafeRangeAPI(UnitInRange)
 local UnitInVehicle = XPerl_SafeUnitAPI(UnitInVehicle)
 local UnitIsAFK = XPerl_SafeUnitAPI(UnitIsAFK)
-local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitIsConnected = XPerl_SafeTrueAPI(UnitIsConnected)
 local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
 local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
 local UnitIsEnemy = XPerl_SafeUnitAPI(UnitIsEnemy)
@@ -125,7 +125,7 @@ local UnitIsPlayer = XPerl_SafeUnitAPI(UnitIsPlayer)
 local UnitIsPVP = XPerl_SafeUnitAPI(UnitIsPVP)
 local UnitIsTapDenied = XPerl_SafeUnitAPI(UnitIsTapDenied)
 local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
-local UnitIsVisible = XPerl_SafeUnitAPI(UnitIsVisible)
+local UnitIsVisible = XPerl_SafeTrueAPI(UnitIsVisible)
 local UnitLevel = UnitLevel
 local UnitName = UnitName
 local UnitPlayerControlled = XPerl_SafeUnitAPI(UnitPlayerControlled)
@@ -1780,7 +1780,8 @@ function XPerl_GetDisplayedPowerType(unitID) -- copied from CompactUnitFrame.lua
 		return ALTERNATE_POWER_INDEX
 	else
 		-- UnitPowerType is nil for units that don't exist yet (early login events, pet/roster churn)
-		return UnitPowerType(unitID) or 0
+		-- Secret on Forever reads as mana (0): the type indexes the color table.
+		return XPerl_Plain(UnitPowerType(unitID)) or 0
 	end
 end
 
@@ -1942,7 +1943,7 @@ function XPerl_ReactionColour(argUnit)
 		if UnitIsTapDenied(argUnit) and not UnitIsFriend("player", argUnit) then
 			return conf.colour.reaction.tapped
 		else
-			local reaction = UnitReaction(argUnit, "player")
+			local reaction = XPerl_Plain(UnitReaction(argUnit, "player")) -- secret: the fallback below
 			if (reaction) then
 				if (reaction >= 5) then
 					return conf.colour.reaction.friend
@@ -3892,12 +3893,14 @@ end
 -- XPerl_Unit_UpdateLevel
 function XPerl_Unit_UpdateLevel(self)
 	local level = UnitLevel(self.partyid)
-	local color = GetDifficultyColor(level)
+	-- A secret level still shows; it just can't pick its difficulty color.
+	local plainLevel = XPerl_Plain(level)
+	local color = plainLevel and GetDifficultyColor(plainLevel) or NORMAL_FONT_COLOR or {r = 1, g = 0.82, b = 0}
 	if (self.levelFrame) then
 		self.levelFrame.text:SetTextColor(color.r,color.g,color.b)
 		self.levelFrame.text:SetText(level)
 	elseif (self.nameFrame.level) then
-		if (level == 0) then
+		if (plainLevel == 0) then
 			level = ""
 		end
 		self.nameFrame.level:SetTextColor(color.r,color.g,color.b)

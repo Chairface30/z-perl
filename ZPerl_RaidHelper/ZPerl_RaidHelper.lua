@@ -6,6 +6,11 @@ XPerl_SetModuleRevision("$Revision: 42efb275e5740b2e735b5ecdaac0f954d23f0583 $")
 
 ZPerl_MainTanks = {}
 -- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+local UnitGroupRolesAssigned = XPerl_SafeUnitAPI(UnitGroupRolesAssigned)
+local GetPartyAssignment = XPerl_SafeUnitAPI(GetPartyAssignment)
+local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+
 local UnitAffectingCombat = XPerl_SafeUnitAPI(UnitAffectingCombat)
 local UnitPlayerControlled = XPerl_SafeUnitAPI(UnitPlayerControlled)
 local UnitIsFriend = XPerl_SafeUnitAPI(UnitIsFriend)
@@ -13,7 +18,7 @@ local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
 local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
 local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
 local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
-local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitIsConnected = XPerl_SafeTrueAPI(UnitIsConnected)
 local UnitClass = XPerl_SafeUnitAPI(UnitClass)
 local GetRaidTargetIndex = XPerl_SafeUnitAPI(GetRaidTargetIndex)
 local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
@@ -117,7 +122,8 @@ local function UpdateUnit(self,forcedUpdate)
 
 	self.healthBar.bg:Show()
 
-	if (name and name ~= UNKNOWNOBJECT) then
+	-- A secret name can't be compared, but still shows.
+	if (name and (XPerl_Secret(name) or name ~= UNKNOWNOBJECT)) then
 		-- Name
 		self.text:SetText(name)
 		self.text:SetPoint("BOTTOMRIGHT", self, "TOPRIGHT", 0, -12)
@@ -372,7 +378,8 @@ end
 -- GetRaidIDByName
 local function GetRaidIDByName(name)
 	for i = 1, GetNumGroupMembers() do
-		if (strlower(UnitName("raid"..i)) == strlower(name)) then
+		local n = XPerl_Plain(UnitName("raid"..i)) -- nil when secret
+		if (n and strlower(n) == strlower(name)) then
 			return i
 		end
 	end
@@ -457,12 +464,13 @@ function XPerl_MTRosterChanged()
 		for i = 1, GetNumGroupMembers() do
 			local unitid = "raid"..i
 			if ((not IsClassic and UnitGroupRolesAssigned(unitid) == "TANK") or GetPartyAssignment("maintank", unitid)) then
-				local name = GetUnitName(unitid, true)
-				local name2, realm = UnitName(unitid)
-				if (name ~= name2) then
+				-- Names are keys and compared here: secret ones (nil) are skipped.
+				local name = XPerl_Plain(GetUnitName(unitid, true))
+				local name2, realm = XPerl_PlainName(unitid)
+				if (name and name2 and realm and name ~= name2) then
 					name = name2.."-"..realm
 				end
-				if (name ~= UNKNOWN) then
+				if (name and name ~= UNKNOWN) then
 					if (oldBlizzardNames[name]) then
 						-- We already had this tank, so leave it where it is
 						oldBlizzardNames[name] = nil
@@ -534,7 +542,8 @@ local function ProcessCTRAMessage(unitName, msg)
 			num = tonumber(num)
 			local mtID = 0
 			for i = 1, GetNumGroupMembers() do
-				if (strlower(UnitName("raid"..i)) == strlower(name)) then
+				local n = XPerl_Plain(UnitName("raid"..i)) -- nil when secret
+		if (n and strlower(n) == strlower(name)) then
 					mtID = i
 					break
 				end
@@ -950,7 +959,7 @@ local function CheckArrowPosition()
 			end
 
 			local name = UnitName(xunit)
-			if (maAssignment and unit.type == arrowType and not maDone and name == maAssignment) then
+			if (maAssignment and unit.type == arrowType and not maDone and XPerl_Plain(name) == maAssignment) then
 				maDone = true
 				XPerl_MainAssist:SetParent(unit.healthBar)
 				XPerl_MainAssist:ClearAllPoints()
@@ -963,7 +972,7 @@ local function CheckArrowPosition()
 				XPerl_MainAssist:Show()
 			end
 
-			if (tankAssignment and unit.type == arrowType and not mtDone and name == tankAssignment) then
+			if (tankAssignment and unit.type == arrowType and not mtDone and XPerl_Plain(name) == tankAssignment) then
 				mtDone = true
 				XPerl_MainTank:SetParent(unit.healthBar)
 				XPerl_MainTank:ClearAllPoints()
@@ -1156,7 +1165,7 @@ local function SetVisibility()
 			local u = v:GetAttribute("unit")
 			if (u) then
 				local lbl
-				local name = UnitName(u)
+				local name = XPerl_Plain(UnitName(u)) -- compared only; nil when secret
 				for i, tank in pairs(MainTanks) do
 					if (tank[2] == name) then
 						lbl = i

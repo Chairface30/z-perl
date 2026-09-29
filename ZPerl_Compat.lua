@@ -27,9 +27,18 @@ end)()
 do
     local issecret = issecretvalue
     -- Same number of results as the original call, secrets turned to nil.
+    -- Up to four is the common case and needs no table; cast info returns
+    -- about nine, which goes through one.
     local function Clean(...)
         local n = select("#", ...)
         if n == 0 then return end
+        if n > 4 then
+            local t = { ... }
+            for i = 1, n do
+                if issecret(t[i]) then t[i] = nil end
+            end
+            return unpack(t, 1, n)
+        end
         local a, b, c, d = ...
         if issecret(a) then a = nil end
         if n == 1 then return a end
@@ -46,7 +55,76 @@ do
             return Clean(func(...))
         end
     end
+
+    -- Cast info (UnitCastingInfo, UnitChannelInfo): all or nothing. Other
+    -- units' casts arrive with the name, times and ID secret, and a cast with
+    -- any part unreadable can't be drawn, so it reads as no cast at all.
+    local function AnySecret(...)
+        for i = 1, select("#", ...) do
+            if issecret((select(i, ...))) then return true end
+        end
+        return false
+    end
+    local function Readable(...)
+        if AnySecret(...) then return end
+        return ...
+    end
+    function XPerl_SafeCastAPI(func)
+        if not (issecret and func) then return func end
+        return function(...)
+            return Readable(func(...))
+        end
+    end
+
+    -- Range checks (IsItemInRange, IsSpellInRange, CheckInteractDistance,
+    -- UnitInRange): a secret answer reads as in range, so a frame the client
+    -- won't give a distance for is never faded out as if it were far away.
+    local function InRange(...)
+        local n = select("#", ...)
+        if n == 0 then return end
+        local a, b = ...
+        if issecret(a) then a = true end
+        if n == 1 then return a end
+        if issecret(b) then b = true end
+        return a, b
+    end
+    function XPerl_SafeRangeAPI(func)
+        if not (issecret and func) then return func end
+        return function(...)
+            return InRange(func(...))
+        end
+    end
+
+    -- Yes/no questions where "don't know" should read as yes: is the unit
+    -- connected, is it visible. Read as no, a secret answer would grey a
+    -- group member out as Offline or hide them.
+    XPerl_SafeTrueAPI = XPerl_SafeRangeAPI
+
+    -- A value that is safe to compare, do sums with, join or use as a table
+    -- key: the value itself, or nil when it is secret.
+    function XPerl_Plain(value)
+        if issecret and issecret(value) then return nil end
+        return value
+    end
+
+    -- UnitName for bookkeeping (roster keys, "is this me", matching a saved
+    -- name): name and realm, or nothing when either is secret. Never use it
+    -- for what a frame shows; a secret name still displays as it is.
+    function XPerl_PlainName(unit)
+        local name, realm = UnitName(unit)
+        if issecret and (issecret(name) or issecret(realm)) then return nil end
+        return name, realm
+    end
 end
+
+-- Safe copies for the unit menu below (Inspect and Trade entries).
+local SafeUnitIsPlayer = XPerl_SafeUnitAPI(UnitIsPlayer)
+local SafeUnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
+local SafeCheckInteractDistance = XPerl_SafeRangeAPI(CheckInteractDistance)
+local SafeUnitInParty = XPerl_SafeUnitAPI(UnitInParty)
+local SafeUnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
+local SafeUnitIsGroupLeader = XPerl_SafeUnitAPI(UnitIsGroupLeader)
+local SafeUnitIsGroupAssistant = XPerl_SafeUnitAPI(UnitIsGroupAssistant)
 
 -- Item functions: WoW Forever has them only in C_Item.
 if not GetItemInfo and C_Item and C_Item.GetItemInfo then
@@ -530,7 +608,7 @@ if not XPerl_ShowGenericMenu then
             MSA_DropDownMenu_AddButton(info, level)
             
             -- Clear Focus (if this unit is focus)
-            if UnitIsUnit(unit, "focus") then
+            if SafeUnitIsUnit(unit, "focus") then
                 info = MSA_DropDownMenu_CreateInfo()
                 info.text = CLEAR_FOCUS
                 info.notCheckable = true
@@ -539,7 +617,7 @@ if not XPerl_ShowGenericMenu then
             end
             
             -- Inspect (if player and in range)
-            if UnitIsPlayer(unit) and CheckInteractDistance(unit, 1) and not UnitIsUnit(unit, "player") then
+            if SafeUnitIsPlayer(unit) and SafeCheckInteractDistance(unit, 1) and not SafeUnitIsUnit(unit, "player") then
                 info = MSA_DropDownMenu_CreateInfo()
                 info.text = INSPECT
                 info.notCheckable = true
@@ -548,7 +626,7 @@ if not XPerl_ShowGenericMenu then
             end
             
             -- Trade (if player and in range)
-            if UnitIsPlayer(unit) and CheckInteractDistance(unit, 2) and not UnitIsUnit(unit, "player") then
+            if SafeUnitIsPlayer(unit) and SafeCheckInteractDistance(unit, 2) and not SafeUnitIsUnit(unit, "player") then
                 info = MSA_DropDownMenu_CreateInfo()
                 info.text = TRADE
                 info.notCheckable = true
@@ -557,7 +635,7 @@ if not XPerl_ShowGenericMenu then
             end
             
             -- Follow (if player)
-            if UnitIsPlayer(unit) and not UnitIsUnit(unit, "player") then
+            if SafeUnitIsPlayer(unit) and not SafeUnitIsUnit(unit, "player") then
                 info = MSA_DropDownMenu_CreateInfo()
                 info.text = FOLLOW
                 info.notCheckable = true
@@ -566,7 +644,7 @@ if not XPerl_ShowGenericMenu then
             end
             
             -- Whisper (if player)
-            if UnitIsPlayer(unit) and not UnitIsUnit(unit, "player") then
+            if SafeUnitIsPlayer(unit) and not SafeUnitIsUnit(unit, "player") then
                 info = MSA_DropDownMenu_CreateInfo()
                 info.text = WHISPER
                 info.notCheckable = true
@@ -577,7 +655,7 @@ if not XPerl_ShowGenericMenu then
             end
             
             -- Invite (if player and not in group)
-            if UnitIsPlayer(unit) and not UnitIsUnit(unit, "player") and not UnitInParty(unit) and not UnitInRaid(unit) then
+            if SafeUnitIsPlayer(unit) and not SafeUnitIsUnit(unit, "player") and not SafeUnitInParty(unit) and not SafeUnitInRaid(unit) then
                 info = MSA_DropDownMenu_CreateInfo()
                 info.text = PARTY_INVITE
                 info.notCheckable = true
@@ -586,7 +664,7 @@ if not XPerl_ShowGenericMenu then
             end
             
             -- Raid target icons (if can mark)
-            if (UnitIsGroupLeader("player") or UnitIsGroupAssistant("player") or not IsInGroup()) and UnitExists(unit) then
+            if (SafeUnitIsGroupLeader("player") or SafeUnitIsGroupAssistant("player") or not IsInGroup()) and UnitExists(unit) then
                 info = MSA_DropDownMenu_CreateInfo()
                 info.text = RAID_TARGET_ICON
                 info.notCheckable = true

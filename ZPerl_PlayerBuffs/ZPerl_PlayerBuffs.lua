@@ -2,6 +2,9 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
+
 local conf, pconf
 XPerl_RequestConfig(function(new)
 	conf = new
@@ -102,7 +105,7 @@ function XPerl_Player_Buffs_Position(self)
 			local _, playerClass = UnitClass("player")
 			local extraBar
 
-			if (playerClass == "DRUID" and UnitPowerType(self.partyid) > 0 and not pconf.noDruidBar) or (playerClass == "SHAMAN" and not IsClassic and (GetSpecialization and GetSpecialization()) == 1 and GetShapeshiftForm() == 0 and not pconf.noDruidBar) or (playerClass == "PRIEST" and UnitPowerType(self.partyid) > 0 and not pconf.noDruidBar) then
+			if (playerClass == "DRUID" and (XPerl_Plain(UnitPowerType(self.partyid)) or 0) > 0 and not pconf.noDruidBar) or (playerClass == "SHAMAN" and not IsClassic and (GetSpecialization and GetSpecialization()) == 1 and GetShapeshiftForm() == 0 and not pconf.noDruidBar) or (playerClass == "PRIEST" and (XPerl_Plain(UnitPowerType(self.partyid)) or 0) > 0 and not pconf.noDruidBar) then
 				extraBar = 1
 			else
 				extraBar = 0

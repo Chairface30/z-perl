@@ -3,11 +3,15 @@
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
 -- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+local UnitGroupRolesAssigned = XPerl_SafeUnitAPI(UnitGroupRolesAssigned)
+local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+
 local UnitIsAFK = XPerl_SafeUnitAPI(UnitIsAFK)
 local UnitIsDND = XPerl_SafeUnitAPI(UnitIsDND)
 local UnitAffectingCombat = XPerl_SafeUnitAPI(UnitAffectingCombat)
 local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
-local UnitIsVisible = XPerl_SafeUnitAPI(UnitIsVisible)
+local UnitIsVisible = XPerl_SafeTrueAPI(UnitIsVisible)
 local UnitClass = XPerl_SafeUnitAPI(UnitClass)
 local GetRaidTargetIndex = XPerl_SafeUnitAPI(GetRaidTargetIndex)
 local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
@@ -59,7 +63,7 @@ local GetNumGroupMembers = GetNumGroupMembers
 local UnitGUID = UnitGUID
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
-local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitIsConnected = XPerl_SafeTrueAPI(UnitIsConnected)
 local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
 local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
 local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
@@ -73,7 +77,7 @@ local XPerl_CheckDebuffs = XPerl_CheckDebuffs
 local XPerl_ColourFriendlyUnit = XPerl_ColourFriendlyUnit
 local XPerl_ColourHealthBar = XPerl_ColourHealthBar
 
-local UnitCastingInfo, UnitChannelInfo = UnitCastingInfo, UnitChannelInfo
+local UnitCastingInfo, UnitChannelInfo = XPerl_SafeCastAPI(UnitCastingInfo), XPerl_SafeCastAPI(UnitChannelInfo)
 local LCC = LibStub("LibClassicCasterino", true)
 if LCC then
 	UnitCastingInfo = function(unit) return LCC:UnitCastingInfo(unit); end
@@ -404,7 +408,7 @@ end
 
 -- XPerl_Raid_CheckFlags
 local function XPerl_Raid_CheckFlags(partyid)
-	local unitName, realm = UnitName(partyid)
+	local unitName, realm = XPerl_PlainName(partyid)
 	if realm and realm ~= "" then
 		unitName = unitName.."-"..realm
 	end
@@ -575,12 +579,14 @@ local function XPerl_Raid_UpdateHealth(self)
 	XPerl_Raid_UpdateHealPrediction(self)
 	XPerl_Raid_UpdateResurrectionStatus(self)
 
-	local name, realm = UnitName(partyid)
+	local name, realm = XPerl_PlainName(partyid)
 	if realm and realm ~= "" then
 		name = name.."-"..realm
 	end
-	local myRoster = ZPerl_Roster[name]
-	if (name and UnitIsConnected(partyid)) then
+	local myRoster = name and ZPerl_Roster[name]
+	-- The name is for the roster only (nil when secret); whether the unit is
+	-- there at all is asked directly.
+	if (UnitExists(partyid) and UnitIsConnected(partyid)) then
 		--self.disco = nil
 		--[[if (self.feigning and not UnitBuff(partyid, feignDeath)) then
 			self.feigning = nil
@@ -1054,7 +1060,7 @@ local function XPerl_Raid_UpdatePlayerFlags(self, partyid, ...)
 	if f then
 		self = f
 
-		local unitName, realm = UnitName(partyid)
+		local unitName, realm = XPerl_PlainName(partyid)
 		if realm and realm ~= "" then
 			unitName = unitName.."-"..realm
 		end
@@ -1503,7 +1509,7 @@ local function BuildGuidMap()
 	if (IsInRaid()) then
 		rosterGuids = { }
 		for i = 1, GetNumGroupMembers() do
-			local guid = UnitGUID("raid"..i)
+			local guid = XPerl_Plain(UnitGUID("raid"..i))
 			if (guid) then
 				rosterGuids[guid] = "raid"..i
 			end
@@ -1511,11 +1517,11 @@ local function BuildGuidMap()
 	elseif (IsInGroup()) then
 		rosterGuids = { }
 		for i = 1, GetNumGroupMembers() do
-			local guid = UnitGUID("player")
+			local guid = XPerl_Plain(UnitGUID("player"))
 			if (guid) then
 				rosterGuids[guid] = "player"
 			end
-			local guid = UnitGUID("party"..i - 1)
+			local guid = XPerl_Plain(UnitGUID("party"..i - 1))
 			if (guid) then
 				rosterGuids[guid] = "party"..i - 1
 			end
@@ -1667,6 +1673,10 @@ end
 
 -- SetRes
 local function SetResStatus(resserName, resTargetName, ignoreCounter)
+	-- A secret name comes through as nil, and nil can't be a table key.
+	if (not resserName) then
+		return
+	end
 	local resEnd
 
 	if (resTargetName) then
@@ -1698,7 +1708,7 @@ end
 
 -- UNIT_SPELLCAST_START
 function XPerl_Raid_Events:UNIT_SPELLCAST_START(unit, lineGUID, spellID)
-	local unitName, realm = UnitName(unit)
+	local unitName, realm = XPerl_PlainName(unit)
 	if realm and realm ~= "" then
 		unitName = unitName.."-"..realm
 	end
@@ -1710,7 +1720,7 @@ function XPerl_Raid_Events:UNIT_SPELLCAST_START(unit, lineGUID, spellID)
 	local name, text, texture, startTime, endTime, isTradeSkill = UnitCastingInfo(unit)
 	if (resSpells[name]) then
 		local u = unit.."target"
-		local unitTargetName, realm = UnitName(u)
+		local unitTargetName, realm = XPerl_PlainName(u)
 		if realm and realm ~= "" then
 			unitTargetName = unitTargetName.."-"..realm
 		end
@@ -1723,7 +1733,7 @@ end
 -- UNIT_SPELLCAST_STOP
 function XPerl_Raid_Events:UNIT_SPELLCAST_STOP(unit)
 	if (unit) then
-		local unitName, realm = UnitName(unit)
+		local unitName, realm = XPerl_PlainName(unit)
 		if realm and realm ~= "" then
 			unitName = unitName.."-"..realm
 		end
@@ -1734,7 +1744,7 @@ end
 -- UNIT_SPELLCAST_FAILED
 function XPerl_Raid_Events:UNIT_SPELLCAST_FAILED(unit)
 	if (unit) then
-		local unitName, realm = UnitName(unit)
+		local unitName, realm = XPerl_PlainName(unit)
 		if realm and realm ~= "" then
 			unitName = unitName.."-"..realm
 		end
@@ -2394,7 +2404,7 @@ end
 -- XPerl_RaidTipExtra
 function XPerl_RaidTipExtra(unitid)
 	if (UnitInRaid(unitid)) then
-		local unitName, realm = UnitName(unitid)
+		local unitName, realm = XPerl_PlainName(unitid)
 		if realm and realm ~= "" then
 			unitName = unitName.."-"..realm
 		end

@@ -53,13 +53,13 @@ local type = type
 local unpack = unpack
 
 local CanInspect = CanInspect
-local CheckInteractDistance = CheckInteractDistance
+local CheckInteractDistance = XPerl_SafeRangeAPI(CheckInteractDistance)
 local GetComboPoints = GetComboPoints
 local GetDifficultyColor = GetDifficultyColor or GetQuestDifficultyColor
 local GetInspectSpecialization = GetInspectSpecialization
 local GetLootMethod = GetLootMethod
 local GetNumGroupMembers = GetNumGroupMembers
-local GetRaidRosterInfo = GetRaidRosterInfo
+local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
 local GetSpecializationInfoByID = GetSpecializationInfoByID
 local GetSpellInfo = GetSpellInfo
 local GetTime = GetTime
@@ -83,7 +83,7 @@ local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
 local UnitInVehicle = XPerl_SafeUnitAPI(UnitInVehicle)
 local UnitIsAFK = XPerl_SafeUnitAPI(UnitIsAFK)
 local UnitIsBattlePetCompanion = XPerl_SafeUnitAPI(UnitIsBattlePetCompanion)
-local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitIsConnected = XPerl_SafeTrueAPI(UnitIsConnected)
 local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
 local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
 local UnitIsEnemy = XPerl_SafeUnitAPI(UnitIsEnemy)
@@ -94,7 +94,7 @@ local UnitIsPlayer = XPerl_SafeUnitAPI(UnitIsPlayer)
 local UnitIsPVP = XPerl_SafeUnitAPI(UnitIsPVP)
 local UnitIsPVPFreeForAll = XPerl_SafeUnitAPI(UnitIsPVPFreeForAll)
 local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
-local UnitIsVisible = XPerl_SafeUnitAPI(UnitIsVisible)
+local UnitIsVisible = XPerl_SafeTrueAPI(UnitIsVisible)
 local UnitIsWildBattlePet = XPerl_SafeUnitAPI(UnitIsWildBattlePet)
 local UnitLevel = UnitLevel
 local UnitName = UnitName
@@ -482,7 +482,9 @@ local function XPerl_Target_UpdateLevel(self)
 		self.levelFrame:Show()
 		self.levelFrame.skull:Hide()
 		self.levelFrame:SetWidth(27)
-		if (targetlevel < 0) then
+		-- A secret level still shows; it can't be compared or colored.
+		local plainLevel = XPerl_Plain(targetlevel)
+		if (plainLevel and plainLevel < 0) then
 			--[[if (UnitClassification(self.partyid) == "worldboss") then
 				self.levelFrame.text:Hide()
 				self.levelFrame.skull:Show()
@@ -492,11 +494,11 @@ local function XPerl_Target_UpdateLevel(self)
 			self.levelFrame.text:Hide()
 			self.levelFrame.skull:Show()
 		else
-			local color = GetDifficultyColor(targetlevel)
+			local color = plainLevel and GetDifficultyColor(plainLevel) or NORMAL_FONT_COLOR or {r = 1, g = 0.82, b = 0}
 			self.levelFrame.text:SetTextColor(color.r, color.g, color.b)
 			self.levelFrame.text:Show()
 			if (not self.conf.elite and (UnitClassification(self.partyid) == "elite" or UnitClassification(self.partyid) == "worldboss")) then
-				self.levelFrame.text:SetFormattedText("%d+", targetlevel)
+				pcall(self.levelFrame.text.SetFormattedText, self.levelFrame.text, "%d+", targetlevel)
 				self.levelFrame:SetWidth(33)
 			end
 		end
@@ -615,6 +617,10 @@ end
 
 local function UnitFullName(unit)
 	local n,s = UnitName(unit)
+	-- A secret name still shows; it just can't have the realm joined on.
+	if XPerl_Secret(n, s) then
+		return n
+	end
 	if (s and s ~= "") then
 		return n.."-"..s
 	end
@@ -676,7 +682,7 @@ do
 			end
 			lastInspectTime = GetTime()
 			lastInspectGUID = UnitGUID(unit)
-			lastInspectName = UnitFullName(unit)
+			lastInspectName = XPerl_Plain(UnitFullName(unit))
 		end)
 
 		-- INSPECT_READY
@@ -695,8 +701,8 @@ do
 			end
 
 			local partyid = self.partyid
-			if (UnitIsVisible(partyid) and UnitExists(partyid) and UnitIsPlayer(partyid) and UnitLevel(partyid) > 10) then
-				local name = UnitName(partyid)
+			if (UnitIsVisible(partyid) and UnitExists(partyid) and UnitIsPlayer(partyid) and (XPerl_Plain(UnitLevel(partyid)) or 0) > 10) then
+				local name = XPerl_Plain(UnitName(partyid)) -- a cache key; nil when secret
 				if (not name) then
 					return
 				else
@@ -735,7 +741,7 @@ do
 										inspectReady = nil
 										lastInspectInvalid = nil
 										lastInspectPending = 0
-										if (lastInspectName ~= UnitFullName(partyid)) then
+										if (lastInspectName ~= XPerl_Plain(UnitFullName(partyid))) then
 											NotifyInspect(partyid)
 										end
 									end
@@ -1869,6 +1875,7 @@ end
 
 function XPerl_Target_ComboFrame_Update()
 	local comboPoints = IsClassic and GetComboPoints("player", "target") or UnitPower(UnitHasVehicleUI("player") and "vehicle" or "player", Enum.PowerType.ComboPoints)
+	comboPoints = XPerl_Plain(comboPoints) or 0 -- secret on Forever: shown as none
 	if comboPoints > 0 and UnitCanAttack((not IsClassic and UnitHasVehicleUI("player")) and "vehicle" or "player", "target") then
 		if not ComboFrame:IsShown() then
 			ComboFrame:Show()

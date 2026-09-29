@@ -26,14 +26,14 @@ local UnitExists = UnitExists
 local UnitFactionGroup = XPerl_SafeUnitAPI(UnitFactionGroup)
 local UnitGUID = UnitGUID
 local UnitIsAFK = XPerl_SafeUnitAPI(UnitIsAFK)
-local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitIsConnected = XPerl_SafeTrueAPI(UnitIsConnected)
 local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
 local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
 local UnitIsFriend = XPerl_SafeUnitAPI(UnitIsFriend)
 local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
 local UnitIsPVP = XPerl_SafeUnitAPI(UnitIsPVP)
 local UnitIsPVPFreeForAll = XPerl_SafeUnitAPI(UnitIsPVPFreeForAll)
-local UnitIsVisible = XPerl_SafeUnitAPI(UnitIsVisible)
+local UnitIsVisible = XPerl_SafeTrueAPI(UnitIsVisible)
 local UnitLevel = UnitLevel
 local UnitName = UnitName
 local UnitPower = UnitPower
@@ -309,18 +309,21 @@ function XPerl_TargetTarget_UpdateDisplay(self, force)
 
 			if self.conf.level then
 				local TargetTargetLevel = UnitLevel(partyid)
-				local color = GetDifficultyColor(TargetTargetLevel)
+				-- A secret level still shows; it can't be compared, colored or
+				-- have a "+" added.
+				local plainLevel = XPerl_Plain(TargetTargetLevel)
+				local color = plainLevel and GetDifficultyColor(plainLevel) or NORMAL_FONT_COLOR or {r = 1, g = 0.82, b = 0}
 
 				self.levelFrame.text:Show()
 				self.levelFrame.skull:Hide()
-				if TargetTargetLevel == -1 then
+				if plainLevel == -1 then
 					if UnitClassification(partyid) == "worldboss" then
 						TargetTargetLevel = "Boss"
 					else
 						self.levelFrame.text:Hide()
 						self.levelFrame.skull:Show()
 					end
-				elseif (strfind(UnitClassification(partyid) or "", "elite")) then
+				elseif (plainLevel and strfind(UnitClassification(partyid) or "", "elite")) then
 					TargetTargetLevel = TargetTargetLevel.."+"
 					self.levelFrame:SetWidth(33)
 				else
@@ -329,7 +332,7 @@ function XPerl_TargetTarget_UpdateDisplay(self, force)
 
 				self.levelFrame.text:SetText(TargetTargetLevel)
 
-				if TargetTargetLevel == "Boss" then
+				if plainLevel == -1 and TargetTargetLevel == "Boss" then
 					self.levelFrame:SetWidth(self.levelFrame.text:GetStringWidth() + 6)
 					color = {r = 1, g = 0, b = 0}
 				end
@@ -392,14 +395,14 @@ function XPerl_TargetTarget_OnUpdate(self, elapsed)
 	local newGuid = UnitGUID(partyid)
 	local newHP = UnitIsGhost(partyid) and 1 or (UnitIsDead(partyid) and 0 or (XPerl_Unit_GetHealth and XPerl_Unit_GetHealth(self) or UnitHealth(partyid)))
 	local newHPMax = UnitHealthMax(partyid)
-	local newManaType = UnitPowerType(partyid)
+	local newManaType = XPerl_Plain(UnitPowerType(partyid))
 	local newMana = UnitPower(partyid)
 	local newManaMax = UnitPowerMax(partyid)
 	local newAFK = UnitIsAFK(partyid)
 
 	if XPerl_Secret(newHP, newHPMax, newMana, newManaMax) then
 		-- Forever: can't tell whether a secret value changed, so redraw on a timer
-		if XPerl_SecretPoll(self, elapsed) or (conf.showAFK and newAFK ~= self.afk) or (newManaType ~= self.targetmanatype) then
+		if XPerl_SecretPoll(self, elapsed) or (conf.showAFK and newAFK ~= self.afk) or (newManaType ~= XPerl_Plain(self.targetmanatype)) then
 			XPerl_Target_UpdateHealth(self)
 			XPerl_Target_SetManaType(self)
 			XPerl_Target_SetMana(self)
@@ -409,7 +412,7 @@ function XPerl_TargetTarget_OnUpdate(self, elapsed)
 			XPerl_Target_UpdateHealth(self)
 		end
 
-		if (newManaType ~= self.targetmanatype) then
+		if (newManaType ~= XPerl_Plain(self.targetmanatype)) then
 			XPerl_Target_SetManaType(self)
 			XPerl_Target_SetMana(self)
 		end
@@ -461,13 +464,13 @@ function XPerl_TargetTargetTarget_OnUpdate(self, elapsed)
 
 	local newGuid = UnitGUID(partyid)
 	local newHP = UnitIsGhost(partyid) and 1 or (UnitIsDead(partyid) and 0 or (XPerl_Unit_GetHealth and XPerl_Unit_GetHealth(self) or UnitHealth(partyid)))
-	local newManaType = UnitPowerType(partyid)
+	local newManaType = XPerl_Plain(UnitPowerType(partyid))
 	local newMana = UnitPower(partyid)
 	local newAFK = UnitIsAFK(partyid)
 
 	if XPerl_Secret(newHP, newMana) then
 		-- Forever: can't tell whether a secret value changed, so redraw on a timer
-		if XPerl_SecretPoll(self, elapsed) or (conf.showAFK and newAFK ~= self.afk) or (newManaType ~= self.targetmanatype) then
+		if XPerl_SecretPoll(self, elapsed) or (conf.showAFK and newAFK ~= self.afk) or (newManaType ~= XPerl_Plain(self.targetmanatype)) then
 			XPerl_Target_UpdateHealth(self)
 			XPerl_Target_SetManaType(self)
 			XPerl_Target_SetMana(self)
@@ -477,7 +480,7 @@ function XPerl_TargetTargetTarget_OnUpdate(self, elapsed)
 			XPerl_Target_UpdateHealth(self)
 		end
 
-		if (newManaType ~= self.targetmanatype) then
+		if (newManaType ~= XPerl_Plain(self.targetmanatype)) then
 			XPerl_Target_SetManaType(self)
 			XPerl_Target_SetMana(self)
 		end

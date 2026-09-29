@@ -396,8 +396,10 @@ local function XPerl_AddEnemy(anyEnemy, FoundEnemy, name)
 			wholeEnemyUnitList[name] = true
 
 			if (XPerl_Highlight and conf and conf.highlight.AGGRO) then
-				if (UnitInRaid(namett) or UnitInParty(namett)) then
-					currentPlayerAggro[UnitName(namett)] = UnitGUID(namett)
+				-- A secret name can't be a key; that player is skipped.
+				local aggroName = XPerl_Plain(UnitName(namett))
+				if (aggroName and (UnitInRaid(namett) or UnitInParty(namett))) then
+					currentPlayerAggro[aggroName] = UnitGUID(namett)
 				end
 			end
 		end
