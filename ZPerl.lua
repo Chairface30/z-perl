@@ -4429,6 +4429,10 @@ function XPerl_Unit_ThreatStatus(self, relative, immediate)
 				-- scaledPercent is 0% - 100%, 100 means you pull agro
 				-- rawPercent is before normalization so can go up to 110% or 130% before you pull agro
 				isTanking, state, scaledPercent, rawPercent, threatValue = UnitDetailedThreatSituation(one, two)
+				-- On WoW Forever a unit's threat can come back secret (the
+				-- pet's does): it cannot be compared or smoothed, so the
+				-- readout is left off rather than erroring.
+				if XPerl_Secret(scaledPercent) then scaledPercent = nil end
 			end
 		end
 
