@@ -2,6 +2,10 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 18 October 2014
 
+-- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
+local UnitCanAttack = XPerl_SafeUnitAPI(UnitCanAttack)
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
+
 local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
 local IsVanillaClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC or XPerl_IsForever)
 
@@ -15,21 +19,21 @@ local GetDifficultyColor = GetDifficultyColor or GetQuestDifficultyColor
 local GetTime = GetTime
 local InCombatLockdown = InCombatLockdown
 local RegisterUnitWatch = RegisterUnitWatch
-local UnitAffectingCombat = UnitAffectingCombat
+local UnitAffectingCombat = XPerl_SafeUnitAPI(UnitAffectingCombat)
 local UnitAura = UnitAura
-local UnitClassification = UnitClassification
+local UnitClassification = XPerl_SafeUnitAPI(UnitClassification)
 local UnitExists = UnitExists
-local UnitFactionGroup = UnitFactionGroup
+local UnitFactionGroup = XPerl_SafeUnitAPI(UnitFactionGroup)
 local UnitGUID = UnitGUID
-local UnitIsAFK = UnitIsAFK
-local UnitIsConnected = UnitIsConnected
-local UnitIsDead = UnitIsDead
-local UnitIsDeadOrGhost = UnitIsDeadOrGhost
-local UnitIsFriend = UnitIsFriend
-local UnitIsGhost = UnitIsGhost
-local UnitIsPVP = UnitIsPVP
-local UnitIsPVPFreeForAll = UnitIsPVPFreeForAll
-local UnitIsVisible = UnitIsVisible
+local UnitIsAFK = XPerl_SafeUnitAPI(UnitIsAFK)
+local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
+local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
+local UnitIsFriend = XPerl_SafeUnitAPI(UnitIsFriend)
+local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
+local UnitIsPVP = XPerl_SafeUnitAPI(UnitIsPVP)
+local UnitIsPVPFreeForAll = XPerl_SafeUnitAPI(UnitIsPVPFreeForAll)
+local UnitIsVisible = XPerl_SafeUnitAPI(UnitIsVisible)
 local UnitLevel = UnitLevel
 local UnitName = UnitName
 local UnitPower = UnitPower
@@ -85,7 +89,7 @@ function ZPerl_TargetTarget_OnLoad(self)
 			pcall(self.RegisterUnitEvent, self, event, "target") -- skip any event this client lacks
 		end
 		XPerl_Register_Prediction(self, conf.targettarget, function(guid)
-			if guid == UnitGUID("targettarget") then
+			if XPerl_SameGUID(guid, UnitGUID("targettarget")) then
 				return "targettarget"
 			end
 		end, "target")
@@ -100,7 +104,7 @@ function ZPerl_TargetTarget_OnLoad(self)
 			self:RegisterUnitEvent(event, "focus")
 		end
 		XPerl_Register_Prediction(self, conf.targettarget, function(guid)
-			if guid == UnitGUID("focustarget") then
+			if XPerl_SameGUID(guid, UnitGUID("focustarget")) then
 				return "focustarget"
 			end
 		end, "focus")
@@ -112,7 +116,7 @@ function ZPerl_TargetTarget_OnLoad(self)
 			self:RegisterUnitEvent(event, "pet")
 		end
 		XPerl_Register_Prediction(self, conf.targettarget, function(guid)
-			if guid == UnitGUID("pettarget") then
+			if XPerl_SameGUID(guid, UnitGUID("pettarget")) then
 				return "pettarget"
 			end
 		end, "pet")
@@ -124,7 +128,7 @@ function ZPerl_TargetTarget_OnLoad(self)
 			pcall(self.RegisterUnitEvent, self, event, "target") -- skip any event this client lacks
 		end
 		XPerl_Register_Prediction(self, conf.targettarget, function(guid)
-			if guid == UnitGUID("targettargettarget") then
+			if XPerl_SameGUID(guid, UnitGUID("targettargettarget")) then
 				return "targettargettarget"
 			end
 		end, "targettarget")
@@ -191,7 +195,7 @@ end
 -- XPerl_TargetTarget_HighlightCallback
 function XPerl_TargetTarget_HighlightCallback(self, updateGUID)
 	local partyid = self.partyid
-	if UnitGUID(partyid) == updateGUID and UnitIsFriend("player", partyid) then
+	if XPerl_SameGUID(UnitGUID(partyid), updateGUID) and UnitIsFriend("player", partyid) then
 		XPerl_Highlight:SetHighlight(self, updateGUID)
 	end
 end
@@ -379,6 +383,10 @@ end
 
 -- XPerl_TargetTarget_OnUpdate
 function XPerl_TargetTarget_OnUpdate(self, elapsed)
+	-- A frame with no settings (the focus target on Forever) has nothing to draw
+	if not self.conf then
+		return
+	end
 	local partyid = self.partyid
 
 	local newGuid = UnitGUID(partyid)
@@ -422,7 +430,7 @@ function XPerl_TargetTarget_OnUpdate(self, elapsed)
 		end
 	end--]]
 
-	if (newGuid ~= self.guid) then
+	if XPerl_GUIDDiffers(newGuid, self.guid, XPerl_GUIDPoll(self, elapsed)) then
 		XPerl_TargetTarget_UpdateDisplay(self)
 	else
 		self.time = elapsed + (self.time or 0)
@@ -445,6 +453,10 @@ end
 
 -- XPerl_TargetTargetTarget_OnUpdate
 function XPerl_TargetTargetTarget_OnUpdate(self, elapsed)
+	-- A frame with no settings (the focus target on Forever) has nothing to draw
+	if not self.conf then
+		return
+	end
 	local partyid = self.partyid
 
 	local newGuid = UnitGUID(partyid)
@@ -486,7 +498,7 @@ function XPerl_TargetTargetTarget_OnUpdate(self, elapsed)
 		end
 	end--]]
 
-	if (newGuid ~= self.guid) then
+	if XPerl_GUIDDiffers(newGuid, self.guid, XPerl_GUIDPoll(self, elapsed)) then
 		XPerl_TargetTarget_UpdateDisplay(self)
 	else
 		self.time = elapsed + (self.time or 0)

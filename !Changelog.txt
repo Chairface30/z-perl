@@ -2,6 +2,8 @@
 * Raid Helper: Target Counters, Count Healers Only for self and Enemy Targeting are now off by default (characters that already saved these settings keep them)
 * Forever: the party frame no longer errors when a member shows as Offline, Dead or Ghost (the client can keep the percent text's width secret)
 * Forever: the party frame's target box no longer errors in a group when a party member's target has a secret name, PvP flag or faction (the name still shows; the PvP icon stays hidden)
+* Forever: fixed a flood of combat errors across the player, target, target of target, party, pet, raid and raid helper frames. In combat the client keeps AFK, PvP and combat flags, creature type, classification and unit GUIDs secret; Z-Perl now reads a secret flag or type as unknown instead of erroring, and frames whose unit's GUID is secret refresh twice a second
+* Forever: the target of target frames no longer error when a frame has no settings (the focus target)
 
 **8.0.1** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: target, target of target, pet, party, party pet, raid and raid helper frames no longer error checking whether a unit is charmed (the client can keep that secret; the charmed warning icon then stays hidden)

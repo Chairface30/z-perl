@@ -20,23 +20,23 @@ local strfind = strfind
 
 local CreateFrame = CreateFrame
 local GetNumGroupMembers = GetNumGroupMembers
-local GetRaidTargetIndex = GetRaidTargetIndex
+local GetRaidTargetIndex = XPerl_SafeUnitAPI(GetRaidTargetIndex)
 local InCombatLockdown = InCombatLockdown
 local IsInGroup = IsInGroup
 local IsInRaid = IsInRaid
 local SetRaidTargetIconTexture = SetRaidTargetIconTexture
-local UnitClass = UnitClass
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
 local UnitExists = UnitExists
 local UnitGUID = UnitGUID
 local UnitHasIncomingResurrection = UnitHasIncomingResurrection
-local UnitHasVehicleUI = UnitHasVehicleUI
+local UnitHasVehicleUI = XPerl_SafeUnitAPI(UnitHasVehicleUI)
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
-local UnitInVehicle = UnitInVehicle
-local UnitIsDead = UnitIsDead
-local UnitIsDeadOrGhost = UnitIsDeadOrGhost
-local UnitIsGhost = UnitIsGhost
-local UnitIsUnit = UnitIsUnit
+local UnitInVehicle = XPerl_SafeUnitAPI(UnitInVehicle)
+local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
+local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
+local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
+local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
 local UnitName = UnitName
 
 local SecureButton_GetUnit = SecureButton_GetUnit
@@ -235,7 +235,7 @@ local function XPerl_RaidPets_OnUpdate(self, elapsed)
 		local newHP = UnitIsGhost(partyid) and 1 or (UnitIsDead(partyid) and 0 or (XPerl_Unit_GetHealth and XPerl_Unit_GetHealth(self) or UnitHealth(partyid)))
 		local newHPMax = UnitHealthMax(partyid)
 
-		if (newGuid ~= self.petGUID) then
+		if XPerl_GUIDDiffers(newGuid, self.petGUID, XPerl_GUIDPoll(self, elapsed)) then
 			XPerl_RaidPets_UpdateDisplay(self)
 			return
 		else
@@ -474,7 +474,7 @@ end
 function XPerl_RaidPets_Events:UNIT_ENTERED_VEHICLE(unit)
 	local guid = UnitGUID(unit)
 	for u, frame in pairs(RaidPetFrameArray) do
-		if (frame.ownerid and UnitGUID(frame.ownerid) == guid) then
+		if (frame.ownerid and XPerl_SameGUID(UnitGUID(frame.ownerid), guid)) then
 			XPerl_RaidPets_UpdateName(frame)
 		end
 	end
@@ -540,7 +540,7 @@ local function onAttrChanged(self, name, value)
 			SetFrameArray(self, value)		-- "raidpet"..strmatch(value, "^raid(%d+)"))
 			self.ownerid = value:gsub("(%a+)pet(%d+)", "%1%2")
 
-			if (self.petGUID ~= UnitGUID(self.partyid) or self.petID ~= value) then
+			if (XPerl_GUIDDiffers(self.petGUID, UnitGUID(self.partyid), true) or self.petID ~= value) then
 				XPerl_RaidPets_UpdateDisplay(self)
 			end
 		else

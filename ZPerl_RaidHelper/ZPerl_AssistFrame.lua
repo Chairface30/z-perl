@@ -2,6 +2,15 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
+-- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
+local UnitIsFriend = XPerl_SafeUnitAPI(UnitIsFriend)
+local UnitCanAttack = XPerl_SafeUnitAPI(UnitCanAttack)
+local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
+local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
+local UnitInParty = XPerl_SafeUnitAPI(UnitInParty)
+local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
+
 local conf
 XPerl_RequestConfig(function(new)
 	conf = new

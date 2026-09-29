@@ -18,6 +18,36 @@ XPerl_IsForever = (function()
     return ok and type(toc) == "number" and toc >= 16000 and toc < 17000 or false
 end)()
 
+-- WoW Forever keeps many unit answers secret, most of all in combat: AFK and
+-- PvP flags, creature type, classification and more. Testing or comparing a
+-- secret throws. XPerl_SafeUnitAPI(func) returns a version of func that gives
+-- nil for each secret result, so it reads as "no" or unknown. Frame files use
+-- it for their local copies of the globals; the globals themselves are never
+-- replaced, so Blizzard's code is untouched.
+do
+    local issecret = issecretvalue
+    -- Same number of results as the original call, secrets turned to nil.
+    local function Clean(...)
+        local n = select("#", ...)
+        if n == 0 then return end
+        local a, b, c, d = ...
+        if issecret(a) then a = nil end
+        if n == 1 then return a end
+        if issecret(b) then b = nil end
+        if n == 2 then return a, b end
+        if issecret(c) then c = nil end
+        if n == 3 then return a, b, c end
+        if issecret(d) then d = nil end
+        return a, b, c, d
+    end
+    function XPerl_SafeUnitAPI(func)
+        if not (issecret and func) then return func end
+        return function(...)
+            return Clean(func(...))
+        end
+    end
+end
+
 -- Item functions: WoW Forever has them only in C_Item.
 if not GetItemInfo and C_Item and C_Item.GetItemInfo then
     GetItemInfo = C_Item.GetItemInfo

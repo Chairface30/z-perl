@@ -75,7 +75,7 @@ local GetNumAddOns = GetNumAddOns
 local GetNumGroupMembers = GetNumGroupMembers
 local GetNumSubgroupMembers = GetNumSubgroupMembers
 local GetRaidRosterInfo = GetRaidRosterInfo
-local GetRaidTargetIndex = GetRaidTargetIndex
+local GetRaidTargetIndex = XPerl_SafeUnitAPI(GetRaidTargetIndex)
 local GetReadyCheckStatus = GetReadyCheckStatus
 local GetRealmName = GetRealmName
 local GetRealZoneText = GetRealZoneText
@@ -96,39 +96,39 @@ local SetPortraitTexture = SetPortraitTexture
 local SetRaidTargetIconTexture = SetRaidTargetIconTexture
 local SpellCanTargetUnit = SpellCanTargetUnit
 local SpellIsTargeting = SpellIsTargeting
-local UnitAffectingCombat = UnitAffectingCombat
+local UnitAffectingCombat = XPerl_SafeUnitAPI(UnitAffectingCombat)
 local UnitAlternatePowerInfo = UnitAlternatePowerInfo
 local UnitAura = UnitAura
-local UnitCanAssist = UnitCanAssist
-local UnitCanAttack = UnitCanAttack
-local UnitClass = UnitClass
+local UnitCanAssist = XPerl_SafeUnitAPI(UnitCanAssist)
+local UnitCanAttack = XPerl_SafeUnitAPI(UnitCanAttack)
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
 local UnitDetailedThreatSituation = UnitDetailedThreatSituation
 local UnitExists = UnitExists
-local UnitFactionGroup = UnitFactionGroup
+local UnitFactionGroup = XPerl_SafeUnitAPI(UnitFactionGroup)
 local UnitGetIncomingHeals = UnitGetIncomingHeals
 local UnitGetTotalAbsorbs = UnitGetTotalAbsorbs
 local UnitGUID = UnitGUID
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
-local UnitInParty = UnitInParty
-local UnitInRaid = UnitInRaid
-local UnitInRange = UnitInRange
-local UnitInVehicle = UnitInVehicle
-local UnitIsAFK = UnitIsAFK
-local UnitIsConnected = UnitIsConnected
-local UnitIsDead = UnitIsDead
-local UnitIsDeadOrGhost = UnitIsDeadOrGhost
-local UnitIsEnemy = UnitIsEnemy
-local UnitIsFriend = UnitIsFriend
-local UnitIsGhost = UnitIsGhost
-local UnitIsPlayer = UnitIsPlayer
-local UnitIsPVP = UnitIsPVP
-local UnitIsTapDenied = UnitIsTapDenied
-local UnitIsUnit = UnitIsUnit
-local UnitIsVisible = UnitIsVisible
+local UnitInParty = XPerl_SafeUnitAPI(UnitInParty)
+local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
+local UnitInRange = XPerl_SafeUnitAPI(UnitInRange)
+local UnitInVehicle = XPerl_SafeUnitAPI(UnitInVehicle)
+local UnitIsAFK = XPerl_SafeUnitAPI(UnitIsAFK)
+local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
+local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
+local UnitIsEnemy = XPerl_SafeUnitAPI(UnitIsEnemy)
+local UnitIsFriend = XPerl_SafeUnitAPI(UnitIsFriend)
+local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
+local UnitIsPlayer = XPerl_SafeUnitAPI(UnitIsPlayer)
+local UnitIsPVP = XPerl_SafeUnitAPI(UnitIsPVP)
+local UnitIsTapDenied = XPerl_SafeUnitAPI(UnitIsTapDenied)
+local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
+local UnitIsVisible = XPerl_SafeUnitAPI(UnitIsVisible)
 local UnitLevel = UnitLevel
 local UnitName = UnitName
-local UnitPlayerControlled = UnitPlayerControlled
+local UnitPlayerControlled = XPerl_SafeUnitAPI(UnitPlayerControlled)
 local UnitPopup_ShowMenu = UnitPopup_ShowMenu
 local UnitPopupMenus = UnitPopupMenus
 local UnitPopupShown = UnitPopupShown
@@ -375,6 +375,29 @@ function XPerl_UnitIsCharmed(unit)
 	local ok, charmed = pcall(UnitIsCharmed, unit)
 	if not ok or XPerl_Secret(charmed) then return false end
 	return charmed and true or false
+end
+
+-- GUIDs can be secret on WoW Forever, and comparing a secret throws.
+-- XPerl_SameGUID: true only when both are readable and equal.
+function XPerl_SameGUID(a, b)
+	if XPerl_Secret(a, b) then return false end
+	return a == b
+end
+
+-- XPerl_GUIDDiffers: a ~= b, or `unknown` when either is secret.
+function XPerl_GUIDDiffers(a, b, unknown)
+	if XPerl_Secret(a, b) then return unknown and true or false end
+	return a ~= b
+end
+
+-- For per-frame GUID checks: true twice a second, so a frame whose unit's GUID
+-- is secret still redraws when the unit might have changed.
+function XPerl_GUIDPoll(self, elapsed)
+	self.guidPollTime = (self.guidPollTime or 0) + (elapsed or 0)
+	if self.guidPollTime >= 0.5 then
+		self.guidPollTime = 0
+		return true
+	end
 end
 
 -- A yes/no unit query (UnitIsPVP, UnitAffectingCombat, ...) that may come back
@@ -3807,7 +3830,7 @@ function XPerl_Unit_UpdatePortrait(self, force)
 			self.portraitFrame.portrait:Hide()
 			local guid = UnitGUID(self.partyid)
 			local currentGuid = type(portrait3D.guid) ~= "boolean" and portrait3D.guid or nil
-			if force or guid ~= currentGuid or not portrait3D:IsShown() then
+			if force or XPerl_GUIDDiffers(guid, currentGuid) or not portrait3D:IsShown() then
 				portrait3D:Show()
 				if portrait3D.ClearModel then portrait3D:ClearModel() end
 				if portrait3D.SetUnit then portrait3D:SetUnit(self.partyid) end

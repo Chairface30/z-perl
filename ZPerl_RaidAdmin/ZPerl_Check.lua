@@ -27,7 +27,7 @@ local outputChannelColour
 
 local GetNumGroupMembers = GetNumGroupMembers
 
-local UnitIsGroupAssistant = UnitIsGroupAssistant
+local UnitIsGroupAssistant = XPerl_SafeUnitAPI(UnitIsGroupAssistant)
 
 local ITEMLISTSIZE		= 12
 local PLAYERLISTSIZE		= 10

@@ -12,7 +12,7 @@ local IsClassic = (WOW_PROJECT_ID >= WOW_PROJECT_CLASSIC or XPerl_IsForever)
 
 local GetNumSubgroupMembers = GetNumSubgroupMembers
 local GetNumGroupMembers = GetNumGroupMembers
-local UnitIsGroupAssistant = UnitIsGroupAssistant
+local UnitIsGroupAssistant = XPerl_SafeUnitAPI(UnitIsGroupAssistant)
 
 local classOrder
 if IsClassic then

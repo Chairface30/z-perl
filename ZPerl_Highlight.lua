@@ -51,18 +51,18 @@ local GetTime = GetTime
 local GetUnitName = GetUnitName
 local IsInRaid = IsInRaid
 local UnitAura = UnitAura
-local UnitClass = UnitClass
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
 local UnitExists = UnitExists
 local UnitGetIncomingHeals = UnitGetIncomingHeals
 local UnitGUID = UnitGUID
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
-local UnitInParty = UnitInParty
-local UnitInRaid = UnitInRaid
-local UnitIsDead = UnitIsDead
-local UnitIsDeadOrGhost = UnitIsDeadOrGhost
-local UnitIsGhost = UnitIsGhost
-local UnitIsUnit = UnitIsUnit
+local UnitInParty = XPerl_SafeUnitAPI(UnitInParty)
+local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
+local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
+local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
+local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
+local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
 local UnitName = UnitName
 local UnitPlayerOrPetInParty = UnitPlayerOrPetInParty
 local UnitPlayerOrPetInRaid = UnitPlayerOrPetInRaid
@@ -949,8 +949,8 @@ function xpHigh:TriggerMendingAnimation(sourceGUID, targetGUID)
 			targetFrame = XPerl_Raid_Pet_GetUnitFrameByGUID(targetGUID)
 		end
 	elseif (GetNumSubgroupMembers() > 0 and XPerl_Party_GetUnitFrameByUnit) then
-		sourceFrame = sourceGUID == UnitGUID("player") and XPerl_Player or XPerl_Party_GetUnitFrameByGUID(sourceGUID)
-		targetFrame = targetGUID == UnitGUID("player") and XPerl_Player or XPerl_Party_GetUnitFrameByGUID(targetGUID)
+		sourceFrame = XPerl_SameGUID(sourceGUID, UnitGUID("player")) and XPerl_Player or XPerl_Party_GetUnitFrameByGUID(sourceGUID)
+		targetFrame = XPerl_SameGUID(targetGUID, UnitGUID("player")) and XPerl_Player or XPerl_Party_GetUnitFrameByGUID(targetGUID)
 		if (not sourceFrame and XPerl_Party_Pet_GetUnitFrameByGUID) then
 			sourceFrame = XPerl_Party_Pet_GetUnitFrameByGUID(sourceGUID)
 		end

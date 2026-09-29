@@ -5,6 +5,19 @@
 XPerl_SetModuleRevision("$Revision: 42efb275e5740b2e735b5ecdaac0f954d23f0583 $")
 
 ZPerl_MainTanks = {}
+-- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
+local UnitAffectingCombat = XPerl_SafeUnitAPI(UnitAffectingCombat)
+local UnitPlayerControlled = XPerl_SafeUnitAPI(UnitPlayerControlled)
+local UnitIsFriend = XPerl_SafeUnitAPI(UnitIsFriend)
+local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
+local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
+local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
+local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
+local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
+local GetRaidTargetIndex = XPerl_SafeUnitAPI(GetRaidTargetIndex)
+local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
+
 local MainTankCount, blizzMTanks, ctraTanks = 0, 0, 0
 local MainTanks = {}
 local BlizzardMainTanks = {}

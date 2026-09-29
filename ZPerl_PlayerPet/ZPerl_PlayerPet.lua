@@ -2,6 +2,15 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
+-- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
+local UnitAffectingCombat = XPerl_SafeUnitAPI(UnitAffectingCombat)
+local UnitIsFriend = XPerl_SafeUnitAPI(UnitIsFriend)
+local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
+local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
+local UnitInVehicle = XPerl_SafeUnitAPI(UnitInVehicle)
+local UnitHasVehicleUI = XPerl_SafeUnitAPI(UnitHasVehicleUI)
+
 local XPerl_Player_Pet_Events = {}
 local conf, pconf
 XPerl_RequestConfig(function(new)
@@ -200,7 +209,7 @@ end
 
 -- XPerl_Player_Pet_HighlightCallback
 function XPerl_Player_Pet_HighlightCallback(self, updateGUID)
-	if (updateGUID == UnitGUID("pet")) then
+	if XPerl_SameGUID(updateGUID, UnitGUID("pet")) then
 		XPerl_Highlight:SetHighlight(self, updateGUID)
 	end
 end
@@ -802,7 +811,7 @@ function XPerl_Player_Pet_Set_Bits(self)
 	XPerl_SetBuffSize(self)
 
 	XPerl_Register_Prediction(self, pconf, function (guid)
-		if guid == UnitGUID("pet") then
+		if XPerl_SameGUID(guid, UnitGUID("pet")) then
 			return "pet"
 		end
 	end, "pet", "player")

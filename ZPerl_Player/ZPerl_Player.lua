@@ -2,6 +2,19 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
+-- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
+local UnitIsPVP = XPerl_SafeUnitAPI(UnitIsPVP)
+local UnitIsPVPFreeForAll = XPerl_SafeUnitAPI(UnitIsPVPFreeForAll)
+local UnitFactionGroup = XPerl_SafeUnitAPI(UnitFactionGroup)
+local UnitAffectingCombat = XPerl_SafeUnitAPI(UnitAffectingCombat)
+local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
+local UnitIsGroupLeader = XPerl_SafeUnitAPI(UnitIsGroupLeader)
+local UnitIsMercenary = XPerl_SafeUnitAPI(UnitIsMercenary)
+local UnitHasVehicleUI = XPerl_SafeUnitAPI(UnitHasVehicleUI)
+local UnitInParty = XPerl_SafeUnitAPI(UnitInParty)
+local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
+
 local XPerl_Player_Events = { }
 local isOutOfControl
 local playerClass, playerName
@@ -32,11 +45,11 @@ local GetDifficultyColor = GetDifficultyColor or GetQuestDifficultyColor
 local GetNumGroupMembers = GetNumGroupMembers
 local UnitGroupRolesAssigned = UnitGroupRolesAssigned
 local UnitHealth = UnitHealth
-local UnitIsAFK = UnitIsAFK
-local UnitIsDead = UnitIsDead
-local UnitIsDeadOrGhost = UnitIsDeadOrGhost
-local UnitIsGhost = UnitIsGhost
-local UnitIsGroupAssistant = UnitIsGroupAssistant
+local UnitIsAFK = XPerl_SafeUnitAPI(UnitIsAFK)
+local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
+local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
+local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
+local UnitIsGroupAssistant = XPerl_SafeUnitAPI(UnitIsGroupAssistant)
 local UnitName = UnitName
 local UnitPower = UnitPower
 local UnitPower = UnitPower
@@ -162,7 +175,7 @@ end
 
 -- XPerl_Player_HighlightCallback(updateName)
 function XPerl_Player_HighlightCallback(self, updateGUID)
-	if (updateGUID == UnitGUID("player")) then
+	if XPerl_SameGUID(updateGUID, UnitGUID("player")) then
 		XPerl_Highlight:SetHighlight(self, updateGUID)
 	end
 end
@@ -2042,9 +2055,9 @@ function XPerl_Player_Set_Bits(self)
 	end
 
 	XPerl_Register_Prediction(self, pconf, function (guid)
-		if guid == UnitGUID("player") then
+		if XPerl_SameGUID(guid, UnitGUID("player")) then
 			return "player"
-		elseif guid == UnitGUID("vehicle") then
+		elseif XPerl_SameGUID(guid, UnitGUID("vehicle")) then
 			return "vehicle"
 		end
 	end, "player", "vehicle")

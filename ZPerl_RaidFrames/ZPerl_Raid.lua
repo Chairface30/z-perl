@@ -2,6 +2,16 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
+-- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
+local UnitIsAFK = XPerl_SafeUnitAPI(UnitIsAFK)
+local UnitIsDND = XPerl_SafeUnitAPI(UnitIsDND)
+local UnitAffectingCombat = XPerl_SafeUnitAPI(UnitAffectingCombat)
+local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
+local UnitIsVisible = XPerl_SafeUnitAPI(UnitIsVisible)
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
+local GetRaidTargetIndex = XPerl_SafeUnitAPI(GetRaidTargetIndex)
+local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
+
 local XPerl_Raid_Events = { }
 local RaidGroupCounts = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 local myGroup
@@ -49,10 +59,10 @@ local GetNumGroupMembers = GetNumGroupMembers
 local UnitGUID = UnitGUID
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
-local UnitIsConnected = UnitIsConnected
-local UnitIsDead = UnitIsDead
-local UnitIsDeadOrGhost = UnitIsDeadOrGhost
-local UnitIsGhost = UnitIsGhost
+local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
+local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
+local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
 local UnitName = UnitName
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
@@ -737,7 +747,7 @@ local function onAttrChanged(self, name, value)
 	if (name == "unit") then
 		if (value) then
 			SetFrameArray(self, value)
-			if (self.lastID ~= value or self.lastGUID ~= UnitGUID(value)) then
+			if (self.lastID ~= value or XPerl_GUIDDiffers(self.lastGUID, UnitGUID(value), true)) then
 				XPerl_Raid_UpdateDisplay(self)
 			end
 		else

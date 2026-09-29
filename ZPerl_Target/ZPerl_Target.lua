@@ -2,6 +2,10 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
+-- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
+local UnitIsGroupAssistant = XPerl_SafeUnitAPI(UnitIsGroupAssistant)
+local UnitIsMercenary = XPerl_SafeUnitAPI(UnitIsMercenary)
+
 local XPerl_Target_Events = { }
 local conf, tconf, fconf
 XPerl_RequestConfig(function(new)
@@ -64,37 +68,37 @@ local NotifyInspect = NotifyInspect
 local PlaySound = PlaySound
 local RegisterUnitWatch = RegisterUnitWatch
 local UnitBattlePetType = UnitBattlePetType
-local UnitCanAssist = UnitCanAssist
-local UnitCanAttack = UnitCanAttack
-local UnitClass = UnitClass
-local UnitClassBase = UnitClassBase
-local UnitClassification = UnitClassification
-local UnitCreatureType = UnitCreatureType
+local UnitCanAssist = XPerl_SafeUnitAPI(UnitCanAssist)
+local UnitCanAttack = XPerl_SafeUnitAPI(UnitCanAttack)
+local UnitClass = XPerl_SafeUnitAPI(UnitClass)
+local UnitClassBase = XPerl_SafeUnitAPI(UnitClassBase)
+local UnitClassification = XPerl_SafeUnitAPI(UnitClassification)
+local UnitCreatureType = XPerl_SafeUnitAPI(UnitCreatureType)
 local UnitExists = UnitExists
-local UnitFactionGroup = UnitFactionGroup
+local UnitFactionGroup = XPerl_SafeUnitAPI(UnitFactionGroup)
 local UnitGUID = UnitGUID
-local UnitHasVehicleUI = UnitHasVehicleUI
-local UnitInParty = UnitInParty
-local UnitInRaid = UnitInRaid
-local UnitInVehicle = UnitInVehicle
-local UnitIsAFK = UnitIsAFK
-local UnitIsBattlePetCompanion = UnitIsBattlePetCompanion
-local UnitIsConnected = UnitIsConnected
-local UnitIsDead = UnitIsDead
-local UnitIsDeadOrGhost = UnitIsDeadOrGhost
-local UnitIsEnemy = UnitIsEnemy
-local UnitIsFriend = UnitIsFriend
-local UnitIsGhost = UnitIsGhost
-local UnitIsGroupLeader = UnitIsGroupLeader
-local UnitIsPlayer = UnitIsPlayer
-local UnitIsPVP = UnitIsPVP
-local UnitIsPVPFreeForAll = UnitIsPVPFreeForAll
-local UnitIsUnit = UnitIsUnit
-local UnitIsVisible = UnitIsVisible
-local UnitIsWildBattlePet = UnitIsWildBattlePet
+local UnitHasVehicleUI = XPerl_SafeUnitAPI(UnitHasVehicleUI)
+local UnitInParty = XPerl_SafeUnitAPI(UnitInParty)
+local UnitInRaid = XPerl_SafeUnitAPI(UnitInRaid)
+local UnitInVehicle = XPerl_SafeUnitAPI(UnitInVehicle)
+local UnitIsAFK = XPerl_SafeUnitAPI(UnitIsAFK)
+local UnitIsBattlePetCompanion = XPerl_SafeUnitAPI(UnitIsBattlePetCompanion)
+local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
+local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
+local UnitIsEnemy = XPerl_SafeUnitAPI(UnitIsEnemy)
+local UnitIsFriend = XPerl_SafeUnitAPI(UnitIsFriend)
+local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
+local UnitIsGroupLeader = XPerl_SafeUnitAPI(UnitIsGroupLeader)
+local UnitIsPlayer = XPerl_SafeUnitAPI(UnitIsPlayer)
+local UnitIsPVP = XPerl_SafeUnitAPI(UnitIsPVP)
+local UnitIsPVPFreeForAll = XPerl_SafeUnitAPI(UnitIsPVPFreeForAll)
+local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
+local UnitIsVisible = XPerl_SafeUnitAPI(UnitIsVisible)
+local UnitIsWildBattlePet = XPerl_SafeUnitAPI(UnitIsWildBattlePet)
 local UnitLevel = UnitLevel
 local UnitName = UnitName
-local UnitPlayerControlled = UnitPlayerControlled
+local UnitPlayerControlled = XPerl_SafeUnitAPI(UnitPlayerControlled)
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
 local UnregisterUnitWatch = UnregisterUnitWatch
@@ -285,7 +289,7 @@ end
 
 -- XPerl_Raid_HighlightCallback
 function XPerl_Target_HighlightCallback(self, updateGUID)
-	if (UnitGUID(self.partyid) == updateGUID and UnitIsFriend("player", self.partyid)) then
+	if XPerl_SameGUID(UnitGUID(self.partyid), updateGUID) and UnitIsFriend("player", self.partyid) then
 		XPerl_Highlight:SetHighlight(self, updateGUID)
 	end
 end
@@ -677,7 +681,7 @@ do
 
 		-- INSPECT_READY
 		function XPerl_Target_Events:INSPECT_READY(guid)
-			if (UnitGUID(self.partyid) == guid) then
+			if XPerl_SameGUID(UnitGUID(self.partyid), guid) then
 				inspectReady = true
 				XPerl_Target_UpdateTalents(self, guid)
 			end
@@ -700,7 +704,7 @@ do
 					local name1, name2, name3, group, iconTexture, background
 					if (cached) then
 						name1, name2, name3, group = unpack(cached)
-					elseif (inspectReady and guid == UnitGUID(partyid)) then
+					elseif (inspectReady and XPerl_SameGUID(guid, UnitGUID(partyid))) then
 						local remoteInspectNeeded = not UnitIsUnit("player", partyid) or nil
 						if not IsClassic then
 							group =  GetInspectSpecialization("target")
@@ -1815,14 +1819,14 @@ function XPerl_Target_Set_Bits(self)
 
 	if self == XPerl_Target then
 		XPerl_Register_Prediction(self, tconf, function(guid)
-			if guid == UnitGUID("target") then
+			if XPerl_SameGUID(guid, UnitGUID("target")) then
 				return "target"
 			end
 		end, "target")
 	end
 	if self == XPerl_Focus then
 		XPerl_Register_Prediction(self, fconf, function(guid)
-			if guid == UnitGUID("focus") then
+			if XPerl_SameGUID(guid, UnitGUID("focus")) then
 				return "focus"
 			end
 		end, "focus")

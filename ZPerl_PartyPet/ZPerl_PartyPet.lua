@@ -2,6 +2,11 @@
 -- Author: Chairface (originally Resike)
 -- License: GNU GPL v3, 29 June 2007 (see LICENSE.txt)
 
+-- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
+local UnitAffectingCombat = XPerl_SafeUnitAPI(UnitAffectingCombat)
+local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
+local UnitIsVisible = XPerl_SafeUnitAPI(UnitIsVisible)
+
 local XPerl_Party_Pet_Events = { }
 local conf, pconf, petconf
 local PartyPetFrames = { }
@@ -24,11 +29,11 @@ local UnitExists = UnitExists
 local UnitGUID = UnitGUID
 local UnitHealth = UnitHealth
 local UnitHealthMax = UnitHealthMax
-local UnitIsConnected = UnitIsConnected
-local UnitIsDead = UnitIsDead
-local UnitIsDeadOrGhost = UnitIsDeadOrGhost
-local UnitIsGhost = UnitIsGhost
-local UnitIsPVP = UnitIsPVP
+local UnitIsConnected = XPerl_SafeUnitAPI(UnitIsConnected)
+local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
+local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
+local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
+local UnitIsPVP = XPerl_SafeUnitAPI(UnitIsPVP)
 local UnitName = UnitName
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
@@ -546,7 +551,7 @@ local function XPerl_Party_Pet_OnUpdate(self, elapsed)
 		local newMana = UnitPower(partyid)
 		local newManaMax = UnitPowerMax(partyid)
 
-		if (newGuid ~= self.guid) then
+		if XPerl_GUIDDiffers(newGuid, self.guid, XPerl_GUIDPoll(self, elapsed)) then
 			XPerl_Party_Pet_UpdateDisplay(self)
 			return
 		else
