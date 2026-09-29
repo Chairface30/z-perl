@@ -1,4 +1,6 @@
-**Unreleased**
+**8.0.1** - Z-Perl Unit Frames Forever - By Chairface Chippendale
+* Forever: target, target of target, pet, party, party pet, raid and raid helper frames no longer error checking whether a unit is charmed (the client can keep that secret; the charmed warning icon then stays hidden)
+* Forever: the pet frame's threat readout no longer errors when you attack (your pet's threat is secret; the readout is left off)
 * Forever: other players' and mobs' casts no longer error in the target, focus and party cast bars (the client keeps them secret, so those bars stay hidden and the name shows); your own cast bar is unchanged
 * Forever: the hunter pet frame no longer errors looking up pet happiness, which Forever doesn't have
 
