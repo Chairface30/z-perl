@@ -22,7 +22,6 @@ local UnitExists = UnitExists
 local UnitFactionGroup = UnitFactionGroup
 local UnitGUID = UnitGUID
 local UnitIsAFK = UnitIsAFK
-local UnitIsCharmed = UnitIsCharmed
 local UnitIsConnected = UnitIsConnected
 local UnitIsDead = UnitIsDead
 local UnitIsDeadOrGhost = UnitIsDeadOrGhost
@@ -365,7 +364,7 @@ end
 -- XPerl_TargetTarget_Update_Control
 local function XPerl_TargetTarget_Update_Control(self)
 	local partyid = self.partyid
-	if UnitIsVisible(partyid) and UnitIsCharmed(partyid) then
+	if UnitIsVisible(partyid) and XPerl_UnitIsCharmed(partyid) then
 		self.nameFrame.warningIcon:Show()
 	else
 		self.nameFrame.warningIcon:Hide()

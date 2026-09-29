@@ -367,6 +367,16 @@ function XPerl_Secret(...)
 	return false
 end
 
+-- UnitIsCharmed for the charmed warning icons. On WoW Forever the answer can
+-- come back secret, and testing a secret boolean throws ("attempt to perform
+-- boolean test on a secret boolean value"). Unknown reads as not charmed.
+function XPerl_UnitIsCharmed(unit)
+	if not unit then return false end
+	local ok, charmed = pcall(UnitIsCharmed, unit)
+	if not ok or XPerl_Secret(charmed) then return false end
+	return charmed and true or false
+end
+
 -- A secret 0-100 percentage for display, or nil when this client can't give one.
 local function SecretPercent(unit, power, pType)
 	local curve = CurveConstants and CurveConstants.ScaleTo100

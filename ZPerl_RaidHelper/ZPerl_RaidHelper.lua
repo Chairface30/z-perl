@@ -200,7 +200,7 @@ local function UpdateUnit(self,forcedUpdate)
 			self.combatIcon:Hide()
 		end
 
-		if (UnitIsCharmed(xunit)) then
+		if (XPerl_UnitIsCharmed(xunit)) then
 			self.warningIcon:Show()
 		else
 			self.warningIcon:Hide()
@@ -892,7 +892,7 @@ function Events:UNIT_FACTION(unit)
 						frame.combatIcon:Hide()
 					end
 
-					if (UnitIsCharmed(partyid)) then
+					if (XPerl_UnitIsCharmed(partyid)) then
 						frame.warningIcon:Show()
 					else
 						frame.warningIcon:Hide()

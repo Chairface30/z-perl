@@ -372,7 +372,7 @@ end
 
 -- XPerl_Player_Pet_Update_Control
 local function XPerl_Player_Pet_Update_Control(self)
-	if (UnitIsCharmed(self.partyid) and not IsClassic and not UnitInVehicle("player")) then
+	if (XPerl_UnitIsCharmed(self.partyid) and not IsClassic and not UnitInVehicle("player")) then
 		self.nameFrame.warningIcon:Show()
 	else
 		self.nameFrame.warningIcon:Hide()

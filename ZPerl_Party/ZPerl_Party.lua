@@ -802,7 +802,7 @@ local function XPerl_Party_UpdateCombat(self)
 			self.nameFrame.combatIcon:Hide()
 		end
 
-		if (UnitIsCharmed(partyid)) then
+		if (XPerl_UnitIsCharmed(partyid)) then
 			self.nameFrame.warningIcon:Show()
 		else
 			self.nameFrame.warningIcon:Hide()

@@ -1027,7 +1027,7 @@ local function XPerl_Raid_UpdateCombat(self)
 	else
 		self.nameFrame.combatIcon:Hide()
 	end
-	if (UnitIsVisible(partyid) and UnitIsCharmed(partyid)) then
+	if (UnitIsVisible(partyid) and XPerl_UnitIsCharmed(partyid)) then
 		self.nameFrame.warningIcon:Show()
 	else
 		self.nameFrame.warningIcon:Hide()

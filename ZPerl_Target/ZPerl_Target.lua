@@ -79,7 +79,6 @@ local UnitInRaid = UnitInRaid
 local UnitInVehicle = UnitInVehicle
 local UnitIsAFK = UnitIsAFK
 local UnitIsBattlePetCompanion = UnitIsBattlePetCompanion
-local UnitIsCharmed = UnitIsCharmed
 local UnitIsConnected = UnitIsConnected
 local UnitIsDead = UnitIsDead
 local UnitIsDeadOrGhost = UnitIsDeadOrGhost
@@ -457,7 +456,7 @@ local function XPerl_Target_UpdatePVP(self)
 		XPerl_SetUnitNameColor(self.nameFrame.text, partyid)
 	end
 
-	if (UnitIsVisible(partyid) and UnitIsCharmed(partyid)) then
+	if (UnitIsVisible(partyid) and XPerl_UnitIsCharmed(partyid)) then
 		self.nameFrame.warningIcon:Show()
 	else
 		self.nameFrame.warningIcon:Hide()
