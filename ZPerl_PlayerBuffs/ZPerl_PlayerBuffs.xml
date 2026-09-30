@@ -50,4 +50,12 @@
 			<Attribute name="type2" value="cancelaura"/>
 		</Attributes>
 	</Button>
+
+	<!-- Without SecureAuraHeaderTemplate (WoW Forever) the buffs are Z-Perl's
+	     own cooldown buttons, made secure so a right-click still cancels -->
+	<Button name="XPerl_Player_PlainBuffTemplate" inherits="SecureActionButtonTemplate,XPerl_Cooldown_BuffTemplate" virtual="true">
+		<Attributes>
+			<Attribute name="type2" value="cancelaura"/>
+		</Attributes>
+	</Button>
 </Ui>

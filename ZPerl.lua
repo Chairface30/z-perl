@@ -2956,7 +2956,10 @@ function XPerl_GetBuffButton(self, buffnum, debuff, createIfAbsent, newID)
 		end
 
 		buffIconCount = buffIconCount + 1
-		button = CreateFrame("Button", "XPerlBuff"..buffIconCount, parent, BackdropTemplateMixin and format("BackdropTemplate,XPerl_Cooldown_%sTemplate", buffType) or format("XPerl_Cooldown_%sTemplate", buffType))
+		-- A frame can name its own button template (the player frame's
+		-- buffs are secure buttons, so a right-click cancels the buff)
+		local template = ((debuff == 1) and setup.debuffTemplate) or ((debuff ~= 1) and setup.buffTemplate) or format("XPerl_Cooldown_%sTemplate", buffType)
+		button = CreateFrame("Button", "XPerlBuff"..buffIconCount, parent, BackdropTemplateMixin and ("BackdropTemplate,"..template) or template)
 		button:Hide()
 
 		if (setup.rightClickable) then

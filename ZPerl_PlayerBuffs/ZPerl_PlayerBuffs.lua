@@ -128,13 +128,146 @@ function XPerl_Player_Buffs_Position(self)
 			end
 		end
 
-		if (pconf.buffs.above) then
+		if (self.buffFrame.plainAuras) then
+			-- Z-Perl's own buff code lays debuffs out after the buffs, so
+			-- both lists share one frame (as on the target frame)
+			self.debuffFrame:SetAllPoints(self.buffFrame)
+		elseif (pconf.buffs.above) then
 			self.debuffFrame:SetPoint("BOTTOMLEFT", self.buffFrame, "TOPLEFT", 0, 2)
 		else
 			self.debuffFrame:SetPoint("TOPLEFT", self.buffFrame, "BOTTOMLEFT", 0, -2)
 		end
 
 		XPerl_Unit_BuffPositions(self, self.buffFrame.buff, self.buffFrame.debuff, pconf.buffs.size, pconf.debuffs.size)
+	end
+end
+
+-- ============================================================================
+-- Without Blizzard's SecureAuraHeaderTemplate (WoW Forever) the player's
+-- buffs are drawn by Z-Perl's own buff code, the one the target frame uses,
+-- on plain frames that UNIT_AURA refreshes. Each buff is a secure button so
+-- a right-click still cancels it.
+-- ============================================================================
+
+-- The client fires a secure button on the down click and the up click both,
+-- so exactly one is registered, the one the action bar setting asks for.
+local function PlainClick()
+	local get = GetCVarBool or (C_CVar and C_CVar.GetCVarBool)
+	local ok, useKeyDown = pcall(get, "ActionButtonUseKeyDown")
+	if ok and useKeyDown then
+		return "RightButtonDown"
+	end
+	return "RightButtonUp"
+end
+
+-- Cancelling by name survives the icons going stale in combat (auras can't
+-- be re-read there); by index only where the client has no CancelSpellByName
+local cancelByName = type(CancelSpellByName) == "function"
+
+local function XPerl_Player_DrawPlainBuffs(self)
+	local buffs = self.buffFrame
+	if not (buffs and buffs.plainAuras and self.conf) then
+		return
+	end
+	if not pconf.buffs.enable then
+		buffs:Hide()
+		self.debuffFrame:Hide()
+		return
+	end
+
+	XPerl_Unit_UpdateBuffs(self)
+
+	if InCombatLockdown() then
+		return -- attributes and anchors wait for combat to end
+	end
+
+	-- tell each secure button which buff its right-click cancels
+	for i = 1, 40 do
+		local button = buffs.buff and buffs.buff[i]
+		if not button then
+			break
+		end
+		if button:IsShown() then
+			local name = cancelByName and XPerl_UnitBuff(self.partyid, button:GetID(), button.filter)
+			button:SetAttribute("spell", name or nil)
+			button:SetAttribute("index", (not name) and button:GetID() or nil)
+			button:SetAttribute("filter", (not name) and button.filter or nil)
+		end
+	end
+
+	XPerl_Player_Buffs_Position(self)
+end
+
+local function XPerl_Player_PlainBuffFrames(self)
+	local buffs = CreateFrame("Frame", self:GetName().."buffFrame", self)
+	buffs:SetSize(100, 50)
+	buffs.plainAuras = true
+	local debuffs = CreateFrame("Frame", self:GetName().."debuffFrame", self)
+	debuffs:SetAllPoints(buffs)
+	self.buffFrame, self.debuffFrame = buffs, debuffs
+
+	self.buffSetup = {
+		buffTemplate = "XPerl_Player_PlainBuffTemplate",
+		rightClickable = true,
+		onCreate = function(button)
+			button:RegisterForClicks(PlainClick())
+		end,
+		buffScripts = {
+			OnEnter = XPerl_Unit_SetBuffTooltip,
+			OnLeave = XPerl_PlayerTipHide,
+		},
+		debuffScripts = {
+			OnEnter = XPerl_Unit_SetDeBuffTooltip,
+			OnLeave = XPerl_PlayerTipHide,
+		},
+		updateTooltipBuff = XPerl_Unit_SetBuffTooltip,
+		updateTooltipDebuff = XPerl_Unit_SetDeBuffTooltip,
+		debuffParent = true,
+		debuffSizeMod = 0.2,
+		buffAnchor1 = function(self, b)
+			b:SetPoint("TOPLEFT", 0, 0)
+		end,
+	}
+	self.buffSetup.debuffAnchor1 = self.buffSetup.buffAnchor1
+	self.perlBuffs, self.perlDebuffs = 0, 0
+
+	local events = CreateFrame("Frame")
+	events:SetScript("OnEvent", function()
+		XPerl_Player_DrawPlainBuffs(self)
+	end)
+	events:RegisterUnitEvent("UNIT_AURA", "player", "vehicle")
+	events:RegisterEvent("PLAYER_ENTERING_WORLD")
+	events:RegisterEvent("PLAYER_REGEN_ENABLED") -- auras are unreadable in combat: redraw after
+end
+
+-- Shows or hides the buff frames for the current settings, whichever kind they are
+local function ApplyBuffFrames(self)
+	local buffs, debuffs = self.buffFrame, self.debuffFrame
+	if not buffs then
+		return
+	end
+
+	if buffs.plainAuras then
+		if self.conf then
+			XPerl_SetBuffSize(self)
+		end
+		self.buffOptMix = nil
+		XPerl_Player_DrawPlainBuffs(self)
+		return
+	end
+
+	if pconf.buffs.enable then
+		setCommon(buffs, "HELPFUL", "XPerl_Secure_BuffTemplate")
+		buffs:Show()
+	else
+		buffs:Hide()
+	end
+
+	if pconf.buffs.enable and pconf.debuffs.enable then
+		setCommon(debuffs, "HARMFUL", "XPerl_Secure_BuffTemplate")
+		debuffs:Show()
+	else
+		debuffs:Hide()
 	end
 end
 
@@ -151,8 +284,7 @@ function XPerl_Player_BuffSetup(self)
 
 	if (not self.buffFrame) and not self.noAuraHeader then
 		-- Built on Blizzard's SecureAuraHeaderTemplate, which some clients
-		-- (WoW Forever) don't have. Without it there are no Z-Perl player
-		-- buffs, and Blizzard's own stay up (see below).
+		-- (WoW Forever) don't have. Without it Z-Perl draws the buffs itself.
 		local ok, header = pcall(CreateFrame, "Frame", self:GetName().."buffFrame", self, "SecureAuraHeaderTemplate")
 		if not ok then
 			self.noAuraHeader = true
@@ -161,7 +293,10 @@ function XPerl_Player_BuffSetup(self)
 			self.debuffFrame = CreateFrame("Frame", self:GetName().."debuffFrame", self.buffFrame, "SecureAuraHeaderTemplate")
 		end
 	end
-	if (self.buffFrame) and not self.buffFrame.BuffFrameUpdateTime then
+	if (not self.buffFrame) and self.noAuraHeader then
+		XPerl_Player_PlainBuffFrames(self)
+	end
+	if (self.buffFrame) and not self.buffFrame.plainAuras and not self.buffFrame.BuffFrameUpdateTime then
 
 
 		self.buffFrame:SetAttribute("frameStrata", "DIALOG")
@@ -180,23 +315,7 @@ function XPerl_Player_BuffSetup(self)
 		--self.debuffFrame.initialConfigFunction = self.buffFrame.initialConfigFunction
 	end
 
-	if (self.buffFrame) then
-		if pconf.buffs.enable then
-			setCommon(self.buffFrame, "HELPFUL", "XPerl_Secure_BuffTemplate")
-			self.buffFrame:Show()
-		else
-			self.buffFrame:Hide()
-		end
-	end
-
-	if (self.debuffFrame) then
-		if pconf.buffs.enable and pconf.debuffs.enable then
-			setCommon(self.debuffFrame, "HARMFUL", "XPerl_Secure_BuffTemplate")
-			self.debuffFrame:Show()
-		else
-			self.debuffFrame:Hide()
-		end
-	end
+	ApplyBuffFrames(self)
 
 	XPerl_Player_Buffs_Position(self)
 
@@ -230,31 +349,14 @@ local function XPerl_Player_Buffs_Set_Bits(self)
 
 	XPerl_Player_BuffSetup(self)
 
-	-- no buff frame without SecureAuraHeaderTemplate (Forever); a nil frame ref is an error
-	if self.buffFrame then
+	-- The secure header is placed by the state driver; the plain frames are
+	-- placed from Lua (XPerl_Player_Buffs_Position) and given no frame ref
+	if self.buffFrame and not self.buffFrame.plainAuras then
 		self.state:SetFrameRef("ZPerlPlayerBuffs", self.buffFrame)
 	end
 	self.state:SetAttribute("buffsAbove", pconf.buffs.above)
 
-	local buffs = self.buffFrame
-	if buffs then
-		if pconf.buffs.enable then
-			setCommon(buffs, "HELPFUL", "XPerl_Secure_BuffTemplate")
-			buffs:Show()
-		else
-			buffs:Hide()
-		end
-	end
-
-	local debuffs = self.debuffFrame
-	if debuffs then
-		if pconf.buffs.enable and pconf.debuffs.enable then
-			setCommon(debuffs, "HARMFUL", "XPerl_Secure_BuffTemplate")
-			debuffs:Show()
-		else
-			debuffs:Hide()
-		end
-	end
+	ApplyBuffFrames(self)
 
 	XPerl_Player_Buffs_Position(self)
 end
