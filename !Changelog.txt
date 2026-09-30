@@ -11,6 +11,12 @@
   * Buffs and debuffs: nothing secret leaves Z-Perl's own aura reader, so the buff code can compare and add up what it gets
   * A raid roster row with one hidden field keeps its other fields; a hidden name reads as the unit's slot ("raid7") in the raid admin lists
   * The whisper entry is left out of the right-click menu when the name can't be read
+* Forever: asked the client itself which of the functions Z-Perl calls it does not have, and covered the ones that could still be reached:
+  * Range finder set to check by item or by distance: IsItemInRange is gone, so every check errored. It now uses the client's newer call, or falls back to the distance check
+  * Class icon portraits: SetPortraitToTexture is gone; the class icon is now set directly (square rather than round)
+  * Right-click menu: Invite works again (InviteUnit moved), and is left out when it can't work
+  * Options: spell links in the buff and range finder settings (GetSpellLink moved)
+  * Hiding Blizzard's raid frames no longer errors where the client has dropped parts of them
 
 **8.0.2** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Raid Helper: Target Counters, Count Healers Only for self and Enemy Targeting are now off by default (characters that already saved these settings keep them)

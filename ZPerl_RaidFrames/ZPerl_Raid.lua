@@ -1383,11 +1383,18 @@ local function DisableCompactRaidFrames()
 	SetRaidProfileOption(CompactUnitFrameProfiles.selectedProfile, "autoActivatePvE", false)
 	--CompactUnitFrameProfiles_ApplyCurrentSettings()
 	--CompactUnitFrameProfiles_UpdateCurrentPanel()
-	CompactUnitFrameProfiles_SaveChanges(CompactUnitFrameProfiles)
+	-- (each of these is gone from one client or another)
+	if CompactUnitFrameProfiles_SaveChanges then
+		CompactUnitFrameProfiles_SaveChanges(CompactUnitFrameProfiles)
+	end
 	if not InCombatLockdown() then
 		SetCVar("useCompactPartyFrames", 0)
-		CompactUnitFrameProfilesRaidStylePartyFrames:SetChecked(false)
-		CompactRaidFrameManager_SetSetting("IsShown", false)
+		if CompactUnitFrameProfilesRaidStylePartyFrames then
+			CompactUnitFrameProfilesRaidStylePartyFrames:SetChecked(false)
+		end
+		if CompactRaidFrameManager_SetSetting then
+			CompactRaidFrameManager_SetSetting("IsShown", false)
+		end
 	end
 end
 

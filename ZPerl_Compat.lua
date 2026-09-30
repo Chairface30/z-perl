@@ -349,6 +349,35 @@ if not UnitAura and C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
     end
 end
 
+-- IsItemInRange: WoW Forever has no global of that name. C_Item's is used if
+-- the client has one; where there is none the answer is nil ("can't tell") and
+-- the range finder falls back to its distance checks.
+if not IsItemInRange then
+    local itemInRange = C_Item and C_Item.IsItemInRange
+    IsItemInRange = function(item, unit)
+        if type(itemInRange) ~= "function" then return nil end
+        local ok, inRange = pcall(itemInRange, item, unit)
+        if not ok then return nil end
+        return inRange
+    end
+end
+
+-- GetSpellLink: in C_Spell on newer clients. With neither, there is no link.
+if not GetSpellLink then
+    local spellLink = C_Spell and C_Spell.GetSpellLink
+    GetSpellLink = function(spell)
+        if type(spellLink) ~= "function" then return nil end
+        local ok, link = pcall(spellLink, spell)
+        if ok then return link end
+        return nil
+    end
+end
+
+-- InviteUnit: in C_PartyInfo on newer clients.
+if not InviteUnit and C_PartyInfo and C_PartyInfo.InviteUnit then
+    InviteUnit = C_PartyInfo.InviteUnit
+end
+
 -- IsSpellInRange: newer clients (WoW Forever) have only C_Spell.IsSpellInRange,
 -- which answers true/false/nil where the old one answered 1/0/nil.
 if not IsSpellInRange and C_Spell and C_Spell.IsSpellInRange then
@@ -681,7 +710,7 @@ if not XPerl_ShowGenericMenu then
             end
             
             -- Invite (if player and not in group)
-            if SafeUnitIsPlayer(unit) and not SafeUnitIsUnit(unit, "player") and not SafeUnitInParty(unit) and not SafeUnitInRaid(unit) then
+            if InviteUnit and XPerl_Plain(name) and SafeUnitIsPlayer(unit) and not SafeUnitIsUnit(unit, "player") and not SafeUnitInParty(unit) and not SafeUnitInRaid(unit) then
                 info = MSA_DropDownMenu_CreateInfo()
                 info.text = PARTY_INVITE
                 info.notCheckable = true

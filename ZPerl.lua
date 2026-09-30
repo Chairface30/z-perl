@@ -3833,7 +3833,12 @@ function XPerl_Unit_UpdatePortrait(self, force)
 		if self.conf.classPortrait then
 			local _, englishClass = UnitClass(self.partyid)
 			if UnitIsPlayer(self.partyid) and englishClass then
-				SetPortraitToTexture(self.portraitFrame.portrait, "Interface\\Icons\\ClassIcon_"..englishClass)
+				-- (WoW Forever has no SetPortraitToTexture: the icon goes on as it is, square)
+				if SetPortraitToTexture then
+					SetPortraitToTexture(self.portraitFrame.portrait, "Interface\\Icons\\ClassIcon_"..englishClass)
+				else
+					self.portraitFrame.portrait:SetTexture("Interface\\Icons\\ClassIcon_"..englishClass)
+				end
 			elseif UnitExists(self.partyid) then
 				SetPortraitTexture(self.portraitFrame.portrait, self.partyid)
 			end
