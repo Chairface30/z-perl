@@ -1886,7 +1886,9 @@ function XPerl_PlayerTip(self, unitid)
 	end
 
 	if (SpellIsTargeting()) then
-		if (SpellCanTargetUnit(unitid)) then
+		-- Forever keeps the answer secret in combat: read that as targetable
+		local ok, canTarget = pcall(function() return SpellCanTargetUnit(unitid) and true or false end)
+		if (not ok or canTarget) then
 			SetCursor("CAST_CURSOR")
 		else
 			SetCursor("CAST_ERROR_CURSOR")
@@ -1895,8 +1897,13 @@ function XPerl_PlayerTip(self, unitid)
 
 	GameTooltip_SetDefaultAnchor(GameTooltip, self)
 	GameTooltip:SetUnit(unitid)
-	local r, g, b = GameTooltip_UnitColor(unitid)
-	GameTooltipTextLeft1:SetTextColor(r, g, b)
+	-- Blizzard's colour picker tests flags Forever keeps secret in combat
+	-- (a mouse-over of a group member's target): the name then keeps the
+	-- tooltip's own colour
+	local ok, r, g, b = pcall(GameTooltip_UnitColor, unitid)
+	if (ok and r) then
+		GameTooltipTextLeft1:SetTextColor(r, g, b)
+	end
 	GameTooltip:Show()
 
 	if (XPerl_RaidTipExtra) then
