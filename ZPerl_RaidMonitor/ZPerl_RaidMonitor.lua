@@ -5,6 +5,10 @@
 -- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
 -- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
 
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+
+-- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
+
 local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
 local UnitIsDead = XPerl_SafeUnitAPI(UnitIsDead)
 local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
@@ -211,7 +215,7 @@ local function UpdateUnit(self)
 	if (id) then
 		self.bar.name:SetText(UnitName(id))
 
-		self.powerType = UnitPowerType(id)
+		self.powerType = XPerl_Plain(UnitPowerType(id))
 		self.mana, self.manaMax = UnitPower(id), UnitPowerMax(id)
 		self.bar:SetMinMaxValues(0, self.manaMax)
 		self.bar:SetValue(self.mana)
@@ -521,7 +525,7 @@ function XPerl_RaidMonitor_Init(self)
 		if (u) then
 			local id = SecureButton_GetUnit(u)
 			if (id) then
-				u.powerType = UnitPowerType(id)
+				u.powerType = XPerl_Plain(UnitPowerType(id))
 				u.mana, u.manaMax = UnitPower(id), UnitPowerMax(id)
 				u.bar:SetMinMaxValues(0, u.manaMax)
 				u.bar:SetValue(u.mana)
@@ -549,7 +553,7 @@ function XPerl_RaidMonitor_Init(self)
 		if (u) then
 			local id = SecureButton_GetUnit(u)
 			if (id) then
-				u.powerType = UnitPowerType(id)
+				u.powerType = XPerl_Plain(UnitPowerType(id))
 				u.mana, u.manaMax = UnitPower(id), UnitPowerMax(id)
 				u.bar:SetMinMaxValues(0, u.manaMax)
 				u.bar:SetValue(u.mana)
@@ -577,7 +581,7 @@ function XPerl_RaidMonitor_Init(self)
 		if (u) then
 			local id = SecureButton_GetUnit(u)
 			if (id) then
-				u.powerType = UnitPowerType(id)
+				u.powerType = XPerl_Plain(UnitPowerType(id))
 				u.mana, u.manaMax = UnitPower(id), UnitPowerMax(id)
 				u.bar:SetMinMaxValues(0, u.manaMax)
 				u.bar:SetValue(u.mana)

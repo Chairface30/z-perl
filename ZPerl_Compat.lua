@@ -282,27 +282,48 @@ if not UnitAura and C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
     function XPerl_AurasLocked(unit)
         return not pcall(C_UnitAuras.GetAuraDataByIndex, unit or "player", 1, "HELPFUL")
     end
+    -- One field of the aura, under either of its names; nil when secret. The
+    -- buff code compares, adds up and looks up what it gets from here, so
+    -- nothing secret may leave.
+    local issecret = issecretvalue
+    local function Field(data, key, otherKey)
+        local value = data[key]
+        if issecret and issecret(value) then return nil end
+        if value == nil and otherKey then
+            value = data[otherKey]
+            if issecret and issecret(value) then return nil end
+        end
+        return value
+    end
+    local function AuraFields(unit, index, filter)
+        local data = C_UnitAuras.GetAuraDataByIndex(unit, index, filter)
+        if issecret and issecret(data) then return nil end
+        if type(data) ~= "table" then return nil end
+        local name = Field(data, "name")
+        if name == nil then return nil end -- an aura with no readable name is no aura
+        return name,
+               Field(data, "icon"),
+               Field(data, "applications", "count") or 0,
+               Field(data, "dispelName", "debuffType"),
+               Field(data, "duration"),
+               Field(data, "expirationTime"),
+               Field(data, "sourceUnit", "source"),
+               Field(data, "isStealable"),
+               Field(data, "nameplateShowPersonal"),
+               Field(data, "spellId"),
+               Field(data, "canApplyAura"),
+               Field(data, "isBossAura", "isBossDebuff"),
+               Field(data, "isFromPlayerOrPlayerPet", "castByPlayer"),
+               Field(data, "nameplateShowAll"),
+               Field(data, "timeMod")
+    end
+    local function Read(ok, ...)
+        if ok then return ... end
+        return nil
+    end
     UnitAura = function(unit, indexOrName, filter)
         if type(indexOrName) == "number" then
-            local ok, auraData = pcall(C_UnitAuras.GetAuraDataByIndex, unit, indexOrName, filter)
-            if not ok then auraData = nil end
-            if auraData then
-                return auraData.name,
-                       auraData.icon,
-                       auraData.applications or auraData.count or 0,
-                       auraData.dispelName or auraData.debuffType,
-                       auraData.duration,
-                       auraData.expirationTime,
-                       auraData.sourceUnit or auraData.source,
-                       auraData.isStealable,
-                       auraData.nameplateShowPersonal,
-                       auraData.spellId,
-                       auraData.canApplyAura,
-                       auraData.isBossAura or auraData.isBossDebuff,
-                       auraData.isFromPlayerOrPlayerPet or auraData.castByPlayer,
-                       auraData.nameplateShowAll,
-                       auraData.timeMod
-            end
+            return Read(pcall(AuraFields, unit, indexOrName, filter))
         end
         return nil
     end
@@ -333,7 +354,11 @@ end
 if not IsSpellInRange and C_Spell and C_Spell.IsSpellInRange then
     IsSpellInRange = function(spell, unit)
         local ok, inRange = pcall(C_Spell.IsSpellInRange, spell, unit)
-        if not ok or inRange == nil then return nil end
+        if not ok then return nil end
+        -- A secret answer is handed on as it is: it can't be tested here, and
+        -- XPerl_SafeRangeAPI reads it as in range.
+        if issecretvalue and issecretvalue(inRange) then return inRange end
+        if inRange == nil then return nil end
         return inRange and 1 or 0
     end
 end
@@ -644,7 +669,8 @@ if not XPerl_ShowGenericMenu then
             end
             
             -- Whisper (if player)
-            if SafeUnitIsPlayer(unit) and not SafeUnitIsUnit(unit, "player") then
+            -- (a secret name can't be written into the chat box)
+            if SafeUnitIsPlayer(unit) and not SafeUnitIsUnit(unit, "player") and XPerl_Plain(name) then
                 info = MSA_DropDownMenu_CreateInfo()
                 info.text = WHISPER
                 info.notCheckable = true

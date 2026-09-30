@@ -333,7 +333,7 @@ function XPerl_TargetTarget_UpdateDisplay(self, force)
 				self.levelFrame.text:SetText(TargetTargetLevel)
 
 				if plainLevel == -1 and TargetTargetLevel == "Boss" then
-					self.levelFrame:SetWidth(self.levelFrame.text:GetStringWidth() + 6)
+					self.levelFrame:SetWidth((XPerl_StringWidth(self.levelFrame.text) or 27) + 6)
 					color = {r = 1, g = 0, b = 0}
 				end
 
@@ -402,13 +402,13 @@ function XPerl_TargetTarget_OnUpdate(self, elapsed)
 
 	if XPerl_Secret(newHP, newHPMax, newMana, newManaMax) then
 		-- Forever: can't tell whether a secret value changed, so redraw on a timer
-		if XPerl_SecretPoll(self, elapsed) or (conf.showAFK and newAFK ~= self.afk) or (newManaType ~= XPerl_Plain(self.targetmanatype)) then
+		if XPerl_SecretPoll(self, elapsed) or (conf.showAFK and XPerl_Changed(newAFK, self.afk)) or (newManaType ~= XPerl_Plain(self.targetmanatype)) then
 			XPerl_Target_UpdateHealth(self)
 			XPerl_Target_SetManaType(self)
 			XPerl_Target_SetMana(self)
 		end
 	else
-		if (conf.showAFK and newAFK ~= self.afk) or (newHP ~= self.targethp) or (newHPMax ~= self.targethpmax) then
+		if (conf.showAFK and XPerl_Changed(newAFK, self.afk)) or XPerl_Changed(newHP, self.targethp) or XPerl_Changed(newHPMax, self.targethpmax) then
 			XPerl_Target_UpdateHealth(self)
 		end
 
@@ -417,7 +417,7 @@ function XPerl_TargetTarget_OnUpdate(self, elapsed)
 			XPerl_Target_SetMana(self)
 		end
 
-		if (newMana ~= self.targetmana) or (newManaMax ~= self.targetmanamax) then
+		if XPerl_Changed(newMana, self.targetmana) or XPerl_Changed(newManaMax, self.targetmanamax) then
 			XPerl_Target_SetMana(self)
 		end
 	end
@@ -470,13 +470,13 @@ function XPerl_TargetTargetTarget_OnUpdate(self, elapsed)
 
 	if XPerl_Secret(newHP, newMana) then
 		-- Forever: can't tell whether a secret value changed, so redraw on a timer
-		if XPerl_SecretPoll(self, elapsed) or (conf.showAFK and newAFK ~= self.afk) or (newManaType ~= XPerl_Plain(self.targetmanatype)) then
+		if XPerl_SecretPoll(self, elapsed) or (conf.showAFK and XPerl_Changed(newAFK, self.afk)) or (newManaType ~= XPerl_Plain(self.targetmanatype)) then
 			XPerl_Target_UpdateHealth(self)
 			XPerl_Target_SetManaType(self)
 			XPerl_Target_SetMana(self)
 		end
 	else
-		if (conf.showAFK and newAFK ~= self.afk) or (newHP ~= self.targethp) then
+		if (conf.showAFK and XPerl_Changed(newAFK, self.afk)) or XPerl_Changed(newHP, self.targethp) then
 			XPerl_Target_UpdateHealth(self)
 		end
 
@@ -485,7 +485,7 @@ function XPerl_TargetTargetTarget_OnUpdate(self, elapsed)
 			XPerl_Target_SetMana(self)
 		end
 
-		if (newMana ~= self.targetmana) then
+		if XPerl_Changed(newMana, self.targetmana) then
 			XPerl_Target_SetMana(self)
 		end
 	end

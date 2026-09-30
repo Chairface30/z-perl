@@ -59,7 +59,7 @@ local GetDifficultyColor = GetDifficultyColor or GetQuestDifficultyColor
 local GetInspectSpecialization = GetInspectSpecialization
 local GetLootMethod = GetLootMethod
 local GetNumGroupMembers = GetNumGroupMembers
-local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+local GetRaidRosterInfo = XPerl_SafeUnitAPI(GetRaidRosterInfo)
 local GetSpecializationInfoByID = GetSpecializationInfoByID
 local GetSpellInfo = GetSpellInfo
 local GetTime = GetTime
@@ -556,7 +556,7 @@ local function XPerl_Target_UpdateClassification(self)
 	if (partyid == "target" and bossType and not tconf.eliteNone) or (partyid == "focus" and bossType and not fconf.eliteNone) then
 		self.bossFrame:Show()
 		self.bossFrame.text:SetText(bossType)
-		self.bossFrame:SetWidth(self.bossFrame.text:GetStringWidth() + 10)
+		self.bossFrame:SetWidth((XPerl_StringWidth(self.bossFrame.text) or 60) + 10)
 	else
 		self.bossFrame:Hide()
 	end
@@ -637,7 +637,7 @@ do
 			--self.creatureTypeFrame.text:SetFormattedText("%d / %d / %d", s1, s2, s3)
 			self.creatureTypeFrame.text:SetText(spec)
 		end
-		self.creatureTypeFrame:SetWidth(self.creatureTypeFrame.text:GetStringWidth() + 10)
+		self.creatureTypeFrame:SetWidth((XPerl_StringWidth(self.creatureTypeFrame.text) or 60) + 10)
 		self.creatureTypeFrame:Show()
 
 		AdjustCreatureTypeFrame(self)
@@ -787,7 +787,7 @@ local function XPerl_Target_UpdateType(self)
 				self.bossFrame.text:SetText(LocalClass)
 				self.bossFrame.text:SetTextColor(1, 1, 1)
 				self.bossFrame:Show()
-				self.bossFrame:SetWidth(self.bossFrame.text:GetStringWidth() + 10)
+				self.bossFrame:SetWidth((XPerl_StringWidth(self.bossFrame.text) or 60) + 10)
 			else
 				if (UnitIsPlayer(partyid) or not UnitPlayerControlled(partyid)) then
 					local l, r, t, b = XPerl_ClassPos(LocalClass)
@@ -802,7 +802,7 @@ local function XPerl_Target_UpdateType(self)
 	--else
 		if (targettype) then
 			self.creatureTypeFrame.text:SetTextColor(1, 1, 1)
-			self.creatureTypeFrame:SetWidth(self.creatureTypeFrame.text:GetStringWidth() + 10)
+			self.creatureTypeFrame:SetWidth((XPerl_StringWidth(self.creatureTypeFrame.text) or 60) + 10)
 		else
 			self.creatureTypeFrame:Hide()
 		end

@@ -260,7 +260,7 @@ local function XPerl_RaidPets_OnUpdate(self, elapsed)
 			if XPerl_SecretPoll(self, elapsed) then
 				XPerl_RaidPets_UpdateHealth(self)
 			end
-		elseif (newHP ~= self.pethp or newHPMax ~= self.pethpmax) then
+		elseif (XPerl_Changed(newHP, self.pethp) or XPerl_Changed(newHPMax, self.pethpmax)) then
 			XPerl_RaidPets_UpdateHealth(self)
 		end
 

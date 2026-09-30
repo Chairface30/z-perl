@@ -5,7 +5,7 @@
 -- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
 -- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
 local UnitGroupRolesAssigned = XPerl_SafeUnitAPI(UnitGroupRolesAssigned)
-local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+local GetRaidRosterInfo = XPerl_SafeUnitAPI(GetRaidRosterInfo)
 
 local UnitIsAFK = XPerl_SafeUnitAPI(UnitIsAFK)
 local UnitIsDND = XPerl_SafeUnitAPI(UnitIsDND)
@@ -2342,6 +2342,7 @@ local function GetCombatRezzerList()
 			local raidid = "raid"..i
 			if (not UnitIsDeadOrGhost(raidid) and UnitIsVisible(raidid)) then
 				local name, _, _, _, _, fileName = GetRaidRosterInfo(i)
+				name = name or raidid -- a name the client keeps secret reads as the unit's slot
 
 				local good
 				if (not UnitAffectingCombat(raidid)) then

@@ -11,7 +11,7 @@ end
 ZPerl_CheckItems = {}
 -- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
 -- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
-local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+local GetRaidRosterInfo = XPerl_SafeUnitAPI(GetRaidRosterInfo)
 
 local UnitIsConnected = XPerl_SafeTrueAPI(UnitIsConnected)
 local UnitClass = XPerl_SafeUnitAPI(UnitClass)
@@ -968,9 +968,10 @@ function XPerl_Check_MakePlayerList()
 		end
 
 		for i = 1, GetNumGroupMembers() do
-			local name = UnitName("raid"..i)
-			-- The name is shown as it is; lookups use a readable copy (nil when secret).
-			local plainName = XPerl_Plain(name)
+			-- The list is sorted and looked up by name: a name the client keeps
+			-- secret reads as the unit's slot.
+			local plainName = XPerl_Plain(UnitName("raid"..i))
+			local name = plainName or ("raid"..i)
 			local _, class = UnitClass("raid"..i)
 			local count = 0
 			local noCTRA

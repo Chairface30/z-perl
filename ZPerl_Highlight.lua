@@ -64,8 +64,8 @@ local UnitIsDeadOrGhost = XPerl_SafeUnitAPI(UnitIsDeadOrGhost)
 local UnitIsGhost = XPerl_SafeUnitAPI(UnitIsGhost)
 local UnitIsUnit = XPerl_SafeUnitAPI(UnitIsUnit)
 local UnitName = UnitName
-local UnitPlayerOrPetInParty = UnitPlayerOrPetInParty
-local UnitPlayerOrPetInRaid = UnitPlayerOrPetInRaid
+local UnitPlayerOrPetInParty = XPerl_SafeUnitAPI(UnitPlayerOrPetInParty)
+local UnitPlayerOrPetInRaid = XPerl_SafeUnitAPI(UnitPlayerOrPetInRaid)
 
 local SecureButton_GetUnit = SecureButton_GetUnit
 
@@ -613,7 +613,7 @@ function xpHigh:ShowShieldBar(frame, show)
 	local h = frame.highlight
 	if (show and conf.highlight.SHIELD and conf.highlight.sparkles) then
 		local unit = SecureButton_GetUnit(frame)
-		local guid = unit and UnitGUID(unit)
+		local guid = unit and XPerl_Plain(UnitGUID(unit)) -- a key; nil when secret
 		if (guid) then
 			local shield = self.shields[guid]
 			if (shield) then

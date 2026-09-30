@@ -6,7 +6,7 @@
 -- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
 -- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
 local UnitGroupRolesAssigned = XPerl_SafeUnitAPI(UnitGroupRolesAssigned)
-local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+local GetRaidRosterInfo = XPerl_SafeUnitAPI(GetRaidRosterInfo)
 
 local CheckInteractDistance = XPerl_SafeRangeAPI(CheckInteractDistance)
 
@@ -656,7 +656,8 @@ local function XPerl_Party_UpdateName(self)
 		self.nameFrame.text:SetFontObject(GameFontNormal)
 		self.nameFrame.text:SetText(Partyname)
 
-		if (self.nameFrame.text:GetStringWidth() > self.nameFrame:GetWidth() - 4) then
+		-- A secret name has a secret width: the small font, which always fits
+		if ((XPerl_StringWidth(self.nameFrame.text) or math.huge) > self.nameFrame:GetWidth() - 4) then
 			self.nameFrame.text:SetFontObject(GameFontNormalSmall)
 		end
 
@@ -1137,7 +1138,7 @@ function XPerl_Party_OnUpdate(self, elapsed)
 				if XPerl_SecretPoll(self.targetFrame, elapsed) then
 					XPerl_Party_TargetUpdateHealth(self)
 				end
-			elseif (hp ~= self.targetFrame.lastHP or hpMax ~= self.targetFrame.lastHPMax or heal ~= self.targetFrame.lastHeal or absorb ~= self.targetFrame.lastAbsorb or GetTime() > self.targetFrame.lastUpdate + 5000) then
+			elseif (XPerl_Changed(hp, self.targetFrame.lastHP) or XPerl_Changed(hpMax, self.targetFrame.lastHPMax) or XPerl_Changed(heal, self.targetFrame.lastHeal) or XPerl_Changed(absorb, self.targetFrame.lastAbsorb) or GetTime() > self.targetFrame.lastUpdate + 5000) then
 				XPerl_Party_TargetUpdateHealth(self)
 			end
 		end

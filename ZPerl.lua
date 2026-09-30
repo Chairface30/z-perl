@@ -74,7 +74,7 @@ local GetLocale = GetLocale
 local GetNumAddOns = GetNumAddOns
 local GetNumGroupMembers = GetNumGroupMembers
 local GetNumSubgroupMembers = GetNumSubgroupMembers
-local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+local GetRaidRosterInfo = XPerl_SafeUnitAPI(GetRaidRosterInfo)
 local GetRaidTargetIndex = XPerl_SafeUnitAPI(GetRaidTargetIndex)
 local GetReadyCheckStatus = GetReadyCheckStatus
 local GetRealmName = GetRealmName
@@ -390,6 +390,22 @@ function XPerl_GUIDDiffers(a, b, unknown)
 	return a ~= b
 end
 
+-- a ~= b for values a frame keeps from one update to the next (health, mana,
+-- names): what was kept can be secret even when the new reading is not, and
+-- comparing it throws. A secret on either side counts as changed.
+function XPerl_Changed(a, b)
+	if XPerl_Secret(a, b) then return true end
+	return a ~= b
+end
+
+-- A font string's text width, or nil when the client keeps it secret (it
+-- does after the string has been given secret text).
+function XPerl_StringWidth(fontString)
+	local ok, width = pcall(fontString.GetStringWidth, fontString)
+	if not ok or XPerl_Secret(width) then return nil end
+	return width
+end
+
 -- For per-frame GUID checks: true twice a second, so a frame whose unit's GUID
 -- is secret still redraws when the unit might have changed.
 function XPerl_GUIDPoll(self, elapsed)
@@ -434,7 +450,7 @@ end
 function XPerl_SetSecretPercent(fontString, unit, power, pType)
 	if not fontString then return end
 	local pct = SecretPercent(unit, power, pType)
-	if pct == nil or not pcall(fontString.SetFormattedText, fontString, "%d%%", pct) then
+	if (not XPerl_Secret(pct) and pct == nil) or not pcall(fontString.SetFormattedText, fontString, "%d%%", pct) then
 		fontString:SetText("")
 	end
 end
@@ -2825,7 +2841,8 @@ function XPerl_StatusBarSetValue(self, val)
 		local min, max = self:GetMinMaxValues()
 		local current = self:GetValue()
 
-		if (val < current and val <= max and val >= min) then
+		-- A bar holding secret values can't be compared: no fade, just the new value
+		if (not XPerl_Secret(val, current, min, max) and val < current and val <= max and val >= min) then
 			local bar = fadeBars[self]
 
 			if (not bar) then
@@ -3775,7 +3792,8 @@ function XPerl_NextMember(_, last)
 				if (i and i < raidCount) then
 					i = i + 1
 					local unitName, _, group, _, _, unitClass, zone, online, dead = GetRaidRosterInfo(i)
-					return "raid"..i, unitName, unitClass, group, zone, online, dead
+					-- (a name the client keeps secret reads as the unit's slot)
+					return "raid"..i, unitName or ("raid"..i), unitClass, group, zone, online, dead
 				end
 			else
 				local partyCount = GetNumSubgroupMembers()
@@ -3793,7 +3811,7 @@ function XPerl_NextMember(_, last)
 
 					if (id) then
 						local _, class = UnitClass(id)
-						return id, UnitName(id), class, 1, "", UnitIsConnected(id), UnitIsDeadOrGhost(id)
+						return id, XPerl_Plain(UnitName(id)) or id, class, 1, "", UnitIsConnected(id), UnitIsDeadOrGhost(id)
 					end
 				end
 			end
@@ -3801,7 +3819,7 @@ function XPerl_NextMember(_, last)
 	else
 		if (IsInRaid()) then
 			local unitName, _, group, _, _, unitClass, zone, online, dead = GetRaidRosterInfo(1)
-			return "raid1", unitName, unitClass, group, zone, online, dead
+			return "raid1", unitName or "raid1", unitClass, group, zone, online, dead
 		else
 			local _, class = UnitClass("player")
 			return "player", UnitName("player"), class, 1, GetRealZoneText(), 1, UnitIsDeadOrGhost("player")
@@ -4295,6 +4313,11 @@ function XPerl_SetExpectedAbsorbs(self)
 				healthBar = self.healthBar
 			end
 			local min, max = healthBar:GetMinMaxValues()
+			-- The health bar itself can still hold secret values from its last draw
+			if XPerl_Secret(min, max, healthBar:GetValue()) then
+				bar:Hide()
+				return
+			end
 			local position = ((max - healthBar:GetValue()) / max) * healthBar:GetWidth()
 
 			if healthBar:GetWidth() <= 0 then

@@ -4,7 +4,7 @@
 
 -- Forever: these can come back secret; secret reads as nil (see ZPerl_Compat.lua)
 -- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
-local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+local GetRaidRosterInfo = XPerl_SafeUnitAPI(GetRaidRosterInfo)
 
 local UnitIsPVP = XPerl_SafeUnitAPI(UnitIsPVP)
 local UnitIsPVPFreeForAll = XPerl_SafeUnitAPI(UnitIsPVPFreeForAll)
@@ -494,7 +494,7 @@ local function XPerl_Player_UpdateXP(self)
 				else
 					XPerl_SetValuedText(xpBar.text, playerxp, playerxpmax, suffix)
 				end
-				if (xpBar.text:GetStringWidth() + 20 <= w) then
+				if ((XPerl_StringWidth(xpBar.text) or 0) + 20 <= w) then
 					break
 				end
 			end

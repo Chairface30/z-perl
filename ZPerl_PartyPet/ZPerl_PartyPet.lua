@@ -577,11 +577,11 @@ local function XPerl_Party_Pet_OnUpdate(self, elapsed)
 				XPerl_Party_Pet_UpdateHealth(self)
 				XPerl_Party_Pet_UpdateMana(self)
 			end
-		elseif (newHP ~= self.pethp or newHPMax ~= self.pethpmax) then
+		elseif (XPerl_Changed(newHP, self.pethp) or XPerl_Changed(newHPMax, self.pethpmax)) then
 			XPerl_Party_Pet_UpdateHealth(self)
 		end
 
-		if not XPerl_Secret(newMana, newManaMax) and (newMana ~= self.petmana or newManaMax ~= self.petmanamax) then
+		if not XPerl_Secret(newMana, newManaMax) and (XPerl_Changed(newMana, self.petmana) or XPerl_Changed(newManaMax, self.petmanamax)) then
 			XPerl_Party_Pet_UpdateMana(self)
 		end
 

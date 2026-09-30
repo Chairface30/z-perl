@@ -9,7 +9,7 @@ ZPerl_MainTanks = {}
 -- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
 local UnitGroupRolesAssigned = XPerl_SafeUnitAPI(UnitGroupRolesAssigned)
 local GetPartyAssignment = XPerl_SafeUnitAPI(GetPartyAssignment)
-local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+local GetRaidRosterInfo = XPerl_SafeUnitAPI(GetRaidRosterInfo)
 
 local UnitAffectingCombat = XPerl_SafeUnitAPI(UnitAffectingCombat)
 local UnitPlayerControlled = XPerl_SafeUnitAPI(UnitPlayerControlled)
@@ -128,8 +128,9 @@ local function UpdateUnit(self,forcedUpdate)
 		self.text:SetText(name)
 		self.text:SetPoint("BOTTOMRIGHT", self, "TOPRIGHT", 0, -12)
 
+		-- A secret name can't be measured or shortened: it shows as it is
 		local remCount = 1
-		while ((self.text:GetStringWidth() >= (self:GetWidth() - 2)) and (string.len(name) > remCount)) do
+		while (not XPerl_Secret(name) and ((XPerl_StringWidth(self.text) or 0) >= (self:GetWidth() - 2)) and (string.len(name) > remCount)) do
 			name = string.sub(name, 1, string.len(name) - remCount)..".."
 			remCount = 3
 			self.text:SetText(name)
@@ -401,7 +402,8 @@ local function ValidateTankList()
 	for index,entry in pairs(ZPerl_MainTanks) do
 		local found
 		for i = 1,GetNumGroupMembers() do
-			if (strlower(UnitName("raid"..i)) == strlower(entry[2])) then
+			local n = XPerl_Plain(UnitName("raid"..i)) -- nil when secret
+			if (n and strlower(n) == strlower(entry[2])) then
 				found = true
 				break
 			end
@@ -1456,6 +1458,9 @@ end
 -- SmoothBarColor
 local function SmoothBarColor(bar, barBG)
 	local barmin, barmax = bar:GetMinMaxValues()
+	if XPerl_Secret(barmin, barmax, bar:GetValue()) then
+		return -- a bar holding secret health keeps the color it has
+	end
 	local percentage = (bar:GetValue() / (barmax - barmin))
 
 	local r, g

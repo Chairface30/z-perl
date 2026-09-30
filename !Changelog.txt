@@ -2,9 +2,15 @@
 * Forever: a sweep for the errors still waiting to happen. A static check of every Z-Perl file found each place a value the client can keep secret is compared, tested, added up, joined into text or used as a table key; all of them are now guarded. What changes when the client hides something:
   * Range checks: a unit the client won't give a distance for is treated as in range, so frames don't fade wrongly
   * Connected and visible: an unknown answer counts as yes, so group members aren't greyed out as Offline
-  * Other players' casts, and a raid roster row the client hides, read as nothing (as cast bars already did)
+  * Other players' casts read as nothing (as cast bars already did)
   * Names, levels, reactions and power types still show; they just aren't compared, colored or used to look things up
   * The XP bar still fills if your XP is hidden, without the text
+* Forever: fixed the party pet frame erroring in combat ("attempt to compare field 'petmana'"). Frames remember the last health and mana they drew to tell when to redraw, and what they remembered could be secret; the same comparison in the party, party pet, raid pet, target of target and party target frames is fixed
+* Forever: the sweep now also follows values a frame keeps between updates, values handed back by Z-Perl's own functions, and the width of text that holds a secret name
+  * A name too long for its frame, when the name is secret, is shown whole rather than measured and shortened
+  * Buffs and debuffs: nothing secret leaves Z-Perl's own aura reader, so the buff code can compare and add up what it gets
+  * A raid roster row with one hidden field keeps its other fields; a hidden name reads as the unit's slot ("raid7") in the raid admin lists
+  * The whisper entry is left out of the right-click menu when the name can't be read
 
 **8.0.2** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Raid Helper: Target Counters, Count Healers Only for self and Enemy Targeting are now off by default (characters that already saved these settings keep them)

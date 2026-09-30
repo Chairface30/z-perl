@@ -4,7 +4,7 @@
 
 -- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
 -- Forever: answers these can keep secret, made safe (see ZPerl_Compat.lua)
-local GetRaidRosterInfo = XPerl_SafeCastAPI(GetRaidRosterInfo)
+local GetRaidRosterInfo = XPerl_SafeUnitAPI(GetRaidRosterInfo)
 
 local UnitIsGroupLeader = XPerl_SafeUnitAPI(UnitIsGroupLeader)
 local UnitIsGroupAssistant = XPerl_SafeUnitAPI(UnitIsGroupAssistant)
