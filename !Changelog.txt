@@ -1,4 +1,5 @@
 **Unreleased**
+* Blizzard's buff frame is hidden only by Hide Default Buffs. With that off and Player Buffs on, both show at once
 * Forever: fixed an error when hovering the target of target frame in combat ("attempt to perform boolean test on a secret boolean value" in GameTooltip_UnitColor). Blizzard's name-color picker tests unit flags the client keeps secret then; the name keeps the tooltip's own color instead
 
 **8.0.3** - Z-Perl Unit Frames Forever - By Chairface Chippendale

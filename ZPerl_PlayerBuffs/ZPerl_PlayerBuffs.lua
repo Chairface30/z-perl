@@ -326,8 +326,9 @@ function XPerl_Player_BuffSetup(self)
 		end
 	end
 
-	-- Blizzard's buffs go while Z-Perl shows yours (or when asked to anyway)
-	if ((pconf.buffs.enable and self.buffFrame) or pconf.buffs.hideBlizzard) then
+	-- Blizzard's buffs go only when asked to (Hide Default Buffs). With that
+	-- off, Blizzard's and Z-Perl's show at once.
+	if (pconf.buffs.hideBlizzard) then
 		HideBlizzardAuraFrame(BuffFrame)
 		HideBlizzardAuraFrame(DebuffFrame)
 		HideBlizzardAuraFrame(TemporaryEnchantFrame)
