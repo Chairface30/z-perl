@@ -51,7 +51,8 @@ local GetTime = GetTime
 local GetZonePVPInfo = GetZonePVPInfo
 local hooksecurefunc = hooksecurefunc
 local InCombatLockdown = InCombatLockdown
-local IsEquippedItem = IsEquippedItem
+-- WoW Forever keeps the item APIs in C_Item
+local IsEquippedItem = IsEquippedItem or (C_Item and C_Item.IsEquippedItem)
 local IsInGroup = IsInGroup
 local IsInInstance = IsInInstance
 local IsInRaid = IsInRaid
@@ -1754,14 +1755,14 @@ function HealComm:CHARACTER_POINTS_CHANGED()
 end
 
 -- Save the currently equipped range weapon
-local RANGED_SLOT = GetInventorySlotInfo("RangedSlot")
+local RANGED_SLOT = GetInventorySlotInfo and GetInventorySlotInfo("RangedSlot")
 function HealComm:PLAYER_EQUIPMENT_CHANGED()
 	-- Caches set bonus info, as you can't reequip set bonus gear in combat no sense in checking it
 	if( not InCombatLockdown() ) then
 		for name, items in pairs(itemSetsData) do
 			equippedSetCache[name] = 0
 			for _, itemID in pairs(items) do
-				if( IsEquippedItem(itemID) ) then
+				if( IsEquippedItem and IsEquippedItem(itemID) ) then
 					equippedSetCache[name] = equippedSetCache[name] + 1
 				end
 			end
@@ -1769,7 +1770,7 @@ function HealComm:PLAYER_EQUIPMENT_CHANGED()
 	end
 
 	-- Check relic
-	local relic = GetInventoryItemLink("player", RANGED_SLOT)
+	local relic = GetInventoryItemLink and RANGED_SLOT and GetInventoryItemLink("player", RANGED_SLOT)
 	playerCurrentRelic = relic and tonumber(strmatch(relic, "item:(%d+):")) or nil
 end
 

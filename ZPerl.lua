@@ -4368,7 +4368,14 @@ function XPerl_SetExpectedHealth(self)
 		if not IsClassic then
 			amount = UnitGetIncomingHeals(unit)
 		elseif HealComm then
+			-- On WoW Forever a group member's GUID can come back secret, and
+			-- LibHealComm keeps its heals in tables keyed by GUID: indexing
+			-- with a secret key throws. Unknown GUID, no incoming-heal bar.
 			local guid = UnitGUID(unit)
+			if not guid or XPerl_Secret(guid) then
+				bar:Hide()
+				return
+			end
 			amount = (HealComm:GetHealAmount(guid, HealComm.ALL_HEALS, GetTime() + 3) or 0) * HealComm:GetHealModifier(guid)
 		end
 		if XPerl_Secret(amount, UnitHealth(unit), UnitHealthMax(unit)) then
