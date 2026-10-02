@@ -43,12 +43,15 @@ local GetNumGroupMembers = GetNumGroupMembers
 local GetNumTalents = GetNumTalents
 local GetNumTalentTabs = GetNumTalentTabs
 local GetRaidRosterInfo = GetRaidRosterInfo
-local GetSpellBonusHealing = GetSpellBonusHealing
-local GetSpellCritChance = GetSpellCritChance
-local GetSpellInfo = GetSpellInfo
+local GetSpellBonusHealing = GetSpellBonusHealing or function() return 0 end
+local GetSpellCritChance = GetSpellCritChance or function() return 0 end
+local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo and function(id)
+	local info = C_Spell.GetSpellInfo(id)
+	if info then return info.name, nil, info.iconID, info.castTime, info.minRange, info.maxRange, info.spellID end
+end)
 local GetTalentInfo = GetTalentInfo
 local GetTime = GetTime
-local GetZonePVPInfo = GetZonePVPInfo
+local GetZonePVPInfo = GetZonePVPInfo or (C_PvP and C_PvP.GetZonePVPInfo)
 local hooksecurefunc = hooksecurefunc
 local InCombatLockdown = InCombatLockdown
 -- WoW Forever keeps the item APIs in C_Item
@@ -63,6 +66,11 @@ local UnitAura = UnitAura
 local UnitCanAssist = UnitCanAssist
 local UnitExists = UnitExists
 local UnitGUID = UnitGUID
+-- WoW Forever protects some events (the combat log among them): a refused
+-- registration is skipped rather than an error
+local function safeRegister(frame, event)
+	return pcall(frame.RegisterEvent, frame, event)
+end
 -- WoW Forever can hand back a GUID as a secret value; a secret cannot key a
 -- table, so every GUID read here goes through this and comes back nil then
 local issecret = issecret
@@ -1630,7 +1638,7 @@ function HealComm:PLAYER_ENTERING_WORLD()
 end
 
 function HealComm:ZONE_CHANGED_NEW_AREA()
-	local pvpType = GetZonePVPInfo()
+	local pvpType = GetZonePVPInfo and GetZonePVPInfo()
 	local instance = select(2, IsInInstance())
 
 	HealComm.zoneHealModifier = 1
@@ -2789,31 +2797,31 @@ function HealComm:OnInitialize()
 	-- When first logging in talent data isn't available until at least PLAYER_ALIVE, so if we don't have data
 	-- will wait for that event otherwise will just cache it right now
 	if( not GetNumTalentTabs or GetNumTalentTabs() == 0 ) then
-		self.eventFrame:RegisterEvent("PLAYER_ALIVE")
+		safeRegister(self.eventFrame, "PLAYER_ALIVE")
 	else
 		self:CHARACTER_POINTS_CHANGED()
 	end
 
 	if( ResetChargeData ) then
-		HealComm.eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+		safeRegister(HealComm.eventFrame, "UNIT_SPELLCAST_INTERRUPTED")
 	end
 
 	-- Finally, register it all
-	self.eventFrame:RegisterEvent("CHAT_MSG_ADDON")
-	self.eventFrame:RegisterEvent("UNIT_SPELLCAST_SENT")
-	self.eventFrame:RegisterEvent("UNIT_SPELLCAST_START")
-	self.eventFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
-	self.eventFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-	self.eventFrame:RegisterEvent("UNIT_SPELLCAST_DELAYED")
-	self.eventFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
-	self.eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-	self.eventFrame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-	self.eventFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-	self.eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
-	self.eventFrame:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
-	self.eventFrame:RegisterEvent("PLAYER_LEVEL_UP")
-	self.eventFrame:RegisterEvent("CHARACTER_POINTS_CHANGED")
-	self.eventFrame:RegisterEvent("UNIT_AURA")
+	safeRegister(self.eventFrame, "CHAT_MSG_ADDON")
+	safeRegister(self.eventFrame, "UNIT_SPELLCAST_SENT")
+	safeRegister(self.eventFrame, "UNIT_SPELLCAST_START")
+	safeRegister(self.eventFrame, "UNIT_SPELLCAST_STOP")
+	safeRegister(self.eventFrame, "UNIT_SPELLCAST_CHANNEL_START")
+	safeRegister(self.eventFrame, "UNIT_SPELLCAST_DELAYED")
+	safeRegister(self.eventFrame, "UNIT_SPELLCAST_CHANNEL_UPDATE")
+	safeRegister(self.eventFrame, "UNIT_SPELLCAST_SUCCEEDED")
+	safeRegister(self.eventFrame, "COMBAT_LOG_EVENT_UNFILTERED")
+	safeRegister(self.eventFrame, "PLAYER_EQUIPMENT_CHANGED")
+	safeRegister(self.eventFrame, "PLAYER_TARGET_CHANGED")
+	safeRegister(self.eventFrame, "UPDATE_MOUSEOVER_UNIT")
+	safeRegister(self.eventFrame, "PLAYER_LEVEL_UP")
+	safeRegister(self.eventFrame, "CHARACTER_POINTS_CHANGED")
+	safeRegister(self.eventFrame, "UNIT_AURA")
 
 	if( self.initialized ) then return end
 	self.initialized = true
@@ -2848,7 +2856,7 @@ end
 -- Event handler
 HealComm.eventFrame = HealComm.frame or HealComm.eventFrame or CreateFrame("Frame")
 HealComm.eventFrame:UnregisterAllEvents()
-HealComm.eventFrame:RegisterEvent("UNIT_PET")
+safeRegister(HealComm.eventFrame, "UNIT_PET")
 HealComm.eventFrame:SetScript("OnEvent", OnEvent)
 HealComm.frame = nil
 
@@ -2865,16 +2873,16 @@ function HealComm:PLAYER_LOGIN()
 	self:OnInitialize()
 
 	self.eventFrame:UnregisterEvent("PLAYER_LOGIN")
-	self.eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-	self.eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-	self.eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+	safeRegister(self.eventFrame, "ZONE_CHANGED_NEW_AREA")
+	safeRegister(self.eventFrame, "PLAYER_ENTERING_WORLD")
+	safeRegister(self.eventFrame, "GROUP_ROSTER_UPDATE")
 
 	self:ZONE_CHANGED_NEW_AREA()
 	self:GROUP_ROSTER_UPDATE()
 end
 
 if( not IsLoggedIn() ) then
-	HealComm.eventFrame:RegisterEvent("PLAYER_LOGIN")
+	safeRegister(HealComm.eventFrame, "PLAYER_LOGIN")
 else
 	HealComm:PLAYER_LOGIN()
 end
