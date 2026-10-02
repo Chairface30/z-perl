@@ -66,9 +66,16 @@ local UnitAura = UnitAura
 local UnitCanAssist = UnitCanAssist
 local UnitExists = UnitExists
 local UnitGUID = UnitGUID
--- WoW Forever protects some events (the combat log among them): a refused
--- registration is skipped rather than an error
+-- WoW Forever protects some events (the combat log among them). Asking for
+-- one is reported as a forbidden action whatever wraps the call, so on that
+-- client those events are never asked for; anything else refused is skipped.
+local isForever = (function()
+	local ok, _, _, _, toc = pcall(GetBuildInfo)
+	return ok and type(toc) == "number" and toc >= 16000 and toc < 17000
+end)()
+local PROTECTED_EVENTS = { COMBAT_LOG_EVENT_UNFILTERED = true }
 local function safeRegister(frame, event)
+	if isForever and PROTECTED_EVENTS[event] then return false end
 	return pcall(frame.RegisterEvent, frame, event)
 end
 -- WoW Forever can hand back a GUID as a secret value; a secret cannot key a
