@@ -63,6 +63,14 @@ local UnitAura = UnitAura
 local UnitCanAssist = UnitCanAssist
 local UnitExists = UnitExists
 local UnitGUID = UnitGUID
+-- WoW Forever can hand back a GUID as a secret value; a secret cannot key a
+-- table, so every GUID read here goes through this and comes back nil then
+local issecret = issecret
+local function safeGUID(unit)
+	local guid = UnitGUID(unit)
+	if guid and issecret and issecret(guid) then return nil end
+	return guid
+end
 local UnitIsCharmed = UnitIsCharmed
 local UnitIsVisible = UnitIsVisible
 local UnitInRaid = UnitInRaid
@@ -149,7 +157,7 @@ if( not HealComm.compressGUID  ) then
 			if strsub(guid,1,6) ~= "Player" then
 				for unit,pguid in pairs(activePets) do
 					if pguid == guid and UnitExists(unit) then
-						str = "p-" .. strmatch(UnitGUID(unit), "^%w*-([-%w]*)$")
+						str = "p-" .. strmatch(safeGUID(unit), "^%w*-([-%w]*)$")
 					end
 				end
 				if not str then
@@ -1203,7 +1211,7 @@ if( playerClass == "PRIEST" ) then
 					return string.format("%s,%s", compressGUID[guid], compressGUID[playerGUID]), healAmount
 				end
 			elseif( spellName == PrayerofHealing ) then
-				guid = UnitGUID("player")
+				guid = safeGUID("player")
 				local targets = compressGUID[guid]
 				local group = guidToGroup[guid]
 
@@ -1432,7 +1440,7 @@ if( playerClass == "HUNTER" ) then
 		itemSetsData["Giantstalker"] = {16851, 16849, 16850, 16845, 16848, 16852, 16846, 16847}
 
 		GetHealTargets = function(bitType, guid, healAmount, spellID)
-			return compressGUID[UnitGUID("pet")], healAmount
+			return compressGUID[safeGUID("pet")], healAmount
 		end
 
 		CalculateHotHealing = function(guid, spellID)
@@ -1467,7 +1475,7 @@ if( playerClass == "WARLOCK" ) then
 		talentData[ImpHealthFunnel] = { mod = 0.1, current = 0 }
 
 		GetHealTargets = function(bitType, guid, healAmount, spellID)
-			return compressGUID[UnitGUID("pet")], healAmount
+			return compressGUID[safeGUID("pet")], healAmount
 		end
 
 		CalculateHealing = function(guid, spellID)
@@ -1643,7 +1651,7 @@ end
 
 local alreadyAdded = {}
 function HealComm:UNIT_AURA(unit)
-	local guid = UnitGUID(unit)
+	local guid = safeGUID(unit)
 	if( not guidToUnit[guid] ) then return end
 	local increase, decrease, playerIncrease, playerDecrease = 1, 1, 1, 1
 
@@ -1743,6 +1751,8 @@ end
 
 -- Cache player talent data for spells we need
 function HealComm:CHARACTER_POINTS_CHANGED()
+	-- the talent APIs are missing on WoW Forever
+	if not (GetNumTalentTabs and GetNumTalents and GetTalentInfo) then return end
 	for tabIndex=1, GetNumTalentTabs() do
 		for i=1, GetNumTalents(tabIndex) do
 			local name, _, _, _, spent = GetTalentInfo(tabIndex, i)
@@ -1897,7 +1907,7 @@ local function findAura(casterGUID, spellID, ...)
 				local name, _, stack, _, duration, endTime, caster, _, _, spell = UnitAura(unit, id, 'HELPFUL')
 				if( not spell ) then break end
 
-				if( spell == spellID and caster and UnitGUID(caster) == casterGUID ) then
+				if( spell == spellID and caster and safeGUID(caster) == casterGUID ) then
 					return (stack and stack > 0 and stack or 1), duration or 0, endTime or 0
 				end
 
@@ -2067,7 +2077,7 @@ function HealComm:CHAT_MSG_ADDON(prefix, message, channel, sender)
 	if( prefix ~= COMM_PREFIX or channel ~= distribution ) then return end
 
 	local commType, extraArg, spellID, arg1, arg2, arg3, arg4, arg5, arg6 = strsplit(":", message)
-	local casterGUID = UnitGUID(Ambiguate(sender, "none"))
+	local casterGUID = safeGUID(Ambiguate(sender, "none"))
 	spellID = tonumber(spellID)
 
 	if( not commType or not spellID or not casterGUID or casterGUID == playerGUID) then return end
@@ -2332,9 +2342,9 @@ function HealComm:UNIT_SPELLCAST_SENT(unit, targetName, castGUID, spellID)
 			setCastData(5, mouseoverName, mouseoverGUID)
 		else
 			-- If the player is ungrouped and healing, you can't take advantage of the name -> "unit" map, look in the UnitIDs that would most likely contain the information that's needed.
-			local guid = UnitGUID(targetName)
+			local guid = safeGUID(targetName)
 			if( not guid ) then
-				guid = UnitName("target") == castTarget and UnitGUID("target") or UnitName("focus") == castTarget and UnitGUID("focus") or UnitName("mouseover") == castTarget and UnitGUID("mouseover") or UnitName("targettarget") == castTarget and UnitGUID("target") or UnitName("focustarget") == castTarget and UnitGUID("focustarget")
+				guid = UnitName("target") == castTarget and safeGUID("target") or UnitName("focus") == castTarget and safeGUID("focus") or UnitName("mouseover") == castTarget and safeGUID("mouseover") or UnitName("targettarget") == castTarget and safeGUID("target") or UnitName("focustarget") == castTarget and safeGUID("focustarget")
 			end
 
 			guidPriorities[lastSentID] = nil
@@ -2352,8 +2362,8 @@ function HealComm:UNIT_SPELLCAST_START(unit, cast, spellID)
 
 	local castGUID = castGUIDs[spellID]
 	local castUnit = guidToUnit[castGUID]
-	if isTBC and not castUnit and spellID == 32546 and castGUID == UnitGUID("target") then -- Binding Heal
-		castGUID = UnitGUID("player")
+	if isTBC and not castUnit and spellID == 32546 and castGUID == safeGUID("target") then -- Binding Heal
+		castGUID = safeGUID("player")
 		castUnit = "player"
 	end
 	if( not castGUID or not castUnit ) then
@@ -2433,7 +2443,7 @@ end
 
 function HealComm:UNIT_SPELLCAST_DELAYED(unit, castGUID, spellID)
 	local spellName = GetSpellInfo(spellID)
-	local casterGUID = UnitGUID(unit)
+	local casterGUID = safeGUID(unit)
 	if( unit ~= "player" or not pendingHeals[casterGUID] or not pendingHeals[casterGUID][spellName] ) then return end
 
 	-- Direct heal delayed
@@ -2461,7 +2471,7 @@ HealComm.UNIT_SPELLCAST_CHANNEL_UPDATE = HealComm.UNIT_SPELLCAST_DELAYED
 
 -- Need to keep track of mouseover as it can change in the split second after/before casts
 function HealComm:UPDATE_MOUSEOVER_UNIT()
-	mouseoverGUID = UnitCanAssist("player", "mouseover") and UnitGUID("mouseover")
+	mouseoverGUID = UnitCanAssist("player", "mouseover") and safeGUID("mouseover")
 	mouseoverName = UnitCanAssist("player", "mouseover") and UnitName("mouseover")
 end
 
@@ -2476,7 +2486,7 @@ function HealComm:PLAYER_TARGET_CHANGED()
 	end
 
 	-- Despite the fact that it's called target last friend, UnitIsFriend won't actually work
-	lastGUID = UnitGUID("target")
+	lastGUID = safeGUID("target")
 	lastName = UnitName("target")
 	lastIsFriend = UnitCanAssist("player", "target")
 end
@@ -2484,7 +2494,7 @@ end
 -- Unit was targeted through a function
 function HealComm:Target(unit)
 	if( self.resetFrame:IsShown() and UnitCanAssist("player", unit) ) then
-		setCastData(6, UnitName(unit), UnitGUID(unit))
+		setCastData(6, UnitName(unit), safeGUID(unit))
 	end
 
 	self.resetFrame:Hide()
@@ -2501,7 +2511,7 @@ HealComm.SpellTargetUnit = HealComm.Target
 -- Used in /assist macros
 function HealComm:AssistUnit(unit)
 	if( self.resetFrame:IsShown() and UnitCanAssist("player", unit .. "target") ) then
-		setCastData(6, UnitName(unit .. "target"), UnitGUID(unit .. "target"))
+		setCastData(6, UnitName(unit .. "target"), safeGUID(unit .. "target"))
 	end
 
 	self.resetFrame:Hide()
@@ -2531,11 +2541,11 @@ end
 function HealComm:CastSpell(arg, unit)
 	-- If the spell is waiting for a target and it's a spell action button then we know that the GUID has to be mouseover or a key binding cast.
 	if( unit and UnitCanAssist("player", unit)  ) then
-		setCastData(4, UnitName(unit), UnitGUID(unit))
+		setCastData(4, UnitName(unit), safeGUID(unit))
 		-- No unit, or it's a unit we can't assist
 	elseif( not SpellIsTargeting() ) then
 		if( UnitCanAssist("player", "target") ) then
-			setCastData(4, UnitName("target"), UnitGUID("target"))
+			setCastData(4, UnitName("target"), safeGUID("target"))
 		else
 			setCastData(4, playerName, playerGUID)
 		end
@@ -2554,7 +2564,7 @@ HealComm.UseAction = HealComm.CastSpell
 local function sanityCheckMapping()
 	for guid, unit in pairs(guidToUnit) do
 		-- Unit no longer exists, remove all healing for them
-		if guid ~= UnitGUID(unit) then
+		if guid ~= safeGUID(unit) then
 			-- Check for (and remove) any active heals
 			for _, tbl in pairs({ pendingHeals, pendingHots }) do
 				if tbl[guid] then
@@ -2614,7 +2624,7 @@ local function clearGUIDData()
 	wipe(decompressGUID)
 	wipe(activePets)
 
-	playerGUID = playerGUID or UnitGUID("player")
+	playerGUID = playerGUID or safeGUID("player")
 	HealComm.guidToUnit = {[playerGUID] = "player"}
 	guidToUnit = HealComm.guidToUnit
 
@@ -2636,13 +2646,13 @@ end
 
 -- Keeps track of pet GUIDs, as pets are considered vehicles this will also map vehicle GUIDs to unit
 function HealComm:UNIT_PET(unit)
-	local guid = UnitGUID(unit)
+	local guid = safeGUID(unit)
 	unit = guidToUnit[guid]
 
 	if not unit then return end
 
 	local pet = self.unitToPet[unit]
-	local petGUID = pet and UnitGUID(pet)
+	local petGUID = pet and safeGUID(pet)
 
 	-- We have an active pet guid from this user and it's different, kill it
 	local activeGUID = activePets[unit]
@@ -2650,7 +2660,8 @@ function HealComm:UNIT_PET(unit)
 		removeAllRecords(activeGUID)
 
 		rawset(self.compressGUID, activeGUID, nil)
-		rawset(self.decompressGUID, "p-"..strsub(UnitGUID(unit),8), nil)
+		local unitGUID = safeGUID(unit)
+		if unitGUID then rawset(self.decompressGUID, "p-"..strsub(unitGUID,8), nil) end
 		guidToUnit[activeGUID] = nil
 		guidToGroup[activeGUID] = nil
 		activePets[unit] = nil
@@ -2671,7 +2682,7 @@ function HealComm:GROUP_ROSTER_UPDATE()
 	wipe(activePets)
 
 	local function update(unit)
-		local guid = UnitGUID(unit)
+		local guid = safeGUID(unit)
 
 		if guid then
 			local raidID = UnitInRaid(unit)
@@ -2681,7 +2692,7 @@ function HealComm:GROUP_ROSTER_UPDATE()
 			guidToGroup[guid] = group
 
 			local pet = self.unitToPet[unit]
-			local petGUID = pet and UnitGUID(pet)
+			local petGUID = pet and safeGUID(pet)
 
 			activePets[unit] = petGUID
 
@@ -2777,7 +2788,7 @@ function HealComm:OnInitialize()
 
 	-- When first logging in talent data isn't available until at least PLAYER_ALIVE, so if we don't have data
 	-- will wait for that event otherwise will just cache it right now
-	if( GetNumTalentTabs() == 0 ) then
+	if( not GetNumTalentTabs or GetNumTalentTabs() == 0 ) then
 		self.eventFrame:RegisterEvent("PLAYER_ALIVE")
 	else
 		self:CHARACTER_POINTS_CHANGED()
@@ -2841,10 +2852,10 @@ HealComm.eventFrame:RegisterEvent("UNIT_PET")
 HealComm.eventFrame:SetScript("OnEvent", OnEvent)
 HealComm.frame = nil
 
--- At PLAYER_LEAVING_WORLD (Actually more like MIRROR_TIMER_STOP but anyway) UnitGUID("player") returns nil, delay registering
+-- At PLAYER_LEAVING_WORLD (Actually more like MIRROR_TIMER_STOP but anyway) safeGUID("player") returns nil, delay registering
 -- events and set a playerGUID/playerName combo for all players on PLAYER_LOGIN not just the healers.
 function HealComm:PLAYER_LOGIN()
-	playerGUID = UnitGUID("player")
+	playerGUID = safeGUID("player")
 	playerName = UnitName("player")
 	playerLevel = UnitLevel("player")
 
