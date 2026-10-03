@@ -1,4 +1,4 @@
-**Unreleased** - Z-Perl Unit Frames Forever - By Chairface Chippendale
+**8.0.5** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: the incoming-heal bar no longer floods BugSack in a group ("attempted to index a table that cannot be indexed with secret keys" in LibHealComm, thousands of times a session). The client can keep a group member's GUID secret, and the heal library files its heals under GUIDs; with a secret GUID the bar simply hides
 * Forever: every GUID LibHealComm reads now comes through one guard that turns a secret GUID into "unknown", so UNIT_PET and the roster updates stop erroring too; the talent cache is skipped where the talent APIs are missing
 * Forever: LibHealComm never asks for the combat log there (the client protects it, and reports the request as a forbidden action however it is wrapped); its other events go through a guard, and the zone, spell-info and spell-power lookups it needs are taken from C_PvP / C_Spell or default to zero where the old globals are missing
