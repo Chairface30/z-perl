@@ -3,6 +3,7 @@
 * Forever: every GUID LibHealComm reads now comes through one guard that turns a secret GUID into "unknown", so UNIT_PET and the roster updates stop erroring too; the talent cache is skipped where the talent APIs are missing
 * Forever: LibHealComm never asks for the combat log there (the client protects it, and reports the request as a forbidden action however it is wrapped); its other events go through a guard, and the zone, spell-info and spell-power lookups it needs are taken from C_PvP / C_Spell or default to zero where the old globals are missing
 * Forever: LibHealComm no longer errors on login ("attempt to call a nil value" in PLAYER_EQUIPMENT_CHANGED): IsEquippedItem lives in C_Item there, and the ranged slot and inventory link lookups are guarded the same way
+* Forever: casting a heal no longer throws Lua errors in LibHealComm ("attempt to call a nil value" when Healing Touch went off, "Auras cannot be accessed when secret" in combat, and secret spell power on Regrowth and Healing Touch). The client has no CastingInfo, so your own cast is read through UnitCastingInfo; aura checks the client refuses in combat count as no aura; spell power it keeps secret counts as zero. The library's secret-GUID guard also looked for the wrong function name and now actually works
 
 **8.0.4** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Blizzard's buff frame is hidden only by Hide Default Buffs. With that off and Player Buffs on, both show at once

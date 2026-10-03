@@ -34,8 +34,21 @@ local unpack = unpack
 local wipe = wipe
 
 local Ambiguate = Ambiguate
-local CastingInfo = CastingInfo
-local ChannelInfo = ChannelInfo
+-- WoW Forever can hand back secret values (WoW's name for it is
+-- issecretvalue); a secret cannot be compared, added up or used as a key
+local issecret = issecretvalue or issecret
+-- Forever has no CastingInfo/ChannelInfo; the unit versions give the same
+-- results for "player". A cast with any secret field reads as no cast.
+local function plainCast(...)
+	if issecret then
+		for i = 1, select("#", ...) do
+			if issecret((select(i, ...))) then return end
+		end
+	end
+	return ...
+end
+local CastingInfo = CastingInfo or (UnitCastingInfo and function() return plainCast(UnitCastingInfo("player")) end)
+local ChannelInfo = ChannelInfo or (UnitChannelInfo and function() return plainCast(UnitChannelInfo("player")) end)
 local CreateFrame = CreateFrame
 local GetInventoryItemLink = GetInventoryItemLink
 local GetInventorySlotInfo = GetInventorySlotInfo
@@ -43,8 +56,18 @@ local GetNumGroupMembers = GetNumGroupMembers
 local GetNumTalents = GetNumTalents
 local GetNumTalentTabs = GetNumTalentTabs
 local GetRaidRosterInfo = GetRaidRosterInfo
-local GetSpellBonusHealing = GetSpellBonusHealing or function() return 0 end
-local GetSpellCritChance = GetSpellCritChance or function() return 0 end
+local GetSpellBonusHealing, GetSpellCritChance = (function(...)
+	local wrapped = {}
+	for i = 1, select("#", ...) do
+		local func = select(i, ...) or function() return 0 end
+		wrapped[i] = function(...)
+			local value = func(...)
+			if issecret and issecret(value) then return 0 end
+			return value
+		end
+	end
+	return unpack(wrapped)
+end)(GetSpellBonusHealing, GetSpellCritChance)
 local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo and function(id)
 	local info = C_Spell.GetSpellInfo(id)
 	if info then return info.name, nil, info.iconID, info.castTime, info.minRange, info.maxRange, info.spellID end
@@ -78,9 +101,8 @@ local function safeRegister(frame, event)
 	if isForever and PROTECTED_EVENTS[event] then return false end
 	return pcall(frame.RegisterEvent, frame, event)
 end
--- WoW Forever can hand back a GUID as a secret value; a secret cannot key a
--- table, so every GUID read here goes through this and comes back nil then
-local issecret = issecret
+-- A GUID can be secret on Forever; a secret cannot key a table, so every
+-- GUID read here goes through this and comes back nil then
 local function safeGUID(unit)
 	local guid = UnitGUID(unit)
 	if guid and issecret and issecret(guid) then return nil end
@@ -704,11 +726,15 @@ do
 		return findAura(spellIdPredicate, unit, filter, spellId)
 	end
 
+	local function found(ok, ...)
+		if ok then return ... end
+	end
+
 	function unitHasAura(unit, name)
 		if type(name) == "number" then
-			return findAuraBySpellId(name, unit)
+			return found(pcall(findAuraBySpellId, name, unit))
 		else
-			return findAuraByName(name, unit)
+			return found(pcall(findAuraByName, name, unit))
 		end
 	end
 end
@@ -2394,6 +2420,7 @@ function HealComm:UNIT_SPELLCAST_START(unit, cast, spellID)
 
 	if( bitType == DIRECT_HEALS ) then
 		local startTime, endTime = select(4, CastingInfo())
+		if not (startTime and endTime) then return end
 		parseDirectHeal(playerGUID, spellID, amt, (endTime - startTime) / 1000, strsplit(",", targets))
 		sendMessage(format("D:%.3f:%d:%d:%s", (endTime - startTime) / 1000, spellID or 0, amt or "", targets))
 	elseif( bitType == CHANNEL_HEALS ) then
