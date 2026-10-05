@@ -1,4 +1,4 @@
-**Unreleased**
+**8.0.6** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: Z-Perl no longer defines the global GetSpellBookItemInfo. Other addons that check whether it exists were picking up Z-Perl's stand-in, which returns different values from the original. It is now XPerl_GetSpellBookItemInfo
 
 **8.0.5** - Z-Perl Unit Frames Forever - By Chairface Chippendale
