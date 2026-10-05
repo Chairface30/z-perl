@@ -1,3 +1,6 @@
+**Unreleased**
+* Forever: Z-Perl no longer defines the global GetSpellBookItemInfo. Other addons that check whether it exists were picking up Z-Perl's stand-in, which returns different values from the original. It is now XPerl_GetSpellBookItemInfo
+
 **8.0.5** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: the incoming-heal bar no longer floods BugSack in a group ("attempted to index a table that cannot be indexed with secret keys" in LibHealComm, thousands of times a session). The client can keep a group member's GUID secret, and the heal library files its heals under GUIDs; with a secret GUID the bar simply hides
 * Forever: every GUID LibHealComm reads now comes through one guard that turns a secret GUID into "unknown", so UNIT_PET and the roster updates stop erroring too; the talent cache is skipped where the talent APIs are missing

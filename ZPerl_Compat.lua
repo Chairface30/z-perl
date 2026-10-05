@@ -433,9 +433,13 @@ if not GetNumSpellTabs and C_SpellBook and C_SpellBook.GetNumSpellBookSkillLines
     GetNumSpellTabs = C_SpellBook.GetNumSpellBookSkillLines
 end
 
--- GetSpellBookItemInfo compatibility
-if not GetSpellBookItemInfo and C_SpellBook and C_SpellBook.GetSpellBookItemInfo then
-    GetSpellBookItemInfo = function(index, bookType)
+-- GetSpellBookItemInfo compatibility, under Z-Perl's own name. Defining the
+-- global broke other addons that check whether it exists and then expect the
+-- client's own version.
+if GetSpellBookItemInfo then
+    XPerl_GetSpellBookItemInfo = GetSpellBookItemInfo
+elseif C_SpellBook and C_SpellBook.GetSpellBookItemInfo then
+    XPerl_GetSpellBookItemInfo = function(index, bookType)
         local info = C_SpellBook.GetSpellBookItemInfo(index, bookType)
         if info then
             return info.itemType, info.spellID
