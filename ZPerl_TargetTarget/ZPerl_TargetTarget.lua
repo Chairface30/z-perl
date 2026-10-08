@@ -342,7 +342,7 @@ function XPerl_TargetTarget_UpdateDisplay(self, force)
 
 			-- Set name - Must do after level as the NameFrame can change size just above here.
 			local TargetTargetname = self.targetname
-			self.nameFrame.text:SetText(TargetTargetname)
+			XPerl_SetUnitNameText(self.nameFrame.text, partyid, TargetTargetname)
 
 			-- Set health
 			XPerl_Target_UpdateHealth(self)
@@ -607,20 +607,22 @@ function XPerl_TargetTarget_SetWidth(self)
 
 	self.conf.size.width = max(0, self.conf.size.width or 0)
 	local bonus = self.conf.size.width
+	-- wider on Forever, for "First Last"
+	local function room(base) return XPerl_NameRoom(base + bonus, 160) end
 
 	if self.conf.percent then
 		if (not InCombatLockdown()) then
-			self:SetWidth(160 + bonus)
-			self.nameFrame:SetWidth(160 + bonus)
-			self.statsFrame:SetWidth(160 + bonus)
+			self:SetWidth(room(160))
+			self.nameFrame:SetWidth(room(160))
+			self.statsFrame:SetWidth(room(160))
 		end
 		self.statsFrame.healthBar.percent:Show()
 		self.statsFrame.manaBar.percent:Show()
 	else
 		if (not InCombatLockdown()) then
-			self:SetWidth(128 + bonus)
-			self.nameFrame:SetWidth(128 + bonus)
-			self.statsFrame:SetWidth(128 + bonus)
+			self:SetWidth(room(128))
+			self.nameFrame:SetWidth(room(128))
+			self.statsFrame:SetWidth(room(128))
 		end
 		self.statsFrame.healthBar.percent:Hide()
 		self.statsFrame.manaBar.percent:Hide()

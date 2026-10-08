@@ -115,6 +115,34 @@ do
         if issecret and (issecret(name) or issecret(realm)) then return nil end
         return name, realm
     end
+
+    -- Every Forever player is "First Last", and UnitName gives the surname as
+    -- its second value, the slot other clients use for the realm. Shows a
+    -- unit's whole name in a font string: joined when both parts are plain;
+    -- drawn by the font string when either is secret (a secret can't be
+    -- joined, but SetFormattedText can draw one); else `name`, what the frame
+    -- had already (the first name). Other clients show `name` unchanged.
+    function XPerl_SetUnitNameText(fs, unit, name)
+        if XPerl_IsForever and unit then
+            local ok, first, surname = pcall(UnitName, unit)
+            if ok then
+                if issecret and (issecret(first) or issecret(surname)) then
+                    if pcall(fs.SetFormattedText, fs, "%s %s", first, surname) then return end
+                elseif type(first) == "string" and type(surname) == "string" and surname ~= "" then
+                    fs:SetText(first .. " " .. surname)
+                    return
+                end
+            end
+        end
+        fs:SetText(name)
+    end
+
+    -- A frame's name width, widened on Forever to fit a first name and a
+    -- surname: never less than `least` there. Other clients get `width`.
+    function XPerl_NameRoom(width, least)
+        if XPerl_IsForever and width < least then return least end
+        return width
+    end
 end
 
 -- Safe copies for the unit menu below (Inspect and Trade entries).

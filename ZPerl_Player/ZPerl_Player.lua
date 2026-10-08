@@ -345,7 +345,7 @@ end
 -- XPerl_Player_UpdateName()
 local function XPerl_Player_UpdateName(self)
 	playerName = UnitName(self.partyid)
-	self.nameFrame.text:SetText(playerName)
+	XPerl_SetUnitNameText(self.nameFrame.text, self.partyid, playerName)
 	XPerl_Player_UpdateCombat(self)
 end
 
@@ -1920,8 +1920,8 @@ end
 function XPerl_Player_SetWidth(self)
 	pconf.size.width = max(0, pconf.size.width or 0)
 	if (pconf.percent) then
-		self.nameFrame:SetWidth(160 + pconf.size.width)
-		self.statsFrame:SetWidth(160 + pconf.size.width)
+		self.nameFrame:SetWidth(XPerl_NameRoom(160 + pconf.size.width, 160))
+		self.statsFrame:SetWidth(XPerl_NameRoom(160 + pconf.size.width, 160))
 		self.statsFrame.healthBar.percent:Show()
 		self.statsFrame.manaBar.percent:Show()
 
@@ -1932,8 +1932,8 @@ function XPerl_Player_SetWidth(self)
 			self.statsFrame.repBar.percent:Show()
 		end
 	else
-		self.nameFrame:SetWidth(128 + pconf.size.width)
-		self.statsFrame:SetWidth(128 + pconf.size.width)
+		self.nameFrame:SetWidth(XPerl_NameRoom(128 + pconf.size.width, 160))
+		self.statsFrame:SetWidth(XPerl_NameRoom(128 + pconf.size.width, 160))
 		self.statsFrame.healthBar.percent:Hide()
 		self.statsFrame.manaBar.percent:Hide()
 		if (self.statsFrame.xpBar) then

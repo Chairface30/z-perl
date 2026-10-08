@@ -469,7 +469,7 @@ end
 
 -- XPerl_Target_UpdateName
 local function XPerl_Target_UpdateName(self)
-	self.nameFrame.text:SetText(UnitName(self.partyid))
+	XPerl_SetUnitNameText(self.nameFrame.text, self.partyid, UnitName(self.partyid))
 	XPerl_Target_UpdatePVP(self)
 end
 
@@ -1751,7 +1751,9 @@ end
 -- XPerl_Target_SetWidth
 function XPerl_Target_SetWidth(self)
 	self.conf.size.width = max(0, self.conf.size.width or 0)
-	local w = 128 + ((self.conf.portrait and 1 or 0) * 62) + ((self.conf.percent and 1 or 0) * 32) + self.conf.size.width
+	local inner = (self.conf.percent and 160 or 128) + self.conf.size.width
+	local room = XPerl_NameRoom(inner, 160) -- wider on Forever, for "First Last"
+	local w = 128 + ((self.conf.portrait and 1 or 0) * 62) + ((self.conf.percent and 1 or 0) * 32) + self.conf.size.width + (room - inner)
 
 	if (not InCombatLockdown()) then
 		self:SetWidth(w)
@@ -1759,15 +1761,15 @@ function XPerl_Target_SetWidth(self)
 
 	if (self.conf.percent) then
 		if (not InCombatLockdown()) then
-			self.nameFrame:SetWidth(160 + self.conf.size.width)
-			self.statsFrame:SetWidth(160 + self.conf.size.width)
+			self.nameFrame:SetWidth(room)
+			self.statsFrame:SetWidth(room)
 		end
 		self.statsFrame.healthBar.percent:Show()
 		self.statsFrame.manaBar.percent:Show()
 	else
 		if (not InCombatLockdown()) then
-			self.nameFrame:SetWidth(128 + self.conf.size.width)
-			self.statsFrame:SetWidth(128 + self.conf.size.width)
+			self.nameFrame:SetWidth(room)
+			self.statsFrame:SetWidth(room)
 		end
 		self.statsFrame.healthBar.percent:Hide()
 		self.statsFrame.manaBar.percent:Hide()

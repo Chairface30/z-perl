@@ -654,7 +654,7 @@ local function XPerl_Party_UpdateName(self)
 	self.lastGUID = UnitGUID(partyid)
 	if (Partyname) then
 		self.nameFrame.text:SetFontObject(GameFontNormal)
-		self.nameFrame.text:SetText(Partyname)
+		XPerl_SetUnitNameText(self.nameFrame.text, partyid, Partyname)
 
 		-- A secret name has a secret width: the small font, which always fits
 		if ((XPerl_StringWidth(self.nameFrame.text) or math.huge) > self.nameFrame:GetWidth() - 4) then
@@ -1592,10 +1592,10 @@ function XPerl_Party_SetWidth(self)
 	pconf.size.width = max(0, pconf.size.width or 0)
 
 	local width = (36 * (pconf.percent or 0)) + 122	-- 158 enabled, 122 disabled
-	self.statsFrame:SetWidth(width + pconf.size.width)
+	self.statsFrame:SetWidth(XPerl_NameRoom(width + pconf.size.width, 158))
 	self:SetWidth(CalcWidth(self))
 
-	self.nameFrame:SetWidth(122 + (pconf.size.width / 2))
+	self.nameFrame:SetWidth(XPerl_NameRoom(122 + (pconf.size.width / 2), 158))
 
 	XPerl_StatsFrameSetup(self)
 end

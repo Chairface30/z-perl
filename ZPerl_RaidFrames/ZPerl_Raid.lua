@@ -395,7 +395,7 @@ local function XPerl_Raid_UpdateName(self)
 	self.lastGUID, self.lastID = guid, partyid -- These stored, so we can at least make a small effort in reducing workload on attribute changes.
 
 	if (name) then
-		self.nameFrame.text:SetText(name)
+		XPerl_SetUnitNameText(self.nameFrame.text, partyid, name)
 
 		if (self.pet) then
 			local color = conf.ColourReactionNone
@@ -2087,15 +2087,15 @@ function XPerl_Raid_SetWidth()
 	for i = 1, 12 do
 		local f = _G["XPerl_Raid_Title"..i]
 		if (f) then
-			f:SetWidth(80 + rconf.size.width)
-			f.virtual:SetWidth(80 + rconf.size.width)
+			f:SetWidth(XPerl_NameRoom(80 + rconf.size.width, 110))
+			f.virtual:SetWidth(XPerl_NameRoom(80 + rconf.size.width, 110))
 		end
 		for j = 1, 40 do
 			local f = _G["XPerl_Raid_Grp"..i.."UnitButton"..j]
 			if (f) then
-				f:SetWidth(80 + rconf.size.width)
-				f.nameFrame:SetWidth(80 + rconf.size.width)
-				f.statsFrame:SetWidth(80 + rconf.size.width)
+				f:SetWidth(XPerl_NameRoom(80 + rconf.size.width, 110))
+				f.nameFrame:SetWidth(XPerl_NameRoom(80 + rconf.size.width, 110))
+				f.statsFrame:SetWidth(XPerl_NameRoom(80 + rconf.size.width, 110))
 			end
 		end
 	end
