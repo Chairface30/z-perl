@@ -1876,6 +1876,9 @@ function XPerl_Target_Set_Bits(self)
 end
 
 function XPerl_Target_ComboFrame_Update()
+	if not (ComboFrame and ComboPoint1) then
+		return -- the client has no Blizzard combo point frame (Forever, since its 2026-10 patch)
+	end
 	local comboPoints = IsClassic and GetComboPoints("player", "target") or UnitPower(UnitHasVehicleUI("player") and "vehicle" or "player", Enum.PowerType.ComboPoints)
 	comboPoints = XPerl_Plain(comboPoints) or 0 -- secret on Forever: shown as none
 	if comboPoints > 0 and UnitCanAttack((not IsClassic and UnitHasVehicleUI("player")) and "vehicle" or "player", "target") then
@@ -1930,6 +1933,9 @@ end
 
 -- Using the Blizzard Combo Point frame, but we move the buttons around a little
 function XPerl_Target_Set_BlizzCPFrame(self)
+	if not (ComboFrame and ComboPoint1) then
+		return
+	end
 	if tconf.combo.blizzard then
 		ComboFrame:ClearAllPoints()
 		for i = 1, not IsClassic and 9 or 5 do
