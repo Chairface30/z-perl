@@ -1,4 +1,4 @@
-**Unreleased** - Z-Perl Unit Frames Forever - By Chairface Chippendale
+**8.0.7** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: fixed an error on load ("attempt to index local 'combo' (a nil value)" in ZPerl_Target.lua). The October client patch removed Blizzard's old combo point frame, which the target frame's Blizzard Combo Points option moves into place; without it the option now does nothing
 * Forever: player, target, target of target, party and raid frames show a player's full name, first name and surname. The client gives the surname where other clients give the realm, so only the first name showed. In combat, when the client hides the name, the frame draws both parts if it can and the first name if not
 * Forever: those frames are wider where the full name needs it: at least 160 for player, target and target of target, 158 for party, 110 for raid. A width you set larger in the options still wins. Other clients keep their old widths
