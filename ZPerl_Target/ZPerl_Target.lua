@@ -175,7 +175,10 @@ function XPerl_Target_OnLoad(self, partyid)
 		self.blizzDebuffs = XPerl_IsForever and TargetFrame and true or nil
 		XPerl_BlizzFrameDisable(TargetFrame, self.blizzDebuffs)
 		if (self.blizzDebuffs) then
-			XPerl_Target_HookBlizzDebuffs(self)
+			local ok, err = pcall(XPerl_Target_HookBlizzDebuffs, self)
+			if not ok then
+				geterrorhandler()(err)
+			end
 		end
 		XPerl_BlizzFrameDisable(TargetofTargetFrame)
 		XPerl_BlizzFrameDisable(TargetFrameToT) -- its name on newer clients
@@ -470,17 +473,25 @@ end
 local function XPerl_Target_PlaceBlizzAuraContainer(self, strip, auras)
 	local size = self.conf.debuffs.size or 20
 	local above = self.conf.buffs.above
-	strip:ClearAllPoints()
-	if above then
-		strip:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 2, 0)
-	else
-		strip:SetPoint("TOPLEFT", self.statsFrame, "BOTTOMLEFT", 2, 0)
+	local side = above and "above" or "below"
+	if strip.side ~= side then
+		strip.side = side
+		strip:ClearAllPoints()
+		if above then
+			strip:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 2, 0)
+		else
+			strip:SetPoint("TOPLEFT", self.statsFrame, "BOTTOMLEFT", 2, 0)
+		end
 	end
 	if auras:GetParent() ~= strip then
 		auras:SetParent(strip)
 	end
-	auras:ClearAllPoints()
-	auras:SetPoint("TOPLEFT", strip, "TOPLEFT", 0, 0)
+	-- re-placed only when Blizzard has moved it
+	local point, rel, _, x, y = auras:GetPoint(1)
+	if not (Plain(point) == "TOPLEFT" and Plain(rel) == strip and Plain(x) == 0 and Plain(y) == 0 and auras:GetNumPoints() == 1) then
+		auras:ClearAllPoints()
+		auras:SetPoint("TOPLEFT", strip, "TOPLEFT", 0, 0)
+	end
 
 	local count, buttonWidth, top, bottom = 0, nil, Plain(auras:GetTop()), nil
 	for _, child in ipairs({auras:GetChildren()}) do
@@ -498,17 +509,28 @@ local function XPerl_Target_PlaceBlizzAuraContainer(self, strip, auras)
 		end
 	end
 	local scale = (buttonWidth and buttonWidth > 0) and size / buttonWidth or 1
-	auras:SetScale(scale)
+	local oldScale = Plain(auras:GetScale())
+	if not oldScale or abs(oldScale - scale) > 0.001 then
+		auras:SetScale(scale)
+	end
 	if not self.conf.debuffs.enable then
 		count = 0
 	end
-	auras:SetAlpha(count > 0 and 1 or 0)
+	local alpha = count > 0 and 1 or 0
+	if Plain(auras:GetAlpha()) ~= alpha then
+		auras:SetAlpha(alpha)
+	end
 
 	local height = size
 	if top and bottom and top > bottom then
 		height = (top - bottom) * scale
 	end
-	strip:SetSize(Plain(self:GetWidth()) or 160, max(1, height))
+	local width = Plain(self:GetWidth()) or 160
+	height = max(1, floor(height + 0.5))
+	if strip.width ~= width or strip.height ~= height then
+		strip.width, strip.height = width, height
+		strip:SetSize(width, height)
+	end
 
 	if strip.count ~= count then
 		strip.count = count
@@ -523,17 +545,12 @@ function XPerl_Target_PlaceBlizzDebuffs(self)
 	end
 	local auras = BlizzAuraContainer()
 	if auras then
-		if not strip.aurasHooked and self.blizzDebuffRefresh then
-			strip.aurasHooked = true
-			local refresh = self.blizzDebuffRefresh
-			auras:HookScript("OnEvent", function(_, event)
-				refresh("Auras OnEvent "..tostring(Plain(event)))
-			end)
-			auras:HookScript("OnSizeChanged", function()
-				refresh("Auras OnSizeChanged")
-			end)
+		-- the container's own scripts are forbidden to hook; a failed move must
+		-- not take the frame down with it
+		local ok, err = pcall(XPerl_Target_PlaceBlizzAuraContainer, self, strip, auras)
+		if not ok then
+			strip.lastError = tostring(err)
 		end
-		XPerl_Target_PlaceBlizzAuraContainer(self, strip, auras)
 		return
 	end
 	local list = BlizzDebuffCollect(TargetFrame, strip)
@@ -608,7 +625,16 @@ function XPerl_Target_HookBlizzDebuffs(self)
 	TargetFrame:HookScript("OnEvent", function(_, event)
 		refresh("OnEvent "..tostring(Plain(event)))
 	end)
-	self.blizzDebuffRefresh = refresh
+	-- The aura container answers its own UNIT_AURA, which nothing here may
+	-- hook, so it is checked a few times a second while there is a target.
+	local elapsed = 0
+	strip:SetScript("OnUpdate", function(_, step)
+		elapsed = elapsed + step
+		if elapsed >= 0.2 then
+			elapsed = 0
+			refresh("poll")
+		end
+	end)
 end
 
 -- One line about a frame or region of Blizzard's: what it is, whether it
@@ -695,6 +721,7 @@ function XPerl_Target_BlizzDebuffReport()
 	if auras then
 		add("Auras: "..BlizzDebuffDescribe(auras).." parent="..tostring(auras:GetParent() == self.blizzDebuffFrame and "strip" or "other").." scale="..tostring(Plain(auras:GetScale())).." alpha="..tostring(Plain(auras:GetAlpha())))
 		walk(auras, 1, "Auras")
+		add("strip last error: "..tostring(self.blizzDebuffFrame.lastError))
 		add("strip: "..BlizzDebuffDescribe(self.blizzDebuffFrame).." h="..tostring(Plain(self.blizzDebuffFrame:GetHeight())).." count="..tostring(self.blizzDebuffFrame.count))
 	end
 	-- table fields of the frame that may hold its aura buttons
