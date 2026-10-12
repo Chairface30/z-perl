@@ -209,6 +209,8 @@ XPERL_CONF_RANGEDEBUFF_DESC				= "Combines range check with debuff check, so tha
 
 XPERL_CONF_SHOWAFKFLAG					= "Show AFK Flag"
 XPERL_CONF_SHOWAFKFLAG_DESC				= "Enable display of all player's AFK status."
+XPERL_CONF_HIDESURNAME					= "Hide Surnames"
+XPERL_CONF_HIDESURNAME_DESC				= "Show players by first name only, without their surname."
 XPERL_CONF_SHOWFD						= "Show Feign Death"
 XPERL_CONF_SHOWFD_DESC					= "Show players that are Feign Death. The new default is to not treat them as a special case."
 XPERL_CONF_SHOWREADYCHECK				= "Show Ready Check"

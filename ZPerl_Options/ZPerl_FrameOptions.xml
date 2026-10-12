@@ -3909,6 +3909,23 @@
 						</Scripts>
 					</CheckButton>
 
+					<CheckButton name="$parent_HideSurname" inherits="XPerlCheckButtonTemplate">
+						<Anchors>
+							<Anchor point="TOPLEFT" relativeTo="$parent_XPerlOldRoleIcons" relativePoint="BOTTOMLEFT" x="0" y="6"/>
+						</Anchors>
+						<Scripts>
+							<OnLoad>
+								XPerl_OptionsSetMyText(self, "XPERL_CONF_HIDESURNAME")
+								self.configBase = "XPerlDB"
+								self.configIndex = "hideSurname"
+								self.configClick = XPerl_OptionActions
+								if not XPerl_IsForever then
+									self:Hide() -- only Forever names have surnames
+								end
+							</OnLoad>
+						</Scripts>
+					</CheckButton>
+
 					<CheckButton name="$parent_SettingsMethod" inherits="XPerlCheckButtonTemplate">
 						<Anchors>
 							<Anchor point="TOPLEFT" relativePoint="BOTTOMRIGHT" x="-200" y="215"/>

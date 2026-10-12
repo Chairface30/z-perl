@@ -122,8 +122,10 @@ do
     -- drawn by the font string when either is secret (a secret can't be
     -- joined, but SetFormattedText can draw one); else `name`, what the frame
     -- had already (the first name). Other clients show `name` unchanged.
+    -- The Hide Surnames option (XPerlDB.hideSurname) shows the first name
+    -- only.
     function XPerl_SetUnitNameText(fs, unit, name)
-        if XPerl_IsForever and unit then
+        if XPerl_IsForever and unit and not (XPerlDB and XPerlDB.hideSurname) then
             local ok, first, surname = pcall(UnitName, unit)
             if ok then
                 if issecret and (issecret(first) or issecret(surname)) then
@@ -138,9 +140,10 @@ do
     end
 
     -- A frame's name width, widened on Forever to fit a first name and a
-    -- surname: never less than `least` there. Other clients get `width`.
+    -- surname: never less than `least` there, unless surnames are hidden.
+    -- Other clients get `width`.
     function XPerl_NameRoom(width, least)
-        if XPerl_IsForever and width < least then return least end
+        if XPerl_IsForever and width < least and not (XPerlDB and XPerlDB.hideSurname) then return least end
         return width
     end
 end
