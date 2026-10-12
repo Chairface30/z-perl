@@ -313,11 +313,13 @@ end
 
 -- Forever: Blizzard's own target frame is kept, because only it can still
 -- show the target's debuffs in combat (the client keeps auras from addons
--- then). The Z-Perl target frame is laid over it: pinned to its top left,
--- above it, and scaled to cover it down to where its auras start, so
--- Blizzard's buffs and debuffs show below. Z-Perl's own buff and debuff icons
--- stay hidden. Nothing of Blizzard's is called or moved. Protected frames:
--- out of combat only.
+-- then). The Z-Perl target frame is laid over it, one strata up, sized to
+-- cover all of Blizzard's art (bar backing, portrait ring, level badge):
+-- the portrait becomes a square as tall as the art, the stats box fills the
+-- height beside it, name and stats fill the width. Aura icons seen above or
+-- below the frame cap that area, so Blizzard's buffs and debuffs are never
+-- covered. Z-Perl's own buff and debuff icons stay hidden. Nothing of
+-- Blizzard's is called or moved.
 local issecret = issecretvalue
 local function Plain(value)
 	if issecret and issecret(value) then
@@ -328,59 +330,130 @@ end
 
 local STRATA = {"BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP"}
 
+-- A region's edges in screen units, or nil when hidden or unknown
+local function ScreenRect(region)
+	local shown = region:IsShown()
+	if not Plain(shown) then
+		return
+	end
+	local left, top, right, bottom = Plain(region:GetLeft()), Plain(region:GetTop()), Plain(region:GetRight()), Plain(region:GetBottom())
+	if not (left and top and right and bottom) then
+		return
+	end
+	local scale = region:GetEffectiveScale()
+	return left * scale, top * scale, right * scale, bottom * scale
+end
+
+-- Blizzard's art in screen units, kept clear of every aura icon seen so far
+local function BlizzardArtBox(self)
+	local blizz = TargetFrame
+	local left, top, right, bottom
+	local function add(region)
+		local l, t, r, b = ScreenRect(region)
+		if l then
+			left, top = left and min(left, l) or l, top and max(top, t) or t
+			right, bottom = right and max(right, r) or r, bottom and min(bottom, b) or b
+		end
+	end
+	local container = blizz.TargetFrameContainer
+	if container then
+		for _, region in ipairs({container:GetRegions()}) do
+			add(region)
+		end
+	end
+	if not left then
+		add(blizz)
+	end
+	local _, frameTop = ScreenRect(blizz)
+	if not (left and frameTop) then
+		return
+	end
+
+	-- remembered as offsets from the frame's top, since icons come and go
+	local content = blizz.TargetFrameContent
+	local contextual = content and content.TargetFrameContentContextual
+	local auras = contextual and contextual.Auras
+	if auras then
+		local middle = (top + bottom) / 2
+		for _, icon in ipairs({auras:GetChildren()}) do
+			local _, iconTop, _, iconBottom = ScreenRect(icon)
+			if iconTop then
+				if (iconTop + iconBottom) / 2 > middle then
+					self.auraAbove = min(self.auraAbove or math.huge, iconBottom - frameTop)
+				else
+					self.auraBelow = max(self.auraBelow or -math.huge, iconTop - frameTop)
+				end
+			end
+		end
+	end
+	if self.auraAbove then
+		top = min(top, frameTop + self.auraAbove - 1)
+	end
+	if self.auraBelow then
+		bottom = max(bottom, frameTop + self.auraBelow + 1)
+	end
+	if right <= left or top <= bottom then
+		return
+	end
+	return left, top, right, bottom
+end
+
+-- Sizes from the last fit. The portrait and stats box aren't protected, so
+-- they are put back in combat too, after Z-Perl's own resizing.
+function XPerl_Target_ApplyBlizzFit(self)
+	local fit = self.blizzFit
+	if not fit then
+		return
+	end
+	if self.portraitFrame:IsShown() then
+		self.portraitFrame:SetSize(fit.portrait, fit.portrait)
+	end
+	self.statsFrame:SetHeight(fit.stats)
+	if not InCombatLockdown() then
+		self.nameFrame:SetWidth(fit.width)
+		self.statsFrame:SetWidth(fit.width)
+	end
+	XPerl_StatsFrameSetup(self)
+end
+
 function XPerl_Target_FitToBlizzard(self)
 	if not self.useBlizzardFrame or InCombatLockdown() then
 		return
 	end
-	local blizz = TargetFrame
-	local blizzScale = blizz:GetEffectiveScale()
-	local left, top, right, bottom = Plain(blizz:GetLeft()), Plain(blizz:GetTop()), Plain(blizz:GetRight()), Plain(blizz:GetBottom())
-	if not (left and top and right and bottom) then
+	local left, top, right, bottom = BlizzardArtBox(self)
+	if not left then
 		return
 	end
-	-- the frame's art ends where its auras begin
-	local content = blizz.TargetFrameContent
-	local contextual = content and content.TargetFrameContentContextual
-	local auras = contextual and contextual.Auras
-	local aurasTop = auras and Plain(auras:GetTop())
-	local boxBottom = aurasTop and aurasTop * auras:GetEffectiveScale() or bottom * blizzScale
-	local boxWidth = (right - left) * blizzScale
-	local boxHeight = top * blizzScale - boxBottom
-	if boxWidth <= 0 or boxHeight <= 0 then
-		return
-	end
-
-	-- Z-Perl's own extent, in its units, buffs and overhanging art left out
+	self:SetScale(self.conf.scale or 0.8)
 	local scale = self:GetEffectiveScale()
-	local zLeft, zTop, zRight, zBottom = self:GetLeft(), self:GetTop(), self:GetRight(), self:GetBottom()
-	if not (zLeft and zTop and zRight and zBottom) then
-		return
-	end
-	local frameLeft, frameTop = zLeft, zTop
-	local skip = {[self.buffFrame] = true, [self.debuffFrame] = true, [self.eliteFrame or 0] = true, [self.hitIndicator or 0] = true, [self.highlight or 0] = true}
-	for _, part in ipairs({self:GetChildren()}) do
-		if not skip[part] and part:IsShown() and part:GetLeft() then
-			local ratio = part:GetEffectiveScale() / scale
-			zLeft = min(zLeft, part:GetLeft() * ratio)
-			zTop = max(zTop, part:GetTop() * ratio)
-			zRight = max(zRight, part:GetRight() * ratio)
-			zBottom = min(zBottom, part:GetBottom() * ratio)
-		end
-	end
-	local width, height = (zRight - zLeft) * scale, (zTop - zBottom) * scale
-	if width <= 0 or height <= 0 then
-		return
-	end
+	local width, height = (right - left) / scale, (top - bottom) / scale
 
-	local factor = min(boxWidth / width, boxHeight / height)
-	self:SetScale(self:GetScale() * factor)
-	-- offsets are in the frame's own units, which scaling leaves alone
+	local name, stats, portrait = self.nameFrame, self.statsFrame, self.portraitFrame
+	-- the stats box starts this far below the name's top
+	local statsDrop = (name:GetTop() and stats:GetTop()) and (name:GetTop() - stats:GetTop()) or (name:GetHeight() - 2)
+	local portraitSize = portrait:IsShown() and height or 0
+	-- the portrait sits this far left of the name's right edge
+	local overlap = (portraitSize > 0 and name:GetRight() and portrait:GetLeft()) and (name:GetRight() - portrait:GetLeft()) or 0
+	self.blizzFit = {
+		portrait = portraitSize,
+		stats = max(20, height - statsDrop),
+		width = max(60, width - portraitSize + overlap),
+	}
+	XPerl_Target_ApplyBlizzFit(self)
+
+	-- the name's top left on the art's top left
+	local dx = (name:GetLeft() and self:GetLeft()) and (name:GetLeft() - self:GetLeft()) or 0
+	local dy = (name:GetTop() and self:GetTop()) and (self:GetTop() - name:GetTop()) or 0
+	local blizzLeft, blizzTop = ScreenRect(TargetFrame)
+	if not blizzLeft then
+		return
+	end
 	self:ClearAllPoints()
-	self:SetPoint("TOPLEFT", blizz, "TOPLEFT", frameLeft - zLeft, -(zTop - frameTop))
+	self:SetPoint("TOPLEFT", TargetFrame, "TOPLEFT", (left - blizzLeft) / scale - dx, (top - blizzTop) / scale + dy)
 
-	local strata = blizz:GetFrameStrata()
-	for i, name in ipairs(STRATA) do
-		if name == strata then
+	local strata = TargetFrame:GetFrameStrata()
+	for i, level in ipairs(STRATA) do
+		if level == strata then
 			self:SetFrameStrata(STRATA[min(#STRATA, i + 1)])
 			break
 		end
@@ -938,6 +1011,7 @@ function XPerl_Target_SetManaType(self)
 			if (self == XPerl_Target or self == XPerl_Focus or self == XPerl_TargetTarget or self == XPerl_FocusTarget or self == XPerl_PetTarget or self == XPerl_TargetTargetTarget) then
 				self.statsFrame:SetHeight(28 + ((conf.bar.fat or 0) * 2))
 				XPerl_StatsFrameSetup(self)
+				XPerl_Target_ApplyBlizzFit(self)
 			end
 		end
 		return
@@ -951,6 +1025,7 @@ function XPerl_Target_SetManaType(self)
 		if (self == XPerl_Target or self == XPerl_Focus or self == XPerl_TargetTarget or self == XPerl_FocusTarget or self == XPerl_PetTarget or self == XPerl_TargetTargetTarget) then
 			self.statsFrame:SetHeight(40)
 			XPerl_StatsFrameSetup(self)
+			XPerl_Target_ApplyBlizzFit(self)
 		end
 	end
 end
@@ -1623,6 +1698,7 @@ function XPerl_Target_Events:PLAYER_TARGET_CHANGED()
 	XPerl_CombatFlashSetFrames(self)
 	XPerl_Target_ClearLockedAuras(self)
 	XPerl_Target_UpdateDisplay(self)
+	XPerl_Target_ApplyBlizzFit(self)
 	XPerl_Target_FitToBlizzard(self)
 
 	if (UnitIsUnit("target", "focus")) then
@@ -1776,6 +1852,9 @@ function XPerl_Target_Events:UNIT_AURA()
 	end
 
 	--XPerl_Targets_BuffUpdate(self)
+	if (self.useBlizzardFrame and not InCombatLockdown()) then
+		XPerl_Target_FitToBlizzard(self)
+	end
 	if (self.conf.buffs.enable or self.conf.debuffs.enable) and not self.useBlizzardFrame then
 		XPerl_Unit_UpdateBuffs(self, nil, nil, self.conf.buffs.castable, self.conf.debuffs.curable)
 		XPerl_Target_BuffPositions(self)
