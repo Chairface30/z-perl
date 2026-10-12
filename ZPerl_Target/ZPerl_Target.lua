@@ -171,11 +171,9 @@ function XPerl_Target_OnLoad(self, partyid)
 
 	self.partyid = partyid
 	if (partyid == "target") then
-		-- Forever: Blizzard's target frame stays, with Z-Perl's 3D portrait on it
+		-- Forever: Blizzard's target frame stays, with the Z-Perl frame laid over it
 		self.useBlizzardFrame = XPerl_IsForever and TargetFrame and true or nil
-		if (self.useBlizzardFrame) then
-			XPerl_Target_BlizzardPortrait()
-		else
+		if (not self.useBlizzardFrame) then
 			XPerl_BlizzFrameDisable(TargetFrame)
 		end
 		XPerl_BlizzFrameDisable(TargetofTargetFrame)
@@ -313,12 +311,13 @@ local function XPerl_Target_BuffPositions(self)
 	end
 end
 
--- Forever: Blizzard's own target frame is used in place of Z-Perl's. The
--- client keeps the target's auras from addons in combat, and only Blizzard's
--- frame can still show its debuffs. Z-Perl lays a square portrait in its own
--- frame style over Blizzard's round portrait and level badge: the 3D model
--- (or the flat picture when there is no model), with the level in the top
--- right corner. Nothing of Blizzard's is called or moved.
+-- Forever: Blizzard's own target frame is kept, because only it can still
+-- show the target's debuffs in combat (the client keeps auras from addons
+-- then). The Z-Perl target frame is laid over it: pinned to its top left,
+-- above it, and scaled to cover it down to where its auras start, so
+-- Blizzard's buffs and debuffs show below. Z-Perl's own buff and debuff icons
+-- stay hidden. Nothing of Blizzard's is called or moved. Protected frames:
+-- out of combat only.
 local issecret = issecretvalue
 local function Plain(value)
 	if issecret and issecret(value) then
@@ -327,142 +326,88 @@ local function Plain(value)
 	return value
 end
 
-function XPerl_Target_BlizzardPortrait()
-	local container = TargetFrame.TargetFrameContainer
-	local portrait = TargetFrame.portrait or (container and container.Portrait)
-	if not portrait or XPerl_TargetBlizzardPortrait then
+local STRATA = {"BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP"}
+
+function XPerl_Target_FitToBlizzard(self)
+	if not self.useBlizzardFrame or InCombatLockdown() then
+		return
+	end
+	local blizz = TargetFrame
+	local blizzScale = blizz:GetEffectiveScale()
+	local left, top, right, bottom = Plain(blizz:GetLeft()), Plain(blizz:GetTop()), Plain(blizz:GetRight()), Plain(blizz:GetBottom())
+	if not (left and top and right and bottom) then
+		return
+	end
+	-- the frame's art ends where its auras begin
+	local content = blizz.TargetFrameContent
+	local contextual = content and content.TargetFrameContentContextual
+	local auras = contextual and contextual.Auras
+	local aurasTop = auras and Plain(auras:GetTop())
+	local boxBottom = aurasTop and aurasTop * auras:GetEffectiveScale() or bottom * blizzScale
+	local boxWidth = (right - left) * blizzScale
+	local boxHeight = top * blizzScale - boxBottom
+	if boxWidth <= 0 or boxHeight <= 0 then
 		return
 	end
 
-	-- a little larger than the circle, reaching over the level badge
-	local holder = CreateFrame("Frame", "XPerl_TargetBlizzardPortrait", TargetFrame, "XPerl_BorderStyleTemplate")
-	-- over every layer of Blizzard's frame, its level badge included
-	local top = TargetFrame:GetFrameLevel()
-	local function highest(frame, depth)
-		for _, child in ipairs({frame:GetChildren()}) do
-			top = max(top, Plain(child:GetFrameLevel()) or 0)
-			if depth < 3 then
-				highest(child, depth + 1)
-			end
+	-- Z-Perl's own extent, in its units, buffs and overhanging art left out
+	local scale = self:GetEffectiveScale()
+	local zLeft, zTop, zRight, zBottom = self:GetLeft(), self:GetTop(), self:GetRight(), self:GetBottom()
+	if not (zLeft and zTop and zRight and zBottom) then
+		return
+	end
+	local frameLeft, frameTop = zLeft, zTop
+	local skip = {[self.buffFrame] = true, [self.debuffFrame] = true, [self.eliteFrame or 0] = true, [self.hitIndicator or 0] = true, [self.highlight or 0] = true}
+	for _, part in ipairs({self:GetChildren()}) do
+		if not skip[part] and part:IsShown() and part:GetLeft() then
+			local ratio = part:GetEffectiveScale() / scale
+			zLeft = min(zLeft, part:GetLeft() * ratio)
+			zTop = max(zTop, part:GetTop() * ratio)
+			zRight = max(zRight, part:GetRight() * ratio)
+			zBottom = min(zBottom, part:GetBottom() * ratio)
 		end
 	end
-	highest(TargetFrame, 1)
-	holder:SetFrameLevel(top + 2)
-	holder:SetPoint("TOPLEFT", portrait, "TOPLEFT", -5, 5)
-	holder:SetPoint("BOTTOMRIGHT", portrait, "BOTTOMRIGHT", 13, -13)
-
-	local flat = holder:CreateTexture(nil, "ARTWORK")
-	flat:SetPoint("TOPLEFT", 3, -3)
-	flat:SetPoint("BOTTOMRIGHT", -3, 3)
-	flat:SetTexCoord(0.1, 0.9, 0.1, 0.9)
-
-	local model = CreateFrame("PlayerModel", nil, holder)
-	model:SetPoint("TOPLEFT", 3, -3)
-	model:SetPoint("BOTTOMRIGHT", -4, 4)
-
-	-- above the model
-	local overlay = CreateFrame("Frame", nil, holder)
-	overlay:SetAllPoints()
-	overlay:SetFrameLevel(model:GetFrameLevel() + 2)
-	local level = overlay:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-	level:SetPoint("TOPRIGHT", -5, -5)
-	local skull = overlay:CreateTexture(nil, "OVERLAY")
-	skull:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
-	skull:SetSize(14, 14)
-	skull:SetPoint("TOPRIGHT", -4, -4)
-
-	local function updateLevel()
-		local targetLevel = UnitLevel("target")
-		local plainLevel = Plain(targetLevel)
-		if plainLevel and plainLevel < 0 then
-			level:Hide()
-			skull:Show()
-			return
-		end
-		skull:Hide()
-		level:Show()
-		-- a secret level still shows; it can't be compared or colored
-		level:SetText(targetLevel)
-		local color = plainLevel and GetDifficultyColor(plainLevel) or NORMAL_FONT_COLOR
-		level:SetTextColor(color.r, color.g, color.b)
-		local class = Plain(UnitClassification("target"))
-		if plainLevel and (class == "elite" or class == "worldboss" or class == "rareelite") then
-			level:SetText(plainLevel.."+")
-		end
+	local width, height = (zRight - zLeft) * scale, (zTop - zBottom) * scale
+	if width <= 0 or height <= 0 then
+		return
 	end
 
-	local function updateModel()
-		-- out of view (too far away): the flat picture instead
-		if Plain(UnitIsVisible("target")) == false then
-			model:Hide()
-			pcall(SetPortraitTexture, flat, "target")
-			flat:Show()
-			holder.noModel = true
-			return
-		end
-		holder.noModel = nil
-		flat:Hide()
-		model:Show()
-		model:ClearModel()
-		model:SetUnit("target")
-		local cam = XPerlDB and XPerlDB.portrait3DCamera or {}
-		local distance = (cam.distance or 90) / 100
-		model:SetPortraitZoom(distance > 1 and max(0, 1 - (distance - 1)) or 1)
-		model:SetCamera(0)
-		model:SetFacing((cam.facing or 15) / 100)
-		if model.SetCamDistanceScale then
-			model:SetCamDistanceScale(distance)
-		end
-		model:SetPosition(0, (cam.panX or 0) / 100, (cam.panY or 5) / 100)
-		if model.RefreshCamera then
-			model:RefreshCamera()
-		end
-		pcall(model.SetLight, model, true, false, 0, 0, 0, 1.0, 1.0, 1.0, 1.0)
-	end
+	local factor = min(boxWidth / width, boxHeight / height)
+	self:SetScale(self:GetScale() * factor)
+	-- offsets are in the frame's own units, which scaling leaves alone
+	self:ClearAllPoints()
+	self:SetPoint("TOPLEFT", blizz, "TOPLEFT", frameLeft - zLeft, -(zTop - frameTop))
 
-	local function update(_, event)
-		if not UnitExists("target") then
-			return
+	local strata = blizz:GetFrameStrata()
+	for i, name in ipairs(STRATA) do
+		if name == strata then
+			self:SetFrameStrata(STRATA[min(#STRATA, i + 1)])
+			break
 		end
-		if conf then
-			local frame, border = conf.colour.frame, conf.colour.border
-			holder:SetBackdropColor(frame.r, frame.g, frame.b, frame.a)
-			holder:SetBackdropBorderColor(border.r, border.g, border.b, border.a)
-		end
-		-- a golden border for elites
-		local class = Plain(UnitClassification("target"))
-		if class == "elite" or class == "rareelite" or class == "worldboss" then
-			holder:SetBackdropBorderColor(1, 0.82, 0, 1)
-		end
-		if event ~= "UNIT_LEVEL" and event ~= "UNIT_CLASSIFICATION_CHANGED" then
-			updateModel()
-		end
-		updateLevel()
 	end
+end
 
-	holder:RegisterEvent("PLAYER_TARGET_CHANGED")
-	holder:RegisterUnitEvent("UNIT_MODEL_CHANGED", "target")
-	holder:RegisterUnitEvent("UNIT_PORTRAIT_UPDATE", "target")
-	holder:RegisterUnitEvent("UNIT_LEVEL", "target")
-	holder:RegisterUnitEvent("UNIT_CLASSIFICATION_CHANGED", "target")
-	holder:SetScript("OnEvent", update)
-	holder:SetScript("OnShow", update)
-	-- a target that was out of view gets its model once it comes into view
-	local elapsed = 0
-	holder:SetScript("OnUpdate", function(_, step)
-		elapsed = elapsed + step
-		if elapsed > 1 then
-			elapsed = 0
-			if holder.noModel and Plain(UnitIsVisible("target")) ~= false then
-				updateModel()
-			end
-		end
-	end)
-	update()
+-- a golden border for elites
+function XPerl_Target_EliteBorder(self)
+	if not (self.useBlizzardFrame and conf and self.portraitFrame) then
+		return
+	end
+	local class = Plain(UnitClassification(self.partyid))
+	if class == "elite" or class == "rareelite" or class == "worldboss" then
+		self.portraitFrame:SetBackdropBorderColor(1, 0.82, 0, 1)
+	else
+		local border = conf.colour.border
+		self.portraitFrame:SetBackdropBorderColor(border.r, border.g, border.b, border.a)
+	end
 end
 
 -- XPerl_Targets_BuffUpdate
 function XPerl_Targets_BuffUpdate(self)
+	if (self.useBlizzardFrame) then
+		self.buffFrame:Hide()
+		self.debuffFrame:Hide()
+		return
+	end
 	if (not self.conf.buffs.enable and not self.conf.debuffs.enable) then
 		self.buffFrame:Hide()
 		self.debuffFrame:Hide()
@@ -1382,6 +1327,7 @@ function XPerl_Target_UpdateDisplay(self)
 		XPerl_Target_UpdateName(self)
 		XPerl_Target_UpdateClassification(self)
 		XPerl_Target_UpdateLevel(self)
+		XPerl_Target_EliteBorder(self)
 		XPerl_Target_UpdateType(self)
 		XPerl_Target_SetManaType(self)
 		XPerl_Target_SetMana(self)
@@ -1503,6 +1449,7 @@ end
 function XPerl_Target_Events:PLAYER_REGEN_ENABLED()
 	XPerl_Unit_ThreatStatus(self, self.partyid == "target" and "player" or nil)
 	XPerl_Target_AurasAfterCombat(self)
+	XPerl_Target_FitToBlizzard(self)
 end
 
 function XPerl_Target_Events:PLAYER_REGEN_DISABLED()
@@ -1528,7 +1475,7 @@ function XPerl_Target_Events:PET_BATTLE_OPENING_START()
 end
 
 function XPerl_Target_Events:PET_BATTLE_CLOSE()
-	if (XPerl_Target and not XPerl_Target.useBlizzardFrame and UnitExists("target")) then
+	if (XPerl_Target and UnitExists("target")) then
 		XPerl_Target:Show()
 	end
 	if (XPerl_Focus and XPerl_Focus.conf.enable and UnitExists("focus")) then
@@ -1676,6 +1623,7 @@ function XPerl_Target_Events:PLAYER_TARGET_CHANGED()
 	XPerl_CombatFlashSetFrames(self)
 	XPerl_Target_ClearLockedAuras(self)
 	XPerl_Target_UpdateDisplay(self)
+	XPerl_Target_FitToBlizzard(self)
 
 	if (UnitIsUnit("target", "focus")) then
 		self.statsFrame.focusTarget:Show()
@@ -1801,6 +1749,7 @@ end
 -- UNIT_LEVEL
 function XPerl_Target_Events:UNIT_LEVEL()
 	XPerl_Target_UpdateLevel(self)
+	XPerl_Target_EliteBorder(self)
 	XPerl_Target_UpdateClassification(self)
 end
 
@@ -1827,7 +1776,7 @@ function XPerl_Target_Events:UNIT_AURA()
 	end
 
 	--XPerl_Targets_BuffUpdate(self)
-	if self.conf.buffs.enable or self.conf.debuffs.enable then
+	if (self.conf.buffs.enable or self.conf.debuffs.enable) and not self.useBlizzardFrame then
 		XPerl_Unit_UpdateBuffs(self, nil, nil, self.conf.buffs.castable, self.conf.debuffs.curable)
 		XPerl_Target_BuffPositions(self)
 	end
@@ -2032,13 +1981,14 @@ function XPerl_Target_Set_Bits(self)
 	XPerl_Target_SetWidth(self)
 
 	if (not InCombatLockdown()) then
-		if (self.conf.enable and not self.useBlizzardFrame) then
+		if (self.conf.enable) then
 			RegisterUnitWatch(self)
 		else
 			self:Hide()
 			UnregisterUnitWatch(self)
 		end
 	end
+	XPerl_Target_FitToBlizzard(self)
 
 	if (self == XPerl_Target) then
 		XPerl_Target_Set_BlizzCPFrame(self)

@@ -1,3 +1,6 @@
+**Unreleased**
+* Forever: the whole Z-Perl target frame is back, laid over Blizzard's target frame instead of a portrait square: pinned to its top left, drawn above it, and scaled to cover it down to where its buffs and debuffs start, so Blizzard's aura icons show uncovered below. Z-Perl's own target buff and debuff icons stay hidden there (the client freezes them in combat). The portrait keeps the golden border for elites. The frame is re-fitted on target changes and after combat, never during it
+
 **8.0.8** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: Blizzard's own target frame is used in place of Z-Perl's, so the target's debuffs show in combat. The client keeps a target's auras from addons in combat, so Z-Perl's target frame could only show the debuffs that were up when the fight began; only Blizzard's frame can still draw them. Z-Perl lays a square portrait in its own frame style over Blizzard's round portrait and level badge: the 3D model (using the 3D portrait camera settings), or the flat picture when the target is too far away for one, with the level in the top right corner (colored by difficulty, + for elites, a skull for bosses). Elites get a golden border. Z-Perl's own target of target frame stays
 
