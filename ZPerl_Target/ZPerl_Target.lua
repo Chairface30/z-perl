@@ -316,7 +316,13 @@ end
 -- part's own units. A layout saved with /zperl layout (conf.blizzLayout)
 -- wins over the shipped one; with neither, the frame is fitted by measuring.
 local LAYOUT_PARTS = {"nameFrame", "statsFrame", "portraitFrame", "levelFrame", "creatureTypeFrame", "typeFramePlayer", "bossFrame", "cpFrame", "eliteFrame"}
-XPerl_Target_ShippedLayout = nil
+XPerl_Target_ShippedLayout = {
+	nameFrame = {12, -6, 159, 31},
+	statsFrame = {12, -30, 159, 47},
+	portraitFrame = {164, -6, 83, 77},
+	levelFrame = {181, -78, 27, 27},
+	typeFramePlayer = {205, -79, 29, 27},
+}
 
 local function TargetLayout(self)
 	return self.conf and self.conf.blizzLayout or XPerl_Target_ShippedLayout
