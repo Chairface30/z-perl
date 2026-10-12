@@ -171,14 +171,12 @@ function XPerl_Target_OnLoad(self, partyid)
 
 	self.partyid = partyid
 	if (partyid == "target") then
-		-- Forever: Blizzard's target frame keeps running, out of sight, to lend its debuffs
-		self.blizzDebuffs = XPerl_IsForever and TargetFrame and true or nil
-		XPerl_BlizzFrameDisable(TargetFrame, self.blizzDebuffs)
-		if (self.blizzDebuffs) then
-			local ok, err = pcall(XPerl_Target_HookBlizzDebuffs, self)
-			if not ok then
-				geterrorhandler()(err)
-			end
+		-- Forever: Blizzard's target frame stays, with Z-Perl's 3D portrait on it
+		self.useBlizzardFrame = XPerl_IsForever and TargetFrame and true or nil
+		if (self.useBlizzardFrame) then
+			XPerl_Target_BlizzardPortrait()
+		else
+			XPerl_BlizzFrameDisable(TargetFrame)
 		end
 		XPerl_BlizzFrameDisable(TargetofTargetFrame)
 		XPerl_BlizzFrameDisable(TargetFrameToT) -- its name on newer clients
@@ -315,15 +313,11 @@ local function XPerl_Target_BuffPositions(self)
 	end
 end
 
--- Blizzard's debuffs on the target frame (Forever). The client keeps the
--- target's auras from addons in combat, but Blizzard's own target frame still
--- draws them. That frame keeps running out of sight, and once it has drawn,
--- its debuff buttons are moved onto a strip under the Z-Perl frame in place of
--- Z-Perl's own debuffs. Nothing of Blizzard's is called: its buttons are only
--- re-parented, scaled and placed.
-local blizzDebuffKnown = setmetatable({}, {__mode = "k"})
-local blizzDebuffList = {}
-
+-- Forever: Blizzard's own target frame is used in place of Z-Perl's. The
+-- client keeps the target's auras from addons in combat, and only Blizzard's
+-- frame can still show its debuffs. Z-Perl lays a 3D portrait over the
+-- frame's round portrait: a black disc over Blizzard's picture, the model
+-- square inside it. Nothing of Blizzard's is called or moved.
 local issecret = issecretvalue
 local function Plain(value)
 	if issecret and issecret(value) then
@@ -332,423 +326,78 @@ local function Plain(value)
 	return value
 end
 
--- Blizzard's own order for a button: its index where the buttons are named
--- (TargetFrameDebuff1...), else its place in the rows Blizzard anchored it in.
-local function BlizzDebuffOrder(button, strip, depth)
-	if type(blizzDebuffKnown[button]) == "number" then
-		return blizzDebuffKnown[button], 0
-	end
-	local point, rel, relPoint, x, y = button:GetPoint(1)
-	point, rel, relPoint, x, y = Plain(point), Plain(rel), Plain(relPoint), Plain(x), Plain(y)
-	if rel == strip then
-		return button.zpOrder or 0, 0 -- still where we put it
-	elseif rel and blizzDebuffKnown[rel] and depth < 40 then
-		local row, col = BlizzDebuffOrder(rel, strip, depth + 1)
-		if point and relPoint and ((point:find("TOP") and relPoint:find("BOTTOM")) or (point:find("BOTTOM") and relPoint:find("TOP"))) then
-			return row + 1, 0
-		end
-		return row, col + 1
-	end
-	return -(y or 0), x or 0
-end
-
-local function BlizzDebuffSort(a, b)
-	if a.zpRow ~= b.zpRow then
-		return a.zpRow < b.zpRow
-	end
-	return a.zpCol < b.zpCol
-end
-
--- The debuff buttons Blizzard's target frame is showing, in its order. Named
--- buttons, pooled ones and plain children are all looked for, since which
--- the client uses can change with its patches.
-local function BlizzDebuffCollect(blizz, strip)
-	local name = blizz:GetName()
-	for i = 1, 40 do
-		local button = _G[name.."Debuff"..i]
-		if not button then
-			break
-		end
-		blizzDebuffKnown[button] = i
-	end
-	local pools = blizz.auraPools
-	if pools and pools.EnumerateActiveByTemplate then
-		pcall(function()
-			for button in pools:EnumerateActiveByTemplate("TargetDebuffFrameTemplate") do
-				blizzDebuffKnown[button] = blizzDebuffKnown[button] or true
-			end
-		end)
-	end
-	for _, child in ipairs({blizz:GetChildren()}) do
-		if not blizzDebuffKnown[child] then
-			local childName = Plain(child:GetName())
-			if (childName and childName:find("Debuff%d+$")) or (child.Border and child.Icon and child.Cooldown and not child.Stealable) then
-				blizzDebuffKnown[child] = true
-			end
-		end
-	end
-
-	local list = blizzDebuffList
-	wipe(list)
-	for button in pairs(blizzDebuffKnown) do
-		local shown = button:IsShown()
-		if issecret and issecret(shown) then
-			shown = true
-		end
-		if shown then
-			button.zpRow, button.zpCol = BlizzDebuffOrder(button, strip, 0)
-			list[#list + 1] = button
-		end
-	end
-	sort(list, BlizzDebuffSort)
-	return list
-end
-
--- Where the Z-Perl buffs go: under the debuff strip when it has icons (over
--- it with Buffs Above), else straight under (over) the frame.
-local function XPerl_Target_AnchorBuffFrame(self)
-	local strip = self.blizzDebuffFrame
-	local hasDebuffs = strip and strip.count and strip.count > 0
-	self.buffFrame:ClearAllPoints()
-	if (self.conf.buffs.above) then
-		if hasDebuffs then
-			self.buffFrame:SetPoint("BOTTOMLEFT", strip, "TOPLEFT", 0, 1)
-		else
-			self.buffFrame:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 2, 0)
-		end
-	else
-		if hasDebuffs then
-			self.buffFrame:SetPoint("TOPLEFT", strip, "BOTTOMLEFT", 0, -1)
-		else
-			self.buffFrame:SetPoint("TOPLEFT", self.statsFrame, "BOTTOMLEFT", 2, 0)
-		end
-	end
-end
-
--- Newer clients keep the target frame's aura buttons in one container, which
--- Blizzard only fills while it can be seen.
--- Found by its field path, else by walking the frame for a child whose
--- parent key (or debug name) says Auras: field reads can come back empty.
-local blizzAuraContainer, blizzAuraFoundBy
-local function BlizzAuraContainer()
-	if blizzAuraContainer then
-		return blizzAuraContainer
-	end
-	local content = TargetFrame.TargetFrameContent
-	local contextual = content and content.TargetFrameContentContextual
-	if contextual and contextual.Auras then
-		blizzAuraContainer, blizzAuraFoundBy = contextual.Auras, "field"
-		return blizzAuraContainer
-	end
-	local function isAuras(child)
-		local key = child.GetParentKey and Plain(child:GetParentKey())
-		if key == "Auras" then
-			return true
-		end
-		local name = child.GetDebugName and Plain(child:GetDebugName())
-		return name and name:find("%.Auras$") ~= nil
-	end
-	local function search(frame, depth)
-		for _, child in ipairs({frame:GetChildren()}) do
-			if isAuras(child) then
-				return child
-			end
-			if depth < 3 then
-				local found = search(child, depth + 1)
-				if found then
-					return found
-				end
-			end
-		end
-	end
-	local found = search(TargetFrame, 1)
-	if found then
-		blizzAuraContainer, blizzAuraFoundBy = found, "walk"
-	end
-	return found
-end
-
--- The container is moved whole onto the strip, made visible there, and
--- scaled so its buttons come out at the Debuff Size.
-local function XPerl_Target_PlaceBlizzAuraContainer(self, strip, auras)
-	local size = self.conf.debuffs.size or 20
-	local above = self.conf.buffs.above
-	local side = above and "above" or "below"
-	if strip.side ~= side then
-		strip.side = side
-		strip:ClearAllPoints()
-		if above then
-			strip:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 2, 0)
-		else
-			strip:SetPoint("TOPLEFT", self.statsFrame, "BOTTOMLEFT", 2, 0)
-		end
-	end
-	if auras:GetParent() ~= strip then
-		auras:SetParent(strip)
-	end
-	-- re-placed only when Blizzard has moved it
-	local point, rel, _, x, y = auras:GetPoint(1)
-	if not (Plain(point) == "TOPLEFT" and Plain(rel) == strip and Plain(x) == 0 and Plain(y) == 0 and auras:GetNumPoints() == 1) then
-		auras:ClearAllPoints()
-		auras:SetPoint("TOPLEFT", strip, "TOPLEFT", 0, 0)
-	end
-
-	local count, buttonWidth, top, bottom = 0, nil, Plain(auras:GetTop()), nil
-	for _, child in ipairs({auras:GetChildren()}) do
-		local shown = child:IsShown()
-		if issecret and issecret(shown) then
-			shown = true
-		end
-		if shown then
-			count = count + 1
-			buttonWidth = buttonWidth or Plain(child:GetWidth())
-			local childBottom = Plain(child:GetBottom())
-			if childBottom and (not bottom or childBottom < bottom) then
-				bottom = childBottom
-			end
-		end
-	end
-	local scale = (buttonWidth and buttonWidth > 0) and size / buttonWidth or 1
-	local oldScale = Plain(auras:GetScale())
-	if not oldScale or abs(oldScale - scale) > 0.001 then
-		auras:SetScale(scale)
-	end
-	if not self.conf.debuffs.enable then
-		count = 0
-	end
-	local alpha = count > 0 and 1 or 0
-	if Plain(auras:GetAlpha()) ~= alpha then
-		auras:SetAlpha(alpha)
-	end
-
-	local height = size
-	if top and bottom and top > bottom then
-		height = (top - bottom) * scale
-	end
-	local width = Plain(self:GetWidth()) or 160
-	height = max(1, floor(height + 0.5))
-	if strip.width ~= width or strip.height ~= height then
-		strip.width, strip.height = width, height
-		strip:SetSize(width, height)
-	end
-
-	if strip.count ~= count then
-		strip.count = count
-		XPerl_Target_AnchorBuffFrame(self)
-	end
-end
-
-function XPerl_Target_PlaceBlizzDebuffs(self)
-	local strip = self.blizzDebuffFrame
-	if not (strip and self.conf) then
+function XPerl_Target_BlizzardPortrait()
+	local container = TargetFrame.TargetFrameContainer
+	local portrait = TargetFrame.portrait or (container and container.Portrait)
+	if not portrait or XPerl_TargetBlizzardPortrait then
 		return
 	end
-	local auras = BlizzAuraContainer()
-	if auras then
-		-- the container's own scripts are forbidden to hook; a failed move must
-		-- not take the frame down with it
-		local ok, err = pcall(XPerl_Target_PlaceBlizzAuraContainer, self, strip, auras)
-		if not ok then
-			strip.lastError = tostring(err)
-		end
-		return
-	end
-	local list = BlizzDebuffCollect(TargetFrame, strip)
-	local count = self.conf.debuffs.enable and #list or 0
-	local size = self.conf.debuffs.size or 20
-	local gap = 1
-	local above = self.conf.buffs.above
-	local width = Plain(self:GetWidth()) or 160
-	local perRow = max(1, floor((width - 4 + gap) / (size + gap)))
-	local rows = max(1, ceil(count / perRow))
 
-	strip:ClearAllPoints()
-	if above then
-		strip:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 2, 0)
-	else
-		strip:SetPoint("TOPLEFT", self.statsFrame, "BOTTOMLEFT", 2, 0)
-	end
-	strip:SetSize(perRow * (size + gap), rows * (size + gap))
+	local holder = CreateFrame("Frame", "XPerl_TargetBlizzardPortrait", TargetFrame)
+	holder:SetFrameLevel((container or TargetFrame):GetFrameLevel() + 2)
+	holder:SetPoint("TOPLEFT", portrait, "TOPLEFT", 1, -1)
+	holder:SetPoint("BOTTOMRIGHT", portrait, "BOTTOMRIGHT", -1, 1)
 
-	local corner = above and "BOTTOMLEFT" or "TOPLEFT"
-	local ySign = above and 1 or -1
-	for i, button in ipairs(list) do
-		if count == 0 then
-			button:SetParent(TargetFrame) -- Debuffs off: Blizzard keeps them, out of sight
-		else
-			if button:GetParent() ~= strip then
-				button:SetParent(strip)
-			end
-			local buttonWidth = Plain(button:GetWidth())
-			local scale = (buttonWidth and buttonWidth > 0) and size / buttonWidth or 1
-			button:SetScale(scale)
-			local col, row = (i - 1) % perRow, floor((i - 1) / perRow)
-			button:ClearAllPoints()
-			button:SetPoint(corner, strip, corner, col * (size + gap) / scale, ySign * row * (size + gap) / scale)
-			button.zpOrder = i
-		end
-	end
+	local disc = holder:CreateTexture(nil, "BACKGROUND")
+	disc:SetAllPoints()
+	disc:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask")
+	disc:SetVertexColor(0, 0, 0, 1)
 
-	if strip.count ~= count then
-		strip.count = count
-		XPerl_Target_AnchorBuffFrame(self)
-	end
-end
-
--- Hooked once: after Blizzard's target frame updates its auras, by whichever
--- name this client gives that update, and after each of its events.
-function XPerl_Target_HookBlizzDebuffs(self)
-	if self.blizzDebuffFrame then
-		return
-	end
-	local strip = CreateFrame("Frame", nil, self)
-	strip.unit = self.partyid -- older Blizzard debuff buttons ask their parent for the unit
-	strip.count = 0
-	self.blizzDebuffFrame = strip
-	-- how often each hook has fired, for /zperl debuffs
-	local fired = {}
-	self.blizzDebuffHooks = fired
-	local function refresh(how)
-		fired[how] = (fired[how] or 0) + 1
-		XPerl_Target_PlaceBlizzDebuffs(self)
-	end
-	if type(TargetFrame_UpdateAuras) == "function" then
-		hooksecurefunc("TargetFrame_UpdateAuras", function(frame)
-			if frame == TargetFrame then
-				refresh("TargetFrame_UpdateAuras")
-			end
-		end)
-	end
-	if type(TargetFrame.UpdateAuras) == "function" then
-		hooksecurefunc(TargetFrame, "UpdateAuras", function() refresh("TargetFrame:UpdateAuras") end)
-	end
-	TargetFrame:HookScript("OnEvent", function(_, event)
-		refresh("OnEvent "..tostring(Plain(event)))
-	end)
-	-- The aura container answers its own UNIT_AURA, which nothing here may
-	-- hook, so it is checked a few times a second while there is a target.
-	local elapsed = 0
-	strip:SetScript("OnUpdate", function(_, step)
-		elapsed = elapsed + step
-		if elapsed >= 0.2 then
-			elapsed = 0
-			refresh("poll")
+	-- the largest square that fits in the circle
+	local model = CreateFrame("PlayerModel", nil, holder)
+	model:SetPoint("CENTER")
+	holder:SetScript("OnSizeChanged", function(self, width)
+		width = Plain(width)
+		if width then
+			model:SetSize(width * 0.72, width * 0.72)
 		end
 	end)
-end
+	model:SetSize(40, 40)
 
--- One line about a frame or region of Blizzard's: what it is, whether it
--- shows, and which aura-button parts it has. Secret answers read as "?".
-local function BlizzDebuffDescribe(frame)
-	local function get(method)
-		local ok, value = pcall(frame[method], frame)
-		if not ok then
-			return "err"
-		end
-		value = Plain(value)
-		return value == nil and "?" or tostring(value)
-	end
-	local parts = {}
-	for _, key in ipairs({"Icon", "icon", "Border", "Cooldown", "cooldown", "Count", "count", "Stealable", "auraInstanceID", "unit"}) do
-		if frame[key] ~= nil then
-			parts[#parts + 1] = key
-		end
-	end
-	return format("%s [%s] shown=%s visible=%s w=%s children=%s keys=%s",
-		frame.GetDebugName and get("GetDebugName") or get("GetName"),
-		get("GetObjectType"), get("IsShown"), get("IsVisible"), get("GetWidth"),
-		frame.GetNumChildren and get("GetNumChildren") or "-", table.concat(parts, ","))
-end
-
--- /zperl debuffs: what the target frame finds of Blizzard's debuffs. Printed,
--- and kept in ZPerlTargetDebug.blizzDebuffReport (saved on /reload).
-function XPerl_Target_BlizzDebuffReport()
-	local self = XPerl_Target
-	if not (self and self.blizzDebuffFrame) then
-		XPerl_Notice("Blizzard debuffs are not in use on this client.")
-		return
-	end
-	local list = BlizzDebuffCollect(TargetFrame, self.blizzDebuffFrame)
-	local known, named = 0, 0
-	for _, kind in pairs(blizzDebuffKnown) do
-		known = known + 1
-		if type(kind) == "number" then
-			named = named + 1
-		end
-	end
-	local summary = format("Blizzard debuffs: %d shown, %d known (%d named), aura pools %s, TargetFrame_UpdateAuras %s, TargetFrame.UpdateAuras %s, TargetFrame shown %s.",
-		#list, known, named, TargetFrame.auraPools and "yes" or "no",
-		type(TargetFrame_UpdateAuras) == "function" and "yes" or "no",
-		type(TargetFrame.UpdateAuras) == "function" and "yes" or "no",
-		tostring(Plain(TargetFrame:IsShown())))
-	XPerl_Notice(summary)
-
-	local report = {summary, "when: "..date("%Y-%m-%d %H:%M:%S"), "in combat: "..tostring(InCombatLockdown())}
-	local function add(line)
-		report[#report + 1] = line
-	end
-	for how, count in pairs(self.blizzDebuffHooks or {}) do
-		add("hook fired: "..how.." x"..count)
-	end
-	add("TargetFrame: "..BlizzDebuffDescribe(TargetFrame))
-	local parent = TargetFrame:GetParent()
-	add("TargetFrame parent: "..(parent and BlizzDebuffDescribe(parent) or "none"))
-	for button, kind in pairs(blizzDebuffKnown) do
-		add("known ("..tostring(kind).."): "..BlizzDebuffDescribe(button))
-	end
-	-- Blizzard's frame, three levels down
-	local function walk(frame, depth, path)
-		if depth > 3 or not frame.GetChildren then
+	local function update()
+		if not UnitExists("target") then
 			return
 		end
-		for i, child in ipairs({frame:GetChildren()}) do
-			local childPath = path.."."..i
-			add("child "..childPath..": "..BlizzDebuffDescribe(child))
-			walk(child, depth + 1, childPath)
+		-- out of view (too far away): Blizzard's picture shows instead
+		if Plain(UnitIsVisible("target")) == false then
+			holder:Hide()
+			return
 		end
-	end
-	walk(TargetFrame, 1, "TargetFrame")
-	local auras = BlizzAuraContainer()
-	add("aura container: "..(auras and ("found by "..tostring(blizzAuraFoundBy)) or "not found"))
-	local keys = {}
-	for key in pairs(TargetFrame) do
-		if type(key) == "string" then
-			keys[#keys + 1] = key
+		holder:Show()
+		model:ClearModel()
+		model:SetUnit("target")
+		local cam = XPerlDB and XPerlDB.portrait3DCamera or {}
+		local distance = (cam.distance or 90) / 100
+		model:SetPortraitZoom(distance > 1 and max(0, 1 - (distance - 1)) or 1)
+		model:SetCamera(0)
+		model:SetFacing((cam.facing or 15) / 100)
+		if model.SetCamDistanceScale then
+			model:SetCamDistanceScale(distance)
 		end
+		model:SetPosition(0, (cam.panX or 0) / 100, (cam.panY or 5) / 100)
+		if model.RefreshCamera then
+			model:RefreshCamera()
+		end
+		pcall(model.SetLight, model, true, false, 0, 0, 0, 1.0, 1.0, 1.0, 1.0)
 	end
-	sort(keys)
-	add("TargetFrame keys: "..table.concat(keys, ", "))
-	if auras then
-		add("Auras: "..BlizzDebuffDescribe(auras).." parent="..tostring(auras:GetParent() == self.blizzDebuffFrame and "strip" or "other").." scale="..tostring(Plain(auras:GetScale())).." alpha="..tostring(Plain(auras:GetAlpha())))
-		walk(auras, 1, "Auras")
-		add("strip last error: "..tostring(self.blizzDebuffFrame.lastError))
-		add("strip: "..BlizzDebuffDescribe(self.blizzDebuffFrame).." h="..tostring(Plain(self.blizzDebuffFrame:GetHeight())).." count="..tostring(self.blizzDebuffFrame.count))
-	end
-	-- table fields of the frame that may hold its aura buttons
-	for key, value in pairs(TargetFrame) do
-		if type(key) == "string" and type(value) == "table" and (key:lower():find("aura") or key:lower():find("buff")) then
-			add("field TargetFrame."..key..": "..(value.GetObjectType and BlizzDebuffDescribe(value) or "table"))
-			if key == "auraPools" then
-				for method in pairs(getmetatable(value) and getmetatable(value).__index or {}) do
-					add("  auraPools method: "..tostring(method))
-				end
-				local ok, active = pcall(value.GetNumActive, value)
-				add("  auraPools active: "..tostring(ok and Plain(active)))
+
+	holder:RegisterEvent("PLAYER_TARGET_CHANGED")
+	holder:RegisterUnitEvent("UNIT_MODEL_CHANGED", "target")
+	holder:RegisterUnitEvent("UNIT_PORTRAIT_UPDATE", "target")
+	holder:SetScript("OnEvent", update)
+	-- a target out of view gets its model once it comes into view
+	local ticker = CreateFrame("Frame", nil, TargetFrame)
+	local elapsed = 0
+	ticker:SetScript("OnUpdate", function(_, step)
+		elapsed = elapsed + step
+		if elapsed > 2 then
+			elapsed = 0
+			if Plain(UnitIsVisible("target")) ~= false and not holder:IsShown() then
+				update()
 			end
 		end
-	end
-	-- global names Blizzard gave its aura buttons
-	local globals = {}
-	for name in pairs(_G) do
-		if type(name) == "string" and name:find("^TargetFrame") and (name:find("Buff") or name:find("Debuff") or name:find("Aura")) then
-			globals[#globals + 1] = name
-		end
-	end
-	sort(globals)
-	add("globals: "..table.concat(globals, ", "))
-
-	ZPerlTargetDebug = {blizzDebuffReport = report}
-	XPerl_Notice("Full report saved; /reload to write it to disk.")
+	end)
+	update()
 end
 
 -- XPerl_Targets_BuffUpdate
@@ -1818,7 +1467,7 @@ function XPerl_Target_Events:PET_BATTLE_OPENING_START()
 end
 
 function XPerl_Target_Events:PET_BATTLE_CLOSE()
-	if (XPerl_Target and UnitExists("target")) then
+	if (XPerl_Target and not XPerl_Target.useBlizzardFrame and UnitExists("target")) then
 		XPerl_Target:Show()
 	end
 	if (XPerl_Focus and XPerl_Focus.conf.enable and UnitExists("focus")) then
@@ -1951,8 +1600,7 @@ function XPerl_Target_Events:PLAYER_TARGET_CHANGED()
 	if self ~= XPerl_Target then
 		return
 	end
-	-- with Blizzard's target frame still running, it plays the select sound itself
-	if (self.conf.sound and not self.blizzDebuffs and UnitExists("target")) then
+	if (self.conf.sound and UnitExists("target")) then
 		if (UnitIsEnemy("target", "player")) then
 			PlaySound(873)
 		elseif (UnitIsFriend("player", "target")) then
@@ -2323,7 +1971,7 @@ function XPerl_Target_Set_Bits(self)
 	XPerl_Target_SetWidth(self)
 
 	if (not InCombatLockdown()) then
-		if (self.conf.enable) then
+		if (self.conf.enable and not self.useBlizzardFrame) then
 			RegisterUnitWatch(self)
 		else
 			self:Hide()
@@ -2343,16 +1991,11 @@ function XPerl_Target_Set_Bits(self)
 		XPerl_RegisterCombatLog(self, false)
 	end
 
-	if (self.blizzDebuffFrame) then
-		XPerl_Target_PlaceBlizzDebuffs(self)
-		XPerl_Target_AnchorBuffFrame(self)
+	self.buffFrame:ClearAllPoints()
+	if (self.conf.buffs.above) then
+		self.buffFrame:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 2, 0)
 	else
-		self.buffFrame:ClearAllPoints()
-		if (self.conf.buffs.above) then
-			self.buffFrame:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 2, 0)
-		else
-			self.buffFrame:SetPoint("TOPLEFT", self.statsFrame, "BOTTOMLEFT", 2, 0)
-		end
+		self.buffFrame:SetPoint("TOPLEFT", self.statsFrame, "BOTTOMLEFT", 2, 0)
 	end
 	self.buffOptMix = nil
 

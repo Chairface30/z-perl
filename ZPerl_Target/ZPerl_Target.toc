@@ -13,6 +13,5 @@
 ## Notes-zhTW: 提供顯示目標框架.
 ## RequiredDeps: ZPerl
 ## OptionalDeps: ZPerl_ArcaneBar
-## SavedVariables: ZPerlTargetDebug
 
 ZPerl_Target.xml

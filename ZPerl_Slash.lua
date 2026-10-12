@@ -80,8 +80,6 @@ local function XPerl_SlashHandler(msg)
 		else
 			XPerl_Notice("No valid unit to focus")
 		end
-	elseif (args[1] == "debuffs" and XPerl_Target_BlizzDebuffReport) then
-		XPerl_Target_BlizzDebuffReport()
 	elseif (args[1] == "help") then
 		DEFAULT_CHAT_FRAME:AddMessage("|cFFFFFF00ZPerl Commands:|r")
 		DEFAULT_CHAT_FRAME:AddMessage("  /zperl - Open options")

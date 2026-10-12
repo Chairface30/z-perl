@@ -1,9 +1,5 @@
 **Unreleased**
-* Forever: the target frame shows Blizzard's own target debuffs in place of Z-Perl's. The client keeps a target's auras from addons in combat, so Z-Perl could only show the debuffs that were up when the fight began; Blizzard's target frame still draws them. It now keeps running out of sight, and its debuff buttons sit in a strip under the Z-Perl target frame (over it with Buffs Above), with the Z-Perl buffs below that. The Debuffs option turns the strip on and off and Debuff Size sets the icon size. Z-Perl's other debuff options (only mine, curable only, big debuffs) don't apply to it; Blizzard picks which debuffs to show
-* Forever: with Blizzard's target frame running, it plays the target select sound, so Z-Perl's Sound option no longer plays a second one
-* /zperl debuffs reports what the target frame finds of Blizzard's debuff buttons, for bug reports
-* Forever: the target and focus frames no longer show the old target's buffs and debuffs after you switch targets in combat. The client keeps every unit's auras from addons while you are in combat, so the frame can only keep what it drew before combat; on a new target it now shows no icons instead of wrong ones
-* Forever: the target and focus frames redraw their buffs and debuffs as soon as combat ends, instead of waiting for the next aura change
+* Forever: Blizzard's own target frame is used in place of Z-Perl's, so the target's debuffs show in combat. The client keeps a target's auras from addons in combat, so Z-Perl's target frame could only show the debuffs that were up when the fight began; only Blizzard's frame can still draw them. Z-Perl lays its 3D portrait over Blizzard's round portrait (using the 3D portrait camera settings) and keeps its own target of target frame
 
 **8.0.7** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: fixed an error on load ("attempt to index local 'combo' (a nil value)" in ZPerl_Target.lua). The October client patch removed Blizzard's old combo point frame, which the target frame's Blizzard Combo Points option moves into place; without it the option now does nothing
