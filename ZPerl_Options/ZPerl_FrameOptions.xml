@@ -1657,6 +1657,9 @@
 								self.configClick = XPerl_Target_Reset
 								XPerl_OptionsSetMyText(self, "XPERL_CONF_FOCUS_SCALE")
 								XPerl_Options_RegisterScalingSlider(self)
+								if XPerl_IsForever and FocusFrame then
+									self:Hide() -- sized by Blizzard's focus frame there
+								end
 							</OnLoad>
 						</Scripts>
 					</Slider>
@@ -7360,6 +7363,7 @@
 						if (not IsAddOnLoaded("ZPerl_ArcaneBar")) then
 							XPerl_Options_EnableCheck(_G[self:GetName().."_".."ArcaneBar"])
 						end
+						XPerl_Options_HideForeverSettings()
 					</OnShow>
 				</Scripts>
 				<Frames>

@@ -192,9 +192,16 @@ function XPerl_Target_OnLoad(self, partyid)
 		end
 		self.combatMask = 0x00010000
 	else
-		XPerl_BlizzFrameDisable(FocusFrame)
+		-- Forever: Blizzard's focus frame stays, with the Z-Perl frame laid over
+		-- it, in the target's layout
+		self.useBlizzardFrame = XPerl_IsForever and FocusFrame and true or nil
+		self.blizzFrame, self.shippedLayout = FocusFrame, XPerl_Target_ShippedLayout
+		if (not self.useBlizzardFrame) then
+			XPerl_BlizzFrameDisable(FocusFrame)
+		end
+		XPerl_BlizzFrameDisable(FocusFrameToT)
 
-		if not IsVanillaClassic then
+		if not IsVanillaClassic or self.useBlizzardFrame then
 			self:RegisterEvent("PLAYER_FOCUS_CHANGED")
 		end
 		self:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -404,8 +411,8 @@ function XPerl_Target_ApplyLayout(self)
 	return true
 end
 
--- /zperl layout: once to show a box on each part of the target and target
--- of target frames, again (or Save) to keep it. Click a box to select it: its X, Y, W and H can be typed in the panel,
+-- /zperl layout: once to show a box on each part of the target and focus
+-- frames, again (or Save) to keep it. Click a box to select it: its X, Y, W and H can be typed in the panel,
 -- and the arrow keys bump it one unit (Shift: resize, Ctrl: ten units).
 -- Dragging moves a box, its corner resizes it, the mouse wheel nudges it.
 function XPerl_Target_EditLayout()
@@ -421,7 +428,7 @@ function XPerl_Target_EditLayout()
 
 	local panel = XPerl_TargetLayoutPanel
 	local owners = {}
-	for _, frame in ipairs({XPerl_Target, XPerl_TargetTarget}) do
+	for _, frame in ipairs({XPerl_Target, XPerl_Focus}) do
 		if frame and frame.useBlizzardFrame and frame.conf then
 			tinsert(owners, frame)
 		end
@@ -450,8 +457,12 @@ function XPerl_Target_EditLayout()
 		return
 	end
 
-	if not (UnitExists("target") and TargetFrame:IsShown() and self:IsShown()) then
-		XPerl_Notice("Target something first, so both target frames show.")
+	local anyShown
+	for _, owner in ipairs(owners) do
+		anyShown = anyShown or (owner:IsShown() and owner.blizzFrame:IsShown())
+	end
+	if not anyShown then
+		XPerl_Notice("Target (or focus) something first, so both frames show.")
 		return
 	end
 	local uiScale = UIParent:GetEffectiveScale()
@@ -630,7 +641,7 @@ function XPerl_Target_EditLayout()
 		if part and part:IsShown() and part:GetLeft() then
 			local handle = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
 			handle.part, handle.partName, handle.owner = part, name, owner
-			handle.title = (owner == XPerl_Target and "" or "ToT ")..name
+			handle.title = (owner == XPerl_Target and "" or "Focus ")..name
 			handle:SetFrameStrata("DIALOG")
 			handle:SetFrameLevel(10 + o * 20 + i)
 			handle:SetBackdrop({bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1})
@@ -2117,6 +2128,8 @@ function XPerl_Target_Events:PLAYER_FOCUS_CHANGED()
 	XPerl_CombatFlashSetFrames(self)
 	XPerl_Target_ClearLockedAuras(self)
 	XPerl_Target_UpdateDisplay(self)
+	XPerl_Target_ApplyBlizzFit(self)
+	XPerl_Target_FitToBlizzard(self)
 
 	if (UnitIsUnit("target", "focus")) then
 		XPerl_Target.statsFrame.focusTarget:Show()

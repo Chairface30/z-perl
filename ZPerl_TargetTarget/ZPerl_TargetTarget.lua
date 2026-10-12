@@ -647,7 +647,7 @@ end
 local function Set(self)
 	-- Forever: the client keeps auras from addons in combat, so these frames
 	-- show none rather than ones frozen at the start of the fight
-	self.noAuras = XPerl_IsForever and (self == XPerl_TargetTarget or self == XPerl_TargetTargetTarget) or nil
+	self.noAuras = XPerl_IsForever and (self == XPerl_TargetTarget or self == XPerl_TargetTargetTarget or self == XPerl_FocusTarget) or nil
 	if self.conf.level then
 		self.levelFrame:Show()
 		self.levelFrame:SetWidth(27)

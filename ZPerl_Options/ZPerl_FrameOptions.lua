@@ -3607,12 +3607,38 @@ function XPerl_Camera_ApplyToAllFrames()
 	
 	DEFAULT_CHAT_FRAME:AddMessage("|cFFD00000Z-Perl|r: 3D Portrait camera settings applied to all frames.")
 end
--- WoW Forever: the target's buffs and debuffs come from Blizzard's target
--- frame, which also sets the target frame's size; the target of target (and
--- its target) show no buffs or debuffs, since the client keeps auras from
--- addons in combat. Their settings are hidden there.
+-- WoW Forever: the target's and focus's buffs and debuffs come from
+-- Blizzard's frames, which also set their size; the target of target, its
+-- target and the focus target show no buffs or debuffs, since the client
+-- keeps auras from addons in combat. Their settings are hidden there.
 local foreverHidden = {
 	"XPerl_Options_Player_ScaleTarget",
+	"XPerl_Options_Player_ScaleFocus",
+	"XPerl_Options_Focus_Options_Buffs",
+	"XPerl_Options_Focus_Options_Castable",
+	"XPerl_Options_Focus_Options_OnlyMyBuffs",
+	"XPerl_Options_Focus_Options_BigBuffs",
+	"XPerl_Options_Focus_Options_BigPet",
+	"XPerl_Options_Focus_Options_BigBuffsStealable",
+	"XPerl_Options_Focus_Options_Debuffs",
+	"XPerl_Options_Focus_Options_Curable",
+	"XPerl_Options_Focus_Options_OnlyMyDebuffs",
+	"XPerl_Options_Focus_Options_BigDebuffs",
+	"XPerl_Options_Focus_Options_BuffSize",
+	"XPerl_Options_Focus_Options_DebuffSize",
+	"XPerl_Options_Focus_Options_BuffWrap",
+	"XPerl_Options_Focus_Options_MaxRows",
+	"XPerl_Options_Focus_Options_Above",
+	"XPerl_Options_Focus_Options_DebuffHighlight",
+	"XPerl_Options_Focus_Options_All",
+	"XPerl_Options_Focus_Options_Friend",
+	"XPerl_Options_Focus_Options_Enemy",
+	"XPerl_Options_Focus_Options_FocusTarget_Buffs",
+	"XPerl_Options_Focus_Options_FocusTarget_BigBuffs",
+	"XPerl_Options_Focus_Options_FocusTarget_BigPet",
+	"XPerl_Options_Focus_Options_FocusTarget_Debuffs",
+	"XPerl_Options_Focus_Options_FocusTarget_BigDebuffs",
+	"XPerl_Options_Focus_Options_FocusTarget_Above",
 	"XPerl_Options_Target_Options_Buffs",
 	"XPerl_Options_Target_Options_Castable",
 	"XPerl_Options_Target_Options_OnlyMyBuffs",
