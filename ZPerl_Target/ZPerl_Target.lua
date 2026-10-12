@@ -342,9 +342,10 @@ function XPerl_Target_ApplyLayout(self)
 	return true
 end
 
--- /zperl layout: once to show a handle on each part, again to save. Drag a
--- handle to move its part, drag its corner to resize; over a handle the
--- wheel nudges it one unit (Shift: sideways, Ctrl: height, Alt: width).
+-- /zperl layout: once to show a box on each part, again (or Save) to keep
+-- it. Click a box to select it: its X, Y, W and H can be typed in the panel,
+-- and the arrow keys bump it one unit (Shift: resize, Ctrl: ten units).
+-- Dragging moves a box, its corner resizes it, the mouse wheel nudges it.
 function XPerl_Target_EditLayout()
 	local self = XPerl_Target
 	if not (self and self.useBlizzardFrame) then
@@ -356,6 +357,7 @@ function XPerl_Target_EditLayout()
 		return
 	end
 
+	local panel = XPerl_TargetLayoutPanel
 	if self.layoutHandles then
 		local layout = {}
 		for _, handle in ipairs(self.layoutHandles) do
@@ -365,6 +367,9 @@ function XPerl_Target_EditLayout()
 		self.layoutHandles = nil
 		self.editingLayout = nil
 		self.conf.blizzLayout = layout
+		if panel then
+			panel:Hide()
+		end
 		XPerl_Target_ApplyLayout(self)
 		XPerl_Notice("Target layout saved. /reload to write it to disk.")
 		return
@@ -377,27 +382,7 @@ function XPerl_Target_EditLayout()
 	self.editingLayout = true
 	local blizzScale = TargetFrame:GetEffectiveScale()
 	local uiScale = UIParent:GetEffectiveScale()
-
-	-- the part placed where its handle is, and the spot remembered
-	local function place(handle)
-		local part = handle.part
-		local partScale = part:GetEffectiveScale()
-		local left, top = handle:GetLeft() * uiScale, handle:GetTop() * uiScale
-		local width, height = handle:GetWidth() * uiScale, handle:GetHeight() * uiScale
-		local x = floor((left - TargetFrame:GetLeft() * blizzScale) / partScale + 0.5)
-		local y = floor((top - TargetFrame:GetTop() * blizzScale) / partScale + 0.5)
-		local w, h = floor(width / partScale + 0.5), floor(height / partScale + 0.5)
-		handle.spot = {x, y, w, h}
-		if not (InCombatLockdown() and part:IsProtected()) then
-			part:ClearAllPoints()
-			part:SetPoint("TOPLEFT", TargetFrame, "TOPLEFT", x, y)
-			part:SetSize(w, h)
-		end
-		if handle.partName == "statsFrame" then
-			XPerl_StatsFrameSetup(self)
-		end
-		handle.label:SetFormattedText("%s\n%d, %d  %dx%d", handle.partName, x, y, w, h)
-	end
+	local selected
 
 	-- the handle laid over its part
 	local function cover(handle)
@@ -406,6 +391,159 @@ function XPerl_Target_EditLayout()
 		handle:ClearAllPoints()
 		handle:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", part:GetLeft() * partScale / uiScale, part:GetTop() * partScale / uiScale)
 		handle:SetSize(part:GetWidth() * partScale / uiScale, part:GetHeight() * partScale / uiScale)
+	end
+
+	local refreshPanel
+
+	-- the part put on a spot, its handle over it
+	local function setSpot(handle, x, y, w, h)
+		local part = handle.part
+		w, h = max(4, w), max(4, h)
+		handle.spot = {x, y, w, h}
+		if not (InCombatLockdown() and part:IsProtected()) then
+			part:ClearAllPoints()
+			part:SetPoint("TOPLEFT", TargetFrame, "TOPLEFT", x, y)
+			part:SetSize(w, h)
+			if handle.partName == "statsFrame" then
+				XPerl_StatsFrameSetup(self)
+			end
+			cover(handle)
+		end
+		handle.label:SetFormattedText("%s\n%d, %d  %dx%d", handle.partName, x, y, w, h)
+		if handle == selected then
+			refreshPanel()
+		end
+	end
+
+	-- the part moved to where its handle was dragged
+	local function place(handle)
+		local partScale = handle.part:GetEffectiveScale()
+		local left, top = handle:GetLeft() * uiScale, handle:GetTop() * uiScale
+		setSpot(handle,
+			floor((left - TargetFrame:GetLeft() * blizzScale) / partScale + 0.5),
+			floor((top - TargetFrame:GetTop() * blizzScale) / partScale + 0.5),
+			floor(handle:GetWidth() * uiScale / partScale + 0.5),
+			floor(handle:GetHeight() * uiScale / partScale + 0.5))
+	end
+
+	-- the panel: the selected box's numbers, typed in or bumped with the arrows
+	if not panel then
+		panel = CreateFrame("Frame", "XPerl_TargetLayoutPanel", UIParent, "BackdropTemplate")
+		panel:SetSize(250, 92)
+		panel:SetPoint("TOP", UIParent, "TOP", 0, -120)
+		panel:SetFrameStrata("DIALOG")
+		panel:SetBackdrop({bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1})
+		panel:SetBackdropColor(0, 0, 0, 0.85)
+		panel:SetBackdropBorderColor(0.2, 1, 0.3, 0.9)
+		panel:SetMovable(true)
+		panel:EnableMouse(true)
+		panel:RegisterForDrag("LeftButton")
+		panel:SetScript("OnDragStart", panel.StartMoving)
+		panel:SetScript("OnDragStop", panel.StopMovingOrSizing)
+		panel.title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		panel.title:SetPoint("TOPLEFT", 8, -6)
+		panel.boxes = {}
+		for i, name in ipairs({"X", "Y", "W", "H"}) do
+			local label = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+			label:SetPoint("TOPLEFT", 8 + (i - 1) * 60, -30)
+			label:SetText(name)
+			local box = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
+			box:SetSize(38, 18)
+			box:SetPoint("LEFT", label, "RIGHT", 6, 0)
+			box:SetAutoFocus(false)
+			box:SetNumeric(false)
+			box:SetMaxLetters(6)
+			panel.boxes[i] = box
+		end
+		panel.help = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+		panel.help:SetPoint("TOPLEFT", 8, -54)
+		panel.help:SetText("Click a box. Arrows: move 1  Shift: resize  Ctrl: x10")
+		panel.save = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+		panel.save:SetSize(60, 18)
+		panel.save:SetPoint("BOTTOMRIGHT", -6, 6)
+		panel.save:SetText(SAVE or "Save")
+		panel.save:SetScript("OnClick", function()
+			XPerl_Target_EditLayout()
+		end)
+		-- the client won't let key passing change in combat: stop taking keys then
+		panel:RegisterEvent("PLAYER_REGEN_DISABLED")
+		panel:RegisterEvent("PLAYER_REGEN_ENABLED")
+		panel:SetScript("OnEvent", function(p, event)
+			p:EnableKeyboard(event == "PLAYER_REGEN_ENABLED")
+		end)
+	end
+
+	refreshPanel = function()
+		if not selected then
+			panel.title:SetText("Target layout: click a box")
+			for _, box in ipairs(panel.boxes) do
+				box:SetText("")
+			end
+			return
+		end
+		panel.title:SetText("Target layout: "..selected.partName)
+		for i, box in ipairs(panel.boxes) do
+			if not box:HasFocus() then
+				box:SetText(selected.spot[i])
+			end
+		end
+	end
+
+	local function typed()
+		if not selected then
+			return
+		end
+		local spot = {}
+		for i, box in ipairs(panel.boxes) do
+			spot[i] = tonumber(box:GetText()) or selected.spot[i]
+		end
+		setSpot(selected, spot[1], spot[2], spot[3], spot[4])
+	end
+	for _, box in ipairs(panel.boxes) do
+		box:SetScript("OnEnterPressed", function(b)
+			typed()
+			b:ClearFocus()
+		end)
+		box:SetScript("OnTabPressed", function(b)
+			typed()
+			b:ClearFocus()
+		end)
+		box:SetScript("OnEscapePressed", function(b)
+			b:ClearFocus()
+			refreshPanel()
+		end)
+	end
+
+	-- arrow keys go to the selected box; every other key to the game
+	local bumps = {UP = {0, 1}, DOWN = {0, -1}, LEFT = {-1, 0}, RIGHT = {1, 0}}
+	panel:EnableKeyboard(true)
+	panel:SetScript("OnKeyDown", function(p, key)
+		if InCombatLockdown() then
+			return
+		end
+		local bump = bumps[key]
+		if not (bump and selected) then
+			p:SetPropagateKeyboardInput(true)
+			return
+		end
+		p:SetPropagateKeyboardInput(false)
+		local step = IsControlKeyDown() and 10 or 1
+		local x, y, w, h = unpack(selected.spot)
+		if IsShiftKeyDown() then
+			w, h = w + bump[1] * step, h - bump[2] * step
+		else
+			x, y = x + bump[1] * step, y + bump[2] * step
+		end
+		setSpot(selected, x, y, w, h)
+	end)
+
+	local function select(handle)
+		if selected then
+			selected:SetBackdropBorderColor(0.2, 1, 0.3, 0.9)
+		end
+		selected = handle
+		handle:SetBackdropBorderColor(1, 0.82, 0, 1)
+		refreshPanel()
 	end
 
 	self.layoutHandles = {}
@@ -430,32 +568,35 @@ function XPerl_Target_EditLayout()
 			handle:RegisterForDrag("LeftButton")
 			handle.label = handle:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 			handle.label:SetPoint("CENTER")
-			handle:SetScript("OnDragStart", handle.StartMoving)
+			handle:SetScript("OnMouseDown", select)
+			handle:SetScript("OnDragStart", function(h)
+				select(h)
+				h:StartMoving()
+			end)
 			handle:SetScript("OnDragStop", function(h)
 				h:StopMovingOrSizing()
 				place(h)
 			end)
 			handle:SetScript("OnMouseWheel", function(h, delta)
-				local left, top = h:GetLeft(), h:GetTop()
-				local step = delta / uiScale * part:GetEffectiveScale()
+				select(h)
+				local x, y, w, h2 = unpack(h.spot)
 				if IsControlKeyDown() then
-					h:SetHeight(max(4, h:GetHeight() + step))
+					h2 = h2 + delta
 				elseif IsAltKeyDown() then
-					h:SetWidth(max(4, h:GetWidth() + step))
+					w = w + delta
 				elseif IsShiftKeyDown() then
-					left = left + step
+					x = x + delta
 				else
-					top = top + step
+					y = y + delta
 				end
-				h:ClearAllPoints()
-				h:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
-				place(h)
+				setSpot(h, x, y, w, h2)
 			end)
 			local grip = CreateFrame("Button", nil, handle)
 			grip:SetSize(10, 10)
 			grip:SetPoint("BOTTOMRIGHT")
 			grip:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
 			grip:SetScript("OnMouseDown", function()
+				select(handle)
 				handle:StartSizing("BOTTOMRIGHT")
 			end)
 			grip:SetScript("OnMouseUp", function()
@@ -467,7 +608,10 @@ function XPerl_Target_EditLayout()
 			tinsert(self.layoutHandles, handle)
 		end
 	end
-	XPerl_Notice("Editing the target layout: drag a box to move it, its corner to resize; mouse wheel nudges (Shift sideways, Ctrl height, Alt width). /zperl layout again to save.")
+	selected = nil
+	refreshPanel()
+	panel:Show()
+	XPerl_Notice("Editing the target layout: click a box, type its numbers or use the arrow keys (Shift resizes, Ctrl moves 10). Save, or /zperl layout again, to keep it.")
 end
 
 -- Forever: Blizzard's own target frame is kept, because only it can still
