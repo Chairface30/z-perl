@@ -171,7 +171,12 @@ function XPerl_Target_OnLoad(self, partyid)
 
 	self.partyid = partyid
 	if (partyid == "target") then
-		XPerl_BlizzFrameDisable(TargetFrame)
+		-- Forever: Blizzard's target frame keeps running, out of sight, to lend its debuffs
+		self.blizzDebuffs = XPerl_IsForever and TargetFrame and true or nil
+		XPerl_BlizzFrameDisable(TargetFrame, self.blizzDebuffs)
+		if (self.blizzDebuffs) then
+			XPerl_Target_HookBlizzDebuffs(self)
+		end
 		XPerl_BlizzFrameDisable(TargetofTargetFrame)
 		XPerl_BlizzFrameDisable(TargetFrameToT) -- its name on newer clients
 
@@ -305,6 +310,214 @@ local function XPerl_Target_BuffPositions(self)
 	else
 		XPerl_Unit_BuffPositions(self, self.buffFrame.buff, self.buffFrame.debuff, self.conf.buffs.size, self.conf.debuffs.size)
 	end
+end
+
+-- Blizzard's debuffs on the target frame (Forever). The client keeps the
+-- target's auras from addons in combat, but Blizzard's own target frame still
+-- draws them. That frame keeps running out of sight, and once it has drawn,
+-- its debuff buttons are moved onto a strip under the Z-Perl frame in place of
+-- Z-Perl's own debuffs. Nothing of Blizzard's is called: its buttons are only
+-- re-parented, scaled and placed.
+local blizzDebuffKnown = setmetatable({}, {__mode = "k"})
+local blizzDebuffList = {}
+
+local issecret = issecretvalue
+local function Plain(value)
+	if issecret and issecret(value) then
+		return nil
+	end
+	return value
+end
+
+-- Blizzard's own order for a button: its index where the buttons are named
+-- (TargetFrameDebuff1...), else its place in the rows Blizzard anchored it in.
+local function BlizzDebuffOrder(button, strip, depth)
+	if type(blizzDebuffKnown[button]) == "number" then
+		return blizzDebuffKnown[button], 0
+	end
+	local point, rel, relPoint, x, y = button:GetPoint(1)
+	point, rel, relPoint, x, y = Plain(point), Plain(rel), Plain(relPoint), Plain(x), Plain(y)
+	if rel == strip then
+		return button.zpOrder or 0, 0 -- still where we put it
+	elseif rel and blizzDebuffKnown[rel] and depth < 40 then
+		local row, col = BlizzDebuffOrder(rel, strip, depth + 1)
+		if point and relPoint and ((point:find("TOP") and relPoint:find("BOTTOM")) or (point:find("BOTTOM") and relPoint:find("TOP"))) then
+			return row + 1, 0
+		end
+		return row, col + 1
+	end
+	return -(y or 0), x or 0
+end
+
+local function BlizzDebuffSort(a, b)
+	if a.zpRow ~= b.zpRow then
+		return a.zpRow < b.zpRow
+	end
+	return a.zpCol < b.zpCol
+end
+
+-- The debuff buttons Blizzard's target frame is showing, in its order. Named
+-- buttons, pooled ones and plain children are all looked for, since which
+-- the client uses can change with its patches.
+local function BlizzDebuffCollect(blizz, strip)
+	local name = blizz:GetName()
+	for i = 1, 40 do
+		local button = _G[name.."Debuff"..i]
+		if not button then
+			break
+		end
+		blizzDebuffKnown[button] = i
+	end
+	local pools = blizz.auraPools
+	if pools and pools.EnumerateActiveByTemplate then
+		pcall(function()
+			for button in pools:EnumerateActiveByTemplate("TargetDebuffFrameTemplate") do
+				blizzDebuffKnown[button] = blizzDebuffKnown[button] or true
+			end
+		end)
+	end
+	for _, child in ipairs({blizz:GetChildren()}) do
+		if not blizzDebuffKnown[child] then
+			local childName = Plain(child:GetName())
+			if (childName and childName:find("Debuff%d+$")) or (child.Border and child.Icon and child.Cooldown and not child.Stealable) then
+				blizzDebuffKnown[child] = true
+			end
+		end
+	end
+
+	local list = blizzDebuffList
+	wipe(list)
+	for button in pairs(blizzDebuffKnown) do
+		local shown = button:IsShown()
+		if issecret and issecret(shown) then
+			shown = true
+		end
+		if shown then
+			button.zpRow, button.zpCol = BlizzDebuffOrder(button, strip, 0)
+			list[#list + 1] = button
+		end
+	end
+	sort(list, BlizzDebuffSort)
+	return list
+end
+
+-- Where the Z-Perl buffs go: under the debuff strip when it has icons (over
+-- it with Buffs Above), else straight under (over) the frame.
+local function XPerl_Target_AnchorBuffFrame(self)
+	local strip = self.blizzDebuffFrame
+	local hasDebuffs = strip and strip.count and strip.count > 0
+	self.buffFrame:ClearAllPoints()
+	if (self.conf.buffs.above) then
+		if hasDebuffs then
+			self.buffFrame:SetPoint("BOTTOMLEFT", strip, "TOPLEFT", 0, 1)
+		else
+			self.buffFrame:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 2, 0)
+		end
+	else
+		if hasDebuffs then
+			self.buffFrame:SetPoint("TOPLEFT", strip, "BOTTOMLEFT", 0, -1)
+		else
+			self.buffFrame:SetPoint("TOPLEFT", self.statsFrame, "BOTTOMLEFT", 2, 0)
+		end
+	end
+end
+
+function XPerl_Target_PlaceBlizzDebuffs(self)
+	local strip = self.blizzDebuffFrame
+	if not (strip and self.conf) then
+		return
+	end
+	local list = BlizzDebuffCollect(TargetFrame, strip)
+	local count = self.conf.debuffs.enable and #list or 0
+	local size = self.conf.debuffs.size or 20
+	local gap = 1
+	local above = self.conf.buffs.above
+	local width = Plain(self:GetWidth()) or 160
+	local perRow = max(1, floor((width - 4 + gap) / (size + gap)))
+	local rows = max(1, ceil(count / perRow))
+
+	strip:ClearAllPoints()
+	if above then
+		strip:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 2, 0)
+	else
+		strip:SetPoint("TOPLEFT", self.statsFrame, "BOTTOMLEFT", 2, 0)
+	end
+	strip:SetSize(perRow * (size + gap), rows * (size + gap))
+
+	local corner = above and "BOTTOMLEFT" or "TOPLEFT"
+	local ySign = above and 1 or -1
+	for i, button in ipairs(list) do
+		if count == 0 then
+			button:SetParent(TargetFrame) -- Debuffs off: Blizzard keeps them, out of sight
+		else
+			if button:GetParent() ~= strip then
+				button:SetParent(strip)
+			end
+			local buttonWidth = Plain(button:GetWidth())
+			local scale = (buttonWidth and buttonWidth > 0) and size / buttonWidth or 1
+			button:SetScale(scale)
+			local col, row = (i - 1) % perRow, floor((i - 1) / perRow)
+			button:ClearAllPoints()
+			button:SetPoint(corner, strip, corner, col * (size + gap) / scale, ySign * row * (size + gap) / scale)
+			button.zpOrder = i
+		end
+	end
+
+	if strip.count ~= count then
+		strip.count = count
+		XPerl_Target_AnchorBuffFrame(self)
+	end
+end
+
+-- Hooked once: after Blizzard's target frame updates its auras, by whichever
+-- name this client gives that update, and after each of its events.
+function XPerl_Target_HookBlizzDebuffs(self)
+	if self.blizzDebuffFrame then
+		return
+	end
+	local strip = CreateFrame("Frame", nil, self)
+	strip.unit = self.partyid -- older Blizzard debuff buttons ask their parent for the unit
+	strip.count = 0
+	self.blizzDebuffFrame = strip
+	local function refresh()
+		XPerl_Target_PlaceBlizzDebuffs(self)
+	end
+	if type(TargetFrame_UpdateAuras) == "function" then
+		hooksecurefunc("TargetFrame_UpdateAuras", function(frame)
+			if frame == TargetFrame then
+				refresh()
+			end
+		end)
+	end
+	if type(TargetFrame.UpdateAuras) == "function" then
+		hooksecurefunc(TargetFrame, "UpdateAuras", refresh)
+	end
+	TargetFrame:HookScript("OnEvent", refresh)
+end
+
+-- /zperl debuffs: what the target frame finds of Blizzard's debuffs
+function XPerl_Target_BlizzDebuffReport()
+	local self = XPerl_Target
+	if not (self and self.blizzDebuffFrame) then
+		XPerl_Notice("Blizzard debuffs are not in use on this client.")
+		return
+	end
+	local list = BlizzDebuffCollect(TargetFrame, self.blizzDebuffFrame)
+	local known, named, pooled = 0, 0, 0
+	for _, kind in pairs(blizzDebuffKnown) do
+		known = known + 1
+		if type(kind) == "number" then
+			named = named + 1
+		end
+	end
+	if TargetFrame.auraPools then
+		pooled = 1
+	end
+	XPerl_Notice(format("Blizzard debuffs: %d shown, %d known (%d named), aura pools %s, TargetFrame_UpdateAuras %s, TargetFrame.UpdateAuras %s, TargetFrame shown %s.",
+		#list, known, named, pooled == 1 and "yes" or "no",
+		type(TargetFrame_UpdateAuras) == "function" and "yes" or "no",
+		type(TargetFrame.UpdateAuras) == "function" and "yes" or "no",
+		tostring(Plain(TargetFrame:IsShown()))))
 end
 
 -- XPerl_Targets_BuffUpdate
@@ -1507,7 +1720,8 @@ function XPerl_Target_Events:PLAYER_TARGET_CHANGED()
 	if self ~= XPerl_Target then
 		return
 	end
-	if (self.conf.sound and UnitExists("target")) then
+	-- with Blizzard's target frame still running, it plays the select sound itself
+	if (self.conf.sound and not self.blizzDebuffs and UnitExists("target")) then
 		if (UnitIsEnemy("target", "player")) then
 			PlaySound(873)
 		elseif (UnitIsFriend("player", "target")) then
@@ -1898,11 +2112,16 @@ function XPerl_Target_Set_Bits(self)
 		XPerl_RegisterCombatLog(self, false)
 	end
 
-	self.buffFrame:ClearAllPoints()
-	if (self.conf.buffs.above) then
-		self.buffFrame:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 2, 0)
+	if (self.blizzDebuffFrame) then
+		XPerl_Target_PlaceBlizzDebuffs(self)
+		XPerl_Target_AnchorBuffFrame(self)
 	else
-		self.buffFrame:SetPoint("TOPLEFT", self.statsFrame, "BOTTOMLEFT", 2, 0)
+		self.buffFrame:ClearAllPoints()
+		if (self.conf.buffs.above) then
+			self.buffFrame:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 2, 0)
+		else
+			self.buffFrame:SetPoint("TOPLEFT", self.statsFrame, "BOTTOMLEFT", 2, 0)
+		end
 	end
 	self.buffOptMix = nil
 

@@ -944,11 +944,19 @@ local blizzFramesDisabled = {}
 local blizzFramesHooked = {}
 
 -- XPerl_BlizzFrameDisable
-function XPerl_BlizzFrameDisable(self)
-	if (self) then
+-- keepRunning: the frame is only moved out of sight; its events, unit watch
+-- and updates carry on (Forever's target frame, whose debuff buttons the
+-- Z-Perl target frame borrows).
+function XPerl_BlizzFrameDisable(self, keepRunning)
+	if (self and keepRunning) then
+		self:SetParent(hiddenParent)
+		for _, bar in pairs({self.healthbar, self.manabar, self.spellbar, self.powerBarAlt}) do
+			bar:UnregisterAllEvents()
+		end
+	elseif (self) then
 		local frameName = self:GetName()
 		blizzFramesDisabled[frameName] = true
-		
+
 		UnregisterUnitWatch(self)
 
 		self:UnregisterAllEvents()
@@ -3393,7 +3401,7 @@ function XPerl_Unit_BuffPositions(self, buffList1, buffList2, size1, size2)
 					buffList2[1]:SetPoint(self.TOPLEFT, self.buffFrame, self.TOPLEFT, 0, self.VSPACING)
 				end
 			else
-				if (not self.conf.debuffs.enable) then
+				if (not self.conf.debuffs.enable or self.blizzDebuffs) then
 					buffList2[1]:SetPoint(self.TOPLEFT, self.buffFrame, self.TOPLEFT, 0, self.VSPACING)
 				end
 			end
@@ -3533,7 +3541,8 @@ function XPerl_Unit_UpdateBuffs(self, maxBuffs, maxDebuffs, castableOnly, curabl
 			self.buffFrame:Hide()
 		end
 
-		if (self.conf.debuffs.enable and maxDebuffs and maxDebuffs > 0) then
+		-- blizzDebuffs: the frame shows Blizzard's debuff buttons instead
+		if (self.conf.debuffs.enable and not self.blizzDebuffs and maxDebuffs and maxDebuffs > 0) then
 			local buffIconIndex = 1
 			self.debuffFrame:Show()
 			lastIcon = 0

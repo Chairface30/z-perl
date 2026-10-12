@@ -1,4 +1,7 @@
 **Unreleased**
+* Forever: the target frame shows Blizzard's own target debuffs in place of Z-Perl's. The client keeps a target's auras from addons in combat, so Z-Perl could only show the debuffs that were up when the fight began; Blizzard's target frame still draws them. It now keeps running out of sight, and its debuff buttons sit in a strip under the Z-Perl target frame (over it with Buffs Above), with the Z-Perl buffs below that. The Debuffs option turns the strip on and off and Debuff Size sets the icon size. Z-Perl's other debuff options (only mine, curable only, big debuffs) don't apply to it; Blizzard picks which debuffs to show
+* Forever: with Blizzard's target frame running, it plays the target select sound, so Z-Perl's Sound option no longer plays a second one
+* /zperl debuffs reports what the target frame finds of Blizzard's debuff buttons, for bug reports
 * Forever: the target and focus frames no longer show the old target's buffs and debuffs after you switch targets in combat. The client keeps every unit's auras from addons while you are in combat, so the frame can only keep what it drew before combat; on a new target it now shows no icons instead of wrong ones
 * Forever: the target and focus frames redraw their buffs and debuffs as soon as combat ends, instead of waiting for the next aura change
 
