@@ -176,9 +176,9 @@ function XPerl_Target_OnLoad(self, partyid)
 		self.blizzFrame, self.shippedLayout = TargetFrame, XPerl_Target_ShippedLayout
 		if (not self.useBlizzardFrame) then
 			XPerl_BlizzFrameDisable(TargetFrame)
-			XPerl_BlizzFrameDisable(TargetofTargetFrame)
-			XPerl_BlizzFrameDisable(TargetFrameToT) -- its name on newer clients
 		end
+		XPerl_BlizzFrameDisable(TargetofTargetFrame)
+		XPerl_BlizzFrameDisable(TargetFrameToT) -- its name on newer clients
 
 		self.statsFrame.focusTarget:SetVertexColor(0.7, 1, 1, 0.5)
 
@@ -318,6 +318,7 @@ end
 -- wins over the shipped one; with neither, the frame is fitted by measuring.
 local LAYOUT_PARTS = {"nameFrame", "statsFrame", "portraitFrame", "levelFrame", "creatureTypeFrame", "typeFramePlayer", "bossFrame", "cpFrame", "eliteFrame"}
 XPerl_Target_ShippedLayout = {
+	scale = 1.115, -- the parts' scale against Blizzard's frame when recorded
 	nameFrame = {12, -6, 159, 31},
 	statsFrame = {12, -30, 159, 47},
 	portraitFrame = {167, -6, 93, 87},
@@ -370,10 +371,11 @@ function XPerl_PlaceOverBlizzard(self)
 	if self == XPerl_Target and not TargetLayout(self) then
 		return -- the target measures its own fit
 	end
-	if self.blizzFrame == TargetFrameToT and GetCVar and GetCVar("showTargetOfTarget") == "0" then
-		pcall(SetCVar, "showTargetOfTarget", "1") -- Blizzard's draws the debuffs
-	end
-	self:SetScale(self.conf.scale or 0.8)
+	-- sized by Blizzard's frame: the layout's own ratio to it, so the whole
+	-- thing grows and shrinks with Blizzard's frame
+	local saved = self.conf.blizzLayout
+	local ratio = saved and saved.scale or self.shippedLayout and self.shippedLayout.scale or 1
+	self:SetScale(ratio * self.blizzFrame:GetEffectiveScale() / self:GetParent():GetEffectiveScale())
 	self:ClearAllPoints()
 	self:SetPoint("TOPLEFT", self.blizzFrame, "TOPLEFT")
 	XPerl_Target_ApplyLayout(self)
@@ -436,6 +438,7 @@ function XPerl_Target_EditLayout()
 		for _, owner in ipairs(owners) do
 			owner.editingLayout = nil
 			if layouts[owner] then
+				layouts[owner].scale = owner:GetEffectiveScale() / owner.blizzFrame:GetEffectiveScale()
 				owner.conf.blizzLayout = layouts[owner]
 			end
 			XPerl_PlaceOverBlizzard(owner)
@@ -1758,6 +1761,9 @@ end
 
 -- XPerl_Target_CheckDebuffs
 local function XPerl_Target_CheckDebuffs(self)
+	if self.useBlizzardFrame then
+		return
+	end
 	if (self.conf.highlightDebuffs.enable) then
 		if (self.conf.highlightDebuffs.who == 1 or (self.conf.highlightDebuffs.who == 2 and UnitCanAssist("player", self.partyid)) or (self.conf.highlightDebuffs.who == 3 and not UnitCanAssist("player", self.partyid))) then
 			XPerl_CheckDebuffs(self, self.partyid)
