@@ -323,9 +323,18 @@ end
 -- to Blizzard's target frame's top left. Each entry is {x, y, w, h} in the
 -- part's own units. A layout saved with /zperl layout (conf.blizzLayout)
 -- wins over the shipped one; with neither, the frame is fitted by measuring.
+local issecret = issecretvalue
+local function Plain(value)
+	if issecret and issecret(value) then
+		return nil
+	end
+	return value
+end
+
 local LAYOUT_PARTS = {"nameFrame", "statsFrame", "portraitFrame", "levelFrame", "creatureTypeFrame", "typeFramePlayer", "bossFrame", "cpFrame", "eliteFrame"}
 XPerl_Target_ShippedLayout = {
 	scale = 0.9694, -- the parts' scale against Blizzard's frame when recorded
+	width = 239.3, -- Blizzard's frame (232 wide) in the parts' units
 	nameFrame = {12, -6, 159, 25},
 	statsFrame = {12, -27, 159, 49},
 	portraitFrame = {167, -6, 75, 75},
@@ -358,6 +367,8 @@ end
 -- of target), whose buffs and debuffs show around it: one strata up, at the
 -- frame's own scale, pinned to the Blizzard frame's top left, its parts put
 -- where the layout says. Position and scale only change out of combat.
+-- Blizzard's target frame width at its normal size (units)
+local BLIZZ_FRAME_WIDTH = 232
 local BLIZZ_STRATA = {"BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP"}
 function XPerl_PlaceOverBlizzard(self)
 	if not self.useBlizzardFrame or self.editingLayout then
@@ -378,11 +389,40 @@ function XPerl_PlaceOverBlizzard(self)
 	if self == XPerl_Target and not TargetLayout(self) then
 		return -- the target measures its own fit
 	end
-	-- sized by Blizzard's frame: the layout's own ratio to it, so the whole
-	-- thing grows and shrinks with Blizzard's frame
+	-- Edit Mode's Frame Size and Use Larger Frame change the Blizzard frame:
+	-- follow them at once, not on the next target change
+	if not self.blizzFollowed then
+		self.blizzFollowed = true
+		local function follow()
+			if not InCombatLockdown() then
+				XPerl_PlaceOverBlizzard(self)
+			end
+		end
+		hooksecurefunc(self.blizzFrame, "SetScale", follow)
+		pcall(self.blizzFrame.HookScript, self.blizzFrame, "OnSizeChanged", follow)
+		if EditModeManagerFrame then
+			pcall(EditModeManagerFrame.HookScript, EditModeManagerFrame, "OnHide", follow)
+		end
+		pcall(self.RegisterEvent, self, "EDIT_MODE_LAYOUTS_UPDATED")
+		XPerl_Target_Events.EDIT_MODE_LAYOUTS_UPDATED = function(frame)
+			if frame.useBlizzardFrame and not InCombatLockdown() then
+				XPerl_PlaceOverBlizzard(frame)
+			end
+		end
+	end
+	-- sized by the Blizzard frame's width on screen, so a larger frame or a
+	-- bigger Frame Size grows the whole layout with it
 	local saved = self.conf.blizzLayout
-	local ratio = saved and saved.scale or self.shippedLayout and self.shippedLayout.scale or 1
-	self:SetScale(ratio * self.blizzFrame:GetEffectiveScale() / self:GetParent():GetEffectiveScale())
+	local layout = saved and saved.scale and saved or self.shippedLayout
+	local span = layout.width or BLIZZ_FRAME_WIDTH / (layout.scale or 1)
+	local width = Plain(self.blizzFrame:GetWidth())
+	if not (width and width > 0) then
+		width = BLIZZ_FRAME_WIDTH
+	end
+	local scale = width * self.blizzFrame:GetEffectiveScale() / span / self:GetParent():GetEffectiveScale()
+	if abs((Plain(self:GetScale()) or 0) - scale) > 0.0005 then
+		self:SetScale(scale)
+	end
 	self:ClearAllPoints()
 	self:SetPoint("TOPLEFT", self.blizzFrame, "TOPLEFT")
 	XPerl_Target_ApplyLayout(self)
@@ -446,6 +486,8 @@ function XPerl_Target_EditLayout()
 			owner.editingLayout = nil
 			if layouts[owner] then
 				layouts[owner].scale = owner:GetEffectiveScale() / owner.blizzFrame:GetEffectiveScale()
+				-- how wide Blizzard's frame is in the parts' units
+				layouts[owner].width = owner.blizzFrame:GetWidth() * owner.blizzFrame:GetEffectiveScale() / owner:GetEffectiveScale()
 				owner.conf.blizzLayout = layouts[owner]
 			end
 			XPerl_PlaceOverBlizzard(owner)
@@ -715,13 +757,6 @@ end
 -- below the frame cap that area, so Blizzard's buffs and debuffs are never
 -- covered. Z-Perl's own buff and debuff icons stay hidden. Nothing of
 -- Blizzard's is called or moved.
-local issecret = issecretvalue
-local function Plain(value)
-	if issecret and issecret(value) then
-		return nil
-	end
-	return value
-end
 
 
 -- A region's edges in screen units, or nil when hidden or unknown
