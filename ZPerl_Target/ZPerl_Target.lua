@@ -424,10 +424,45 @@ end
 
 -- Newer clients keep the target frame's aura buttons in one container, which
 -- Blizzard only fills while it can be seen.
+-- Found by its field path, else by walking the frame for a child whose
+-- parent key (or debug name) says Auras: field reads can come back empty.
+local blizzAuraContainer, blizzAuraFoundBy
 local function BlizzAuraContainer()
+	if blizzAuraContainer then
+		return blizzAuraContainer
+	end
 	local content = TargetFrame.TargetFrameContent
 	local contextual = content and content.TargetFrameContentContextual
-	return contextual and contextual.Auras
+	if contextual and contextual.Auras then
+		blizzAuraContainer, blizzAuraFoundBy = contextual.Auras, "field"
+		return blizzAuraContainer
+	end
+	local function isAuras(child)
+		local key = child.GetParentKey and Plain(child:GetParentKey())
+		if key == "Auras" then
+			return true
+		end
+		local name = child.GetDebugName and Plain(child:GetDebugName())
+		return name and name:find("%.Auras$") ~= nil
+	end
+	local function search(frame, depth)
+		for _, child in ipairs({frame:GetChildren()}) do
+			if isAuras(child) then
+				return child
+			end
+			if depth < 3 then
+				local found = search(child, depth + 1)
+				if found then
+					return found
+				end
+			end
+		end
+	end
+	local found = search(TargetFrame, 1)
+	if found then
+		blizzAuraContainer, blizzAuraFoundBy = found, "walk"
+	end
+	return found
 end
 
 -- The container is moved whole onto the strip, made visible there, and
@@ -488,6 +523,16 @@ function XPerl_Target_PlaceBlizzDebuffs(self)
 	end
 	local auras = BlizzAuraContainer()
 	if auras then
+		if not strip.aurasHooked and self.blizzDebuffRefresh then
+			strip.aurasHooked = true
+			local refresh = self.blizzDebuffRefresh
+			auras:HookScript("OnEvent", function(_, event)
+				refresh("Auras OnEvent "..tostring(Plain(event)))
+			end)
+			auras:HookScript("OnSizeChanged", function()
+				refresh("Auras OnSizeChanged")
+			end)
+		end
 		XPerl_Target_PlaceBlizzAuraContainer(self, strip, auras)
 		return
 	end
@@ -563,15 +608,7 @@ function XPerl_Target_HookBlizzDebuffs(self)
 	TargetFrame:HookScript("OnEvent", function(_, event)
 		refresh("OnEvent "..tostring(Plain(event)))
 	end)
-	local auras = BlizzAuraContainer()
-	if auras then
-		auras:HookScript("OnEvent", function(_, event)
-			refresh("Auras OnEvent "..tostring(Plain(event)))
-		end)
-		auras:HookScript("OnSizeChanged", function()
-			refresh("Auras OnSizeChanged")
-		end)
-	end
+	self.blizzDebuffRefresh = refresh
 end
 
 -- One line about a frame or region of Blizzard's: what it is, whether it
@@ -646,6 +683,15 @@ function XPerl_Target_BlizzDebuffReport()
 	end
 	walk(TargetFrame, 1, "TargetFrame")
 	local auras = BlizzAuraContainer()
+	add("aura container: "..(auras and ("found by "..tostring(blizzAuraFoundBy)) or "not found"))
+	local keys = {}
+	for key in pairs(TargetFrame) do
+		if type(key) == "string" then
+			keys[#keys + 1] = key
+		end
+	end
+	sort(keys)
+	add("TargetFrame keys: "..table.concat(keys, ", "))
 	if auras then
 		add("Auras: "..BlizzDebuffDescribe(auras).." parent="..tostring(auras:GetParent() == self.blizzDebuffFrame and "strip" or "other").." scale="..tostring(Plain(auras:GetScale())).." alpha="..tostring(Plain(auras:GetAlpha())))
 		walk(auras, 1, "Auras")
