@@ -320,9 +320,11 @@ local LAYOUT_PARTS = {"nameFrame", "statsFrame", "portraitFrame", "levelFrame", 
 XPerl_Target_ShippedLayout = {
 	nameFrame = {12, -6, 159, 31},
 	statsFrame = {12, -30, 159, 47},
-	portraitFrame = {164, -6, 83, 77},
-	levelFrame = {181, -78, 27, 27},
-	typeFramePlayer = {205, -79, 29, 27},
+	portraitFrame = {167, -6, 93, 87},
+	levelFrame = {258, -6, 27, 27},
+	creatureTypeFrame = {258, -41, 54, 22},
+	typeFramePlayer = {258, -41, 29, 27}, -- players have no creature type
+	bossFrame = {258, -73, 27, 20},
 }
 
 local function TargetLayout(self)
@@ -385,8 +387,11 @@ function XPerl_Target_ApplyLayout(self)
 		return false
 	end
 	local inCombat = InCombatLockdown()
-	for name, spot in pairs(layout) do
-		local part = self[name]
+	-- part by part: the saved spot, else the shipped one
+	local saved = self.conf and self.conf.blizzLayout
+	for _, name in ipairs(LAYOUT_PARTS) do
+		local spot = saved and saved[name] or self.shippedLayout and self.shippedLayout[name]
+		local part = spot and self[name]
 		if part and not (inCombat and part:IsProtected()) then
 			part:ClearAllPoints()
 			part:SetPoint("TOPLEFT", self.blizzFrame, "TOPLEFT", spot[1], spot[2])
