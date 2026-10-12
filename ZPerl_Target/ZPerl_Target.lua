@@ -592,6 +592,9 @@ function XPerl_Target_EditLayout()
 		if panel then
 			panel:Hide()
 		end
+		if XPerl_TargetLayoutCatcher then
+			XPerl_TargetLayoutCatcher:Hide()
+		end
 		XPerl_Notice("Target layout saved. /reload to write it to disk.")
 		return
 	end
@@ -605,7 +608,9 @@ function XPerl_Target_EditLayout()
 		return
 	end
 	local uiScale = UIParent:GetEffectiveScale()
+	-- the box the panel shows, and every box moved with it
 	local selected
+	local group = {}
 
 	-- the handle laid over its part
 	local function cover(handle)
@@ -698,7 +703,7 @@ function XPerl_Target_EditLayout()
 		end
 		panel.help = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 		panel.help:SetPoint("TOPLEFT", 8, -54)
-		panel.help:SetText("Click a box. Arrows: move 1  Shift: resize  Ctrl: x10")
+		panel.help:SetText("Click or drag around boxes (Shift adds). Arrows move  Shift resizes  Ctrl x10")
 		panel.save = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 		panel.save:SetSize(60, 18)
 		panel.save:SetPoint("BOTTOMRIGHT", -6, 6)
@@ -755,7 +760,8 @@ function XPerl_Target_EditLayout()
 		end)
 	end
 
-	-- arrow keys go to the selected box; every other key to the game
+	local moveGroup
+	-- arrow keys go to the selected boxes; every other key to the game
 	local bumps = {UP = {0, 1}, DOWN = {0, -1}, LEFT = {-1, 0}, RIGHT = {1, 0}}
 	panel:EnableKeyboard(true)
 	panel:SetScript("OnKeyDown", function(p, key)
@@ -769,25 +775,127 @@ function XPerl_Target_EditLayout()
 		end
 		p:SetPropagateKeyboardInput(false)
 		local step = IsControlKeyDown() and 10 or 1
-		local x, y, w, h = unpack(selected.spot)
 		if selected.whole then
-			y = y + bump[2] * step
+			setSpot(selected, 0, selected.spot[2] + bump[2] * step, 0, 0)
 		elseif IsShiftKeyDown() then
-			w, h = w + bump[1] * step, h - bump[2] * step
+			moveGroup(0, 0, bump[1] * step, -bump[2] * step)
 		else
-			x, y = x + bump[1] * step, y + bump[2] * step
+			moveGroup(bump[1] * step, bump[2] * step, 0, 0)
 		end
-		setSpot(selected, x, y, w, h)
 	end)
 
-	local function select(handle)
-		if selected then
-			selected:SetBackdropBorderColor(0.2, 1, 0.3, 0.9)
+	-- gold for the group, orange for the box the panel shows
+	local function paint()
+		for _, h in ipairs(self.layoutHandles) do
+			if h == selected then
+				h:SetBackdropBorderColor(1, 0.5, 0, 1)
+			elseif group[h] then
+				h:SetBackdropBorderColor(1, 0.82, 0, 1)
+			elseif h.whole then
+				h:SetBackdropBorderColor(0.3, 0.6, 1, 0.9)
+			else
+				h:SetBackdropBorderColor(0.2, 1, 0.3, 0.9)
+			end
 		end
-		selected = handle
-		handle:SetBackdropBorderColor(1, 0.82, 0, 1)
+	end
+
+	-- add: Shift or Ctrl held, the box joins or leaves the group. A plain
+	-- click on a box already in the group keeps the group, so it can be
+	-- dragged as one; on any other box it starts over.
+	local function select(handle, add)
+		if add then
+			if group[handle] then
+				group[handle] = nil
+				if selected == handle then
+					selected = next(group)
+				end
+			else
+				group[handle] = true
+				selected = handle
+			end
+		else
+			if not group[handle] then
+				wipe(group)
+				group[handle] = true
+			end
+			selected = handle
+		end
+		paint()
 		refreshPanel()
 	end
+	local function clicked(handle)
+		select(handle, IsShiftKeyDown() or IsControlKeyDown())
+	end
+
+	-- every box in the group moved (and resized) by the same amount
+	moveGroup = function(dx, dy, dw, dh, except)
+		for h in pairs(group) do
+			if h ~= except and not h.whole then
+				local x, y, w, hh = unpack(h.spot)
+				setSpot(h, x + dx, y + dy, w + dw, hh + dh)
+			end
+		end
+	end
+
+	-- dragging over empty screen draws a box; whatever it touches is selected
+	-- (Shift adds to the group). A click on empty screen clears it.
+	local catcher = XPerl_TargetLayoutCatcher
+	if not catcher then
+		catcher = CreateFrame("Frame", "XPerl_TargetLayoutCatcher", UIParent)
+		catcher:SetAllPoints(UIParent)
+		catcher.box = catcher:CreateTexture(nil, "OVERLAY")
+		catcher.box:SetColorTexture(1, 0.82, 0, 0.2)
+		catcher.box:Hide()
+	end
+	-- a strata under the boxes and the panel, so they still take their clicks
+	catcher:SetFrameStrata("HIGH")
+	catcher:EnableMouse(true)
+	local function cursor()
+		local x, y = GetCursorPosition()
+		return x / uiScale, y / uiScale
+	end
+	catcher:SetScript("OnMouseDown", function(c, button)
+		if button ~= "LeftButton" then
+			return
+		end
+		c.startX, c.startY = cursor()
+		c.box:ClearAllPoints()
+		c.box:Show()
+	end)
+	catcher:SetScript("OnUpdate", function(c)
+		if not c.startX then
+			return
+		end
+		local x, y = cursor()
+		c.box:ClearAllPoints()
+		c.box:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", min(x, c.startX), min(y, c.startY))
+		c.box:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", max(x, c.startX), max(y, c.startY))
+	end)
+	catcher:SetScript("OnMouseUp", function(c, button)
+		if button ~= "LeftButton" or not c.startX then
+			return
+		end
+		local x, y = cursor()
+		local left, right = min(x, c.startX), max(x, c.startX)
+		local bottom, top = min(y, c.startY), max(y, c.startY)
+		c.startX, c.startY = nil, nil
+		c.box:Hide()
+		if not IsShiftKeyDown() then
+			wipe(group)
+			selected = nil
+		end
+		if right - left > 3 or top - bottom > 3 then
+			for _, h in ipairs(self.layoutHandles) do
+				if not h.whole and h:GetLeft() and h:GetLeft() < right and h:GetRight() > left and h:GetBottom() < top and h:GetTop() > bottom then
+					group[h] = true
+					selected = selected or h
+				end
+			end
+		end
+		paint()
+		refreshPanel()
+	end)
+	catcher:Show()
 
 	self.layoutHandles = {}
 	for o, owner in ipairs(owners) do
@@ -815,28 +923,30 @@ function XPerl_Target_EditLayout()
 			handle:RegisterForDrag("LeftButton")
 			handle.label = handle:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 			handle.label:SetPoint("CENTER")
-			handle:SetScript("OnMouseDown", select)
+			handle:SetScript("OnMouseDown", clicked)
 			handle:SetScript("OnDragStart", function(h)
 				select(h)
 				h:StartMoving()
 			end)
 			handle:SetScript("OnDragStop", function(h)
 				h:StopMovingOrSizing()
+				local x, y = h.spot[1], h.spot[2]
 				place(h)
+				moveGroup(h.spot[1] - x, h.spot[2] - y, 0, 0, h)
 			end)
 			handle:SetScript("OnMouseWheel", function(h, delta)
-				select(h)
-				local x, y, w, h2 = unpack(h.spot)
-				if IsControlKeyDown() then
-					h2 = h2 + delta
-				elseif IsAltKeyDown() then
-					w = w + delta
-				elseif IsShiftKeyDown() then
-					x = x + delta
-				else
-					y = y + delta
+				if not group[h] then
+					select(h)
 				end
-				setSpot(h, x, y, w, h2)
+				if IsControlKeyDown() then
+					moveGroup(0, 0, 0, delta)
+				elseif IsAltKeyDown() then
+					moveGroup(0, 0, delta, 0)
+				elseif IsShiftKeyDown() then
+					moveGroup(delta, 0, 0, 0)
+				else
+					moveGroup(0, delta, 0, 0)
+				end
 			end)
 			local grip = CreateFrame("Button", nil, handle)
 			grip:SetSize(10, 10)
@@ -874,7 +984,7 @@ function XPerl_Target_EditLayout()
 			bar:EnableMouseWheel(true)
 			bar.label = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 			bar.label:SetPoint("CENTER")
-			bar:SetScript("OnMouseDown", select)
+			bar:SetScript("OnMouseDown", clicked)
 			bar:SetScript("OnMouseWheel", function(b, delta)
 				select(b)
 				setSpot(b, 0, b.spot[2] + delta, 0, 0)
@@ -885,9 +995,11 @@ function XPerl_Target_EditLayout()
 		end
 	end
 	selected = nil
+	wipe(group)
+	paint()
 	refreshPanel()
 	panel:Show()
-	XPerl_Notice("Editing the target layout: click a box, type its numbers or use the arrow keys (Shift resizes, Ctrl moves 10). Save, or /zperl layout again, to keep it.")
+	XPerl_Notice("Editing the target layout: click a box, or drag over empty screen to select several (Shift adds). Arrows, the wheel or dragging move the selection (Shift resizes, Ctrl moves 10); the panel takes typed numbers for the orange box. Save, or /zperl layout again, to keep it.")
 end
 
 -- Forever: Blizzard's own target frame is kept, because only it can still
