@@ -1,5 +1,6 @@
 **Unreleased**
 * Forever: a Hide Surnames option (general settings, under Show AFK Flag) shows players by first name only. Frames that were widened for full names go back to their own widths with it on
+* No more chat messages at login about disabling PerlButton, WT_ZoningTimeFix, CT_PartyBuffs and XPerl_GrimReaper. Z-Perl checked for these old addons on every login and, on clients where the addon check answers differently, reported them disabled even when they weren't installed. The checks are gone, along with a silent one for XPerl_TeamSpeak and an unused list of old module names
 
 **8.0.9** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: the whole Z-Perl target frame is back, laid over Blizzard's target frame instead of a portrait square, so Blizzard's buffs and debuffs show around it in combat. It covers all of Blizzard's art (bar backing, portrait ring, level badge): the portrait becomes a square as tall as that art and the health and mana box fills the height beside it, at your own Z-Perl scale. Aura icons above or below Blizzard's frame are never covered. Z-Perl's own target buff and debuff icons stay hidden there (the client freezes them in combat). The portrait keeps the golden border for elites

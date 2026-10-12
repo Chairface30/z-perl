@@ -240,34 +240,6 @@ function XPerl_Notice(...)
 	end
 end
 
-do
-	local function DisableOther(modName, issues)
-		local name, title, notes, enabled = GetAddOnInfo(modName)
-		if (name and enabled) then
-			DisableAddOn(modName)
-			local notice = "Disabled '"..modName.."' addon. It is not compatible or needed with X-Perl"
-			if (issues) then
-				notice = notice..", and creates display issues."
-			end
-			XPerl_Notice(notice)
-		end
-	end
-
-	DisableOther("PerlButton")		-- PerlButton was made for Nymbia's Perl UnitFrames. We have our own minimap button
-	DisableOther("WT_ZoningTimeFix", true)
-
-	local name, _, _, enabled, loadable = GetAddOnInfo("XPerl_Party")
-	if (enabled) then
-		DisableOther("CT_PartyBuffs", true)
-	end
-
-	local name,_,_,enabled,loadable = GetAddOnInfo("XPerl_GrimReaper")
-	if (enabled) then
-		DisableAddOn("XPerl_GrimReaper")
-		XPerl_Notice("Disabled XPerl_GrimReaper. This has been replaced by a standalone version 'GrimReaper' available on the WoW Ace Updater or from files.wowace.com")
-	end
-end
-
 -- XPerl_RequestConfig
 -- Setup a callback to give config around to local variables
 function XPerl_RequestConfig(getConfig, rev)

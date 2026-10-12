@@ -94,7 +94,6 @@ if (GetLocale() == "deDE") then
 	XPERL_DRAGHINT2						= "|c00FFFFFFUmschalt+Klick|r, zum Anpassen der Fenstergr\195\182\195\159e"
 
 	-- Usage
-	XPerlUsageNameList					= {XPerl = "Core", XPerl_Player = "Player", XPerl_PlayerPet = "Pet", XPerl_Target = "Target", XPerl_TargetTarget = "Target's Target", XPerl_Party = "Party", XPerl_PartyPet = "Party Pets", XPerl_RaidFrames = "Raid Frames", XPerl_RaidHelper = "Raid Helper", XPerl_RaidAdmin = "Raid Admin", XPerl_TeamSpeak = "TS Monitor", XPerl_RaidMonitor = "Raid Monitor", XPerl_RaidPets = "Raid Pets", XPerl_ArcaneBar = "Arcane Bar", XPerl_PlayerBuffs = "Player Buffs", XPerl_GrimReaper = "Grim Reaper"}
 	XPERL_USAGE_MEMMAX					= "UI Max. Speicher: %d"
 	XPERL_USAGE_MODULES 				= "Module: "
 	XPERL_USAGE_NEWVERSION				= "*Neuere Version"

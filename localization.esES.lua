@@ -92,7 +92,6 @@ if (GetLocale() == "esES" or GetLocale() == "esMX") then
 	XPERL_DRAGHINT2	= "|c00FFFFFFShift+Click|r para redimensionar ventana"
 
 	-- Usage
-	XPerlUsageNameList	= {XPerl = "N\195\186cleo", XPerl_Player = "Jugador", XPerl_PlayerPet = "Mascota", XPerl_Target = "Objetivo", XPerl_TargetTarget = "Objetivo de Objetivo", XPerl_Party = "Grupo", XPerl_PartyPet = "Mascotas Grupo", XPerl_RaidFrames = "Marcos Banda", XPerl_RaidHelper = "Ayudante Banda", XPerl_RaidAdmin = "Admin Banda", XPerl_TeamSpeak = "Monitor TS", XPerl_RaidMonitor = "Monitor Banda", XPerl_RaidPets = "Mascotas Banda", XPerl_ArcaneBar = "Barra Arcana", XPerl_PlayerBuffs = "Buffs Jugador", XPerl_GrimReaper = "Grim Reaper"}
 	XPERL_USAGE_MEMMAX	= "UI Mem Max: %d"
 	XPERL_USAGE_MODULES 	= "M\195\179dulos: "
 	XPERL_USAGE_NEWVERSION	= "*Nueva versi\195\179n"

@@ -91,7 +91,6 @@ if (GetLocale() == "zhCN") then
 	XPERL_DRAGHINT2		= "|c00FFFFFFShift+单击|r 改变窗口大小"
 
 	-- Usage
-	XPerlUsageNameList = {XPerl = "主体文件", XPerl_Player = "玩家", XPerl_PlayerPet = "玩家宠物", XPerl_Target = "目标", XPerl_TargetTarget = "目标的目标", XPerl_Party = "队伍", XPerl_PartyPet = "队友宠物", XPerl_RaidFrames = "团队框", XPerl_RaidHelper = "团队助手", XPerl_RaidAdmin = "团队管理", XPerl_TeamSpeak = "TS监视", XPerl_RaidMonitor = "团队监控", XPerl_RaidPets = "团队宠物", XPerl_ArcaneBar = "施法条", XPerl_PlayerBuffs = "玩家增益", XPerl_GrimReaper = "死神之收割"}
 	XPERL_USAGE_MEMMAX	= "UI Mem Max: %d"
 	XPERL_USAGE_MODULES	= "模块: "
 	XPERL_USAGE_NEWVERSION	= "*新版本"

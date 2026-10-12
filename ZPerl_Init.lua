@@ -443,7 +443,6 @@ function ZPerl_Init()
 		hooksecurefunc(GameTooltip, "SetUnitDebuff", XPerl_GameTooltipSetUnitDebuff)
 	end
 
-	DisableAddOn("XPerl_TeamSpeak")
 
 	-- Check for eCastbar and disable old frame if used.
 	if (eCastingBar_Saved and eCastingBar_Player and eCastingBar_Saved[eCastingBar_Player].Enabled == 1) then

@@ -98,7 +98,6 @@ if (GetLocale() == "ruRU") then
 	XPERL_DRAGHINT2	= "|c00FFFFFFShift+Клик|r для изменения размера окна"
 
 -- Usage
-	XPerlUsageNameList	= {XPerl = "Основной", 	XPERL_Player = "Игрок", 	XPERL_PlayerPet = "Питомец", 	XPERL_Target = "Цель", 	XPERL_TargetTarget = "Цель цели", 	XPERL_Party = "Группа", 	XPERL_PartyPet = "Питомцы группы", 	XPERL_RaidFrames = "Фреймы рейда", 	XPERL_RaidHelper = "Помощник рейда", 	XPERL_RaidAdmin = "Рейд-админ", 	XPERL_TeamSpeak = "Монитор TS", 	XPERL_RaidMonitor = "Рейд-монитор", 	XPERL_RaidPets = "Питомцы рейда", 	XPERL_ArcaneBar = "Индикатор заклинаний", 	XPERL_PlayerBuffs = "Баффы игрока", 	XPERL_GrimReaper = "Grim Reaper"}
 	XPERL_USAGE_MEMMAX	= "UI Макс Пам: %d"
 	XPERL_USAGE_MODULES = "Модули: "
 	XPERL_USAGE_NEWVERSION	= "*Новейшая версия"

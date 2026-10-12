@@ -100,7 +100,6 @@ if (GetLocale() == "zhTW") then
 	XPERL_DRAGHINT2		= "|c00FFFFFFShift+點擊|r 重置視窗尺寸"
 
 	-- Usage
-	XPerlUsageNameList	= {XPerl = "核心", XPerl_Player = "玩家", XPerl_PlayerPet = "寵物", XPerl_Target = "目標", XPerl_TargetTarget = "目標的目標", XPerl_Party = "隊友", XPerl_PartyPet = "隊友寵物", XPerl_RaidFrames = "團隊框架", XPerl_RaidHelper = "團隊助手", XPerl_RaidAdmin = "團隊紀錄", XPerl_TeamSpeak = "TS 監視", XPerl_RaidMonitor = "團隊監視", XPerl_RaidPets = "團隊寵物", XPerl_ArcaneBar = "施法條", XPerl_PlayerBuffs = "玩家 Buffs"}
 	XPERL_USAGE_MEMMAX	= "UI 記憶體用量: %d"
 	XPERL_USAGE_MODULES	= "模組: "
 	XPERL_USAGE_NEWVERSION	= "*新版本"

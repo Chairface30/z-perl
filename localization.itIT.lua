@@ -101,7 +101,6 @@ if (GetLocale() == "itIT") then
 	XPERL_DRAGHINT2		= "|c00FFFFFFFai Maiusc+Click|r per ridimensionare la finestra"
 
 	-- Usage
-	XPerlUsageNameList	= {XPerl = "Core", XPerl_Player = "Giocatore", XPerl_PlayerPet = "Famiglio", XPerl_Target = "Bersaglio", XPerl_TargetTarget = "Bersaglio del bersaglio", XPerl_Party = "Gruppo", XPerl_PartyPet = "Famigli del gruppo", XPerl_RaidFrames = "Finestre del raid", XPerl_RaidHelper = "Aiutante dell'incursione", XPerl_RaidAdmin = "Amministrazione incursione", XPerl_TeamSpeak = "TS Monitor", XPerl_RaidMonitor = "Monitor dell'incursione", XPerl_RaidPets = "Famigli dell'incursione", XPerl_ArcaneBar = "Barra arcana", XPerl_PlayerBuffs = "Benefici del giocatore", XPerl_GrimReaper = "Grim Reaper"}
 	XPERL_USAGE_MEMMAX	= "IU Mem Max: %d"
 	XPERL_USAGE_MODULES	= "Moduli: "
 	XPERL_USAGE_NEWVERSION	= "*Una nuova versione"
