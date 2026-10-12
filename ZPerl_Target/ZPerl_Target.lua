@@ -325,14 +325,14 @@ end
 -- wins over the shipped one; with neither, the frame is fitted by measuring.
 local LAYOUT_PARTS = {"nameFrame", "statsFrame", "portraitFrame", "levelFrame", "creatureTypeFrame", "typeFramePlayer", "bossFrame", "cpFrame", "eliteFrame"}
 XPerl_Target_ShippedLayout = {
-	scale = 1.115, -- the parts' scale against Blizzard's frame when recorded
-	nameFrame = {12, -6, 159, 31},
-	statsFrame = {12, -30, 159, 47},
-	portraitFrame = {167, -6, 93, 87},
-	levelFrame = {258, -6, 27, 27},
-	creatureTypeFrame = {258, -41, 54, 22},
-	typeFramePlayer = {258, -41, 29, 27}, -- players have no creature type
-	bossFrame = {258, -73, 27, 20},
+	scale = 0.9694, -- the parts' scale against Blizzard's frame when recorded
+	nameFrame = {12, -6, 159, 25},
+	statsFrame = {12, -27, 159, 49},
+	portraitFrame = {167, -6, 75, 75},
+	typeFramePlayer = {240, -9, 25, 25},
+	creatureTypeFrame = {240, -9, 54, 22}, -- where the class icon sits for players
+	bossFrame = {240, -36, 27, 20},
+	levelFrame = {189, -74, 35, 30},
 }
 
 local function TargetLayout(self)
