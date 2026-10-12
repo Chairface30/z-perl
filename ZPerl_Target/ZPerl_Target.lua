@@ -479,23 +479,53 @@ function XPerl_Target_HookBlizzDebuffs(self)
 	strip.unit = self.partyid -- older Blizzard debuff buttons ask their parent for the unit
 	strip.count = 0
 	self.blizzDebuffFrame = strip
-	local function refresh()
+	-- how often each hook has fired, for /zperl debuffs
+	local fired = {}
+	self.blizzDebuffHooks = fired
+	local function refresh(how)
+		fired[how] = (fired[how] or 0) + 1
 		XPerl_Target_PlaceBlizzDebuffs(self)
 	end
 	if type(TargetFrame_UpdateAuras) == "function" then
 		hooksecurefunc("TargetFrame_UpdateAuras", function(frame)
 			if frame == TargetFrame then
-				refresh()
+				refresh("TargetFrame_UpdateAuras")
 			end
 		end)
 	end
 	if type(TargetFrame.UpdateAuras) == "function" then
-		hooksecurefunc(TargetFrame, "UpdateAuras", refresh)
+		hooksecurefunc(TargetFrame, "UpdateAuras", function() refresh("TargetFrame:UpdateAuras") end)
 	end
-	TargetFrame:HookScript("OnEvent", refresh)
+	TargetFrame:HookScript("OnEvent", function(_, event)
+		refresh("OnEvent "..tostring(Plain(event)))
+	end)
 end
 
--- /zperl debuffs: what the target frame finds of Blizzard's debuffs
+-- One line about a frame or region of Blizzard's: what it is, whether it
+-- shows, and which aura-button parts it has. Secret answers read as "?".
+local function BlizzDebuffDescribe(frame)
+	local function get(method)
+		local ok, value = pcall(frame[method], frame)
+		if not ok then
+			return "err"
+		end
+		value = Plain(value)
+		return value == nil and "?" or tostring(value)
+	end
+	local parts = {}
+	for _, key in ipairs({"Icon", "icon", "Border", "Cooldown", "cooldown", "Count", "count", "Stealable", "auraInstanceID", "unit"}) do
+		if frame[key] ~= nil then
+			parts[#parts + 1] = key
+		end
+	end
+	return format("%s [%s] shown=%s visible=%s w=%s children=%s keys=%s",
+		frame.GetDebugName and get("GetDebugName") or get("GetName"),
+		get("GetObjectType"), get("IsShown"), get("IsVisible"), get("GetWidth"),
+		frame.GetNumChildren and get("GetNumChildren") or "-", table.concat(parts, ","))
+end
+
+-- /zperl debuffs: what the target frame finds of Blizzard's debuffs. Printed,
+-- and kept in ZPerlTargetDebug.blizzDebuffReport (saved on /reload).
 function XPerl_Target_BlizzDebuffReport()
 	local self = XPerl_Target
 	if not (self and self.blizzDebuffFrame) then
@@ -503,21 +533,70 @@ function XPerl_Target_BlizzDebuffReport()
 		return
 	end
 	local list = BlizzDebuffCollect(TargetFrame, self.blizzDebuffFrame)
-	local known, named, pooled = 0, 0, 0
+	local known, named = 0, 0
 	for _, kind in pairs(blizzDebuffKnown) do
 		known = known + 1
 		if type(kind) == "number" then
 			named = named + 1
 		end
 	end
-	if TargetFrame.auraPools then
-		pooled = 1
-	end
-	XPerl_Notice(format("Blizzard debuffs: %d shown, %d known (%d named), aura pools %s, TargetFrame_UpdateAuras %s, TargetFrame.UpdateAuras %s, TargetFrame shown %s.",
-		#list, known, named, pooled == 1 and "yes" or "no",
+	local summary = format("Blizzard debuffs: %d shown, %d known (%d named), aura pools %s, TargetFrame_UpdateAuras %s, TargetFrame.UpdateAuras %s, TargetFrame shown %s.",
+		#list, known, named, TargetFrame.auraPools and "yes" or "no",
 		type(TargetFrame_UpdateAuras) == "function" and "yes" or "no",
 		type(TargetFrame.UpdateAuras) == "function" and "yes" or "no",
-		tostring(Plain(TargetFrame:IsShown()))))
+		tostring(Plain(TargetFrame:IsShown())))
+	XPerl_Notice(summary)
+
+	local report = {summary, "when: "..date("%Y-%m-%d %H:%M:%S"), "in combat: "..tostring(InCombatLockdown())}
+	local function add(line)
+		report[#report + 1] = line
+	end
+	for how, count in pairs(self.blizzDebuffHooks or {}) do
+		add("hook fired: "..how.." x"..count)
+	end
+	add("TargetFrame: "..BlizzDebuffDescribe(TargetFrame))
+	local parent = TargetFrame:GetParent()
+	add("TargetFrame parent: "..(parent and BlizzDebuffDescribe(parent) or "none"))
+	for button, kind in pairs(blizzDebuffKnown) do
+		add("known ("..tostring(kind).."): "..BlizzDebuffDescribe(button))
+	end
+	-- Blizzard's frame, three levels down
+	local function walk(frame, depth, path)
+		if depth > 3 or not frame.GetChildren then
+			return
+		end
+		for i, child in ipairs({frame:GetChildren()}) do
+			local childPath = path.."."..i
+			add("child "..childPath..": "..BlizzDebuffDescribe(child))
+			walk(child, depth + 1, childPath)
+		end
+	end
+	walk(TargetFrame, 1, "TargetFrame")
+	-- table fields of the frame that may hold its aura buttons
+	for key, value in pairs(TargetFrame) do
+		if type(key) == "string" and type(value) == "table" and (key:lower():find("aura") or key:lower():find("buff")) then
+			add("field TargetFrame."..key..": "..(value.GetObjectType and BlizzDebuffDescribe(value) or "table"))
+			if key == "auraPools" then
+				for method in pairs(getmetatable(value) and getmetatable(value).__index or {}) do
+					add("  auraPools method: "..tostring(method))
+				end
+				local ok, active = pcall(value.GetNumActive, value)
+				add("  auraPools active: "..tostring(ok and Plain(active)))
+			end
+		end
+	end
+	-- global names Blizzard gave its aura buttons
+	local globals = {}
+	for name in pairs(_G) do
+		if type(name) == "string" and name:find("^TargetFrame") and (name:find("Buff") or name:find("Debuff") or name:find("Aura")) then
+			globals[#globals + 1] = name
+		end
+	end
+	sort(globals)
+	add("globals: "..table.concat(globals, ", "))
+
+	ZPerlTargetDebug = {blizzDebuffReport = report}
+	XPerl_Notice("Full report saved; /reload to write it to disk.")
 end
 
 -- XPerl_Targets_BuffUpdate
