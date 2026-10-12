@@ -335,13 +335,14 @@ local LAYOUT_PARTS = {"nameFrame", "statsFrame", "portraitFrame", "levelFrame", 
 XPerl_Target_ShippedLayout = {
 	scale = 0.9694, -- the parts' scale against Blizzard's frame when recorded
 	width = 239.3, -- Blizzard's frame (232 wide) in the parts' units
+	buffsOnTopY = -16, -- the whole layer lower while Buffs on Top is set
 	nameFrame = {12, -6, 159, 25},
 	statsFrame = {12, -27, 159, 49},
-	portraitFrame = {167, -6, 75, 75},
-	typeFramePlayer = {240, -9, 25, 25},
-	creatureTypeFrame = {240, -9, 54, 22}, -- where the class icon sits for players
-	bossFrame = {240, -36, 27, 20},
-	levelFrame = {189, -74, 35, 30},
+	portraitFrame = {167, -1, 75, 75},
+	typeFramePlayer = {240, -4, 25, 25},
+	creatureTypeFrame = {240, -4, 54, 22}, -- where the class icon sits for players
+	bossFrame = {240, -31, 27, 20},
+	levelFrame = {189, -69, 35, 30},
 }
 
 local function TargetLayout(self)
