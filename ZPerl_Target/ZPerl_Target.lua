@@ -430,12 +430,40 @@ end
 
 -- Puts every laid-out part in place. Protected parts (the name button) only
 -- move out of combat.
+-- How far Blizzard's art has moved inside its frame from where it normally
+-- sits, in a part's units. Buffs on Top moves the art down to make room for
+-- the auras above it; the layout moves with it. The normal spot is learned
+-- whenever Buffs on Top is off, and kept.
+function XPerl_Target_ArtShift(self, part)
+	local blizz = self.blizzFrame
+	local art = blizz and blizz.TargetFrameContainer
+	if not art then
+		return 0, 0
+	end
+	local blizzScale, artScale = blizz:GetEffectiveScale(), art:GetEffectiveScale()
+	local frameLeft, frameTop = Plain(blizz:GetLeft()), Plain(blizz:GetTop())
+	local artLeft, artTop = Plain(art:GetLeft()), Plain(art:GetTop())
+	if not (frameLeft and frameTop and artLeft and artTop) then
+		return 0, 0
+	end
+	-- in the Blizzard frame's units
+	local dx = (artLeft * artScale - frameLeft * blizzScale) / blizzScale
+	local dy = (artTop * artScale - frameTop * blizzScale) / blizzScale
+	if not Plain(blizz.buffsOnTop) and self.conf then
+		self.conf.blizzArtSpot = {dx, dy}
+	end
+	local normal = self.conf and self.conf.blizzArtSpot
+	local ratio = blizzScale / part:GetEffectiveScale()
+	return (dx - (normal and normal[1] or 0)) * ratio, (dy - (normal and normal[2] or 0)) * ratio
+end
+
 function XPerl_Target_ApplyLayout(self)
 	local layout = self.useBlizzardFrame and not self.editingLayout and TargetLayout(self)
 	if not layout then
 		return false
 	end
 	local inCombat = InCombatLockdown()
+	local shiftX, shiftY = XPerl_Target_ArtShift(self, self.nameFrame)
 	-- part by part: the saved spot, else the shipped one
 	local saved = self.conf and self.conf.blizzLayout
 	for _, name in ipairs(LAYOUT_PARTS) do
@@ -443,7 +471,7 @@ function XPerl_Target_ApplyLayout(self)
 		local part = spot and self[name]
 		if part and not (inCombat and part:IsProtected()) then
 			part:ClearAllPoints()
-			part:SetPoint("TOPLEFT", self.blizzFrame, "TOPLEFT", spot[1], spot[2])
+			part:SetPoint("TOPLEFT", self.blizzFrame, "TOPLEFT", spot[1] + shiftX, spot[2] + shiftY)
 			part:SetSize(spot[3], spot[4])
 		end
 	end
@@ -452,8 +480,9 @@ function XPerl_Target_ApplyLayout(self)
 end
 
 -- /zperl layout: once to show a box on each part of the target and focus
--- frames, again (or Save) to keep it. Click a box to select it: its X, Y, W and H can be typed in the panel,
--- and the arrow keys bump it one unit (Shift: resize, Ctrl: ten units).
+-- frames, again (or Save) to keep it. Click a box to select it: its X, Y, W
+-- and H can be typed in the panel, and the arrow keys bump it one unit
+-- (Shift: resize, Ctrl: ten units).
 -- Dragging moves a box, its corner resizes it, the mouse wheel nudges it.
 function XPerl_Target_EditLayout()
 	local self = XPerl_Target
@@ -528,7 +557,8 @@ function XPerl_Target_EditLayout()
 		handle.spot = {x, y, w, h}
 		if not (InCombatLockdown() and part:IsProtected()) then
 			part:ClearAllPoints()
-			part:SetPoint("TOPLEFT", handle.owner.blizzFrame, "TOPLEFT", x, y)
+			local shiftX, shiftY = XPerl_Target_ArtShift(handle.owner, part)
+			part:SetPoint("TOPLEFT", handle.owner.blizzFrame, "TOPLEFT", x + shiftX, y + shiftY)
 			part:SetSize(w, h)
 			if handle.partName == "statsFrame" then
 				XPerl_StatsFrameSetup(handle.owner)
@@ -547,9 +577,10 @@ function XPerl_Target_EditLayout()
 		local blizz = handle.owner.blizzFrame
 		local blizzScale = blizz:GetEffectiveScale()
 		local left, top = handle:GetLeft() * uiScale, handle:GetTop() * uiScale
+		local shiftX, shiftY = XPerl_Target_ArtShift(handle.owner, handle.part)
 		setSpot(handle,
-			floor((left - blizz:GetLeft() * blizzScale) / partScale + 0.5),
-			floor((top - blizz:GetTop() * blizzScale) / partScale + 0.5),
+			floor((left - blizz:GetLeft() * blizzScale) / partScale - shiftX + 0.5),
+			floor((top - blizz:GetTop() * blizzScale) / partScale - shiftY + 0.5),
 			floor(handle:GetWidth() * uiScale / partScale + 0.5),
 			floor(handle:GetHeight() * uiScale / partScale + 0.5))
 	end
