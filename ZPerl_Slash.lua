@@ -80,6 +80,8 @@ local function XPerl_SlashHandler(msg)
 		else
 			XPerl_Notice("No valid unit to focus")
 		end
+	elseif (args[1] == "artdump" and XPerl_Target_ArtDump) then
+		XPerl_Target_ArtDump(args[2])
 	elseif (args[1] == "layout" and XPerl_Target_EditLayout) then
 		XPerl_Target_EditLayout()
 	elseif (args[1] == "help") then

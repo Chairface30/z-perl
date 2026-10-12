@@ -434,6 +434,68 @@ end
 -- sits, in a part's units. Buffs on Top moves the art down to make room for
 -- the auras above it; the layout moves with it. The normal spot is learned
 -- whenever Buffs on Top is off, and kept.
+-- /zperl artdump <label>: where each piece of Blizzard's target frame sits,
+-- and its flags, kept in the target settings (blizzArtDump) for reading
+-- after a /reload. Taken with Buffs on Top on and off, it shows what moves.
+function XPerl_Target_ArtDump(label)
+	local blizz = TargetFrame
+	local lines = {}
+	local function describe(name, region)
+		if not region then
+			tinsert(lines, name..": missing")
+			return
+		end
+		local scale = region.GetEffectiveScale and region:GetEffectiveScale() or 1
+		local function edge(method)
+			local ok, value = pcall(region[method], region)
+			value = ok and Plain(value)
+			return value and format("%.1f", value * scale) or "?"
+		end
+		local anchors = {}
+		for i = 1, (region.GetNumPoints and region:GetNumPoints() or 0) do
+			local point, rel, relPoint, x, y = region:GetPoint(i)
+			local relName = rel and (rel.GetDebugName and rel:GetDebugName() or rel.GetName and rel:GetName()) or "nil"
+			tinsert(anchors, format("%s>%s.%s(%.1f,%.1f)", tostring(point), tostring(relName), tostring(relPoint), Plain(x) or 0, Plain(y) or 0))
+		end
+		tinsert(lines, format("%s: L %s T %s R %s B %s shown %s | %s", name, edge("GetLeft"), edge("GetTop"), edge("GetRight"), edge("GetBottom"),
+			tostring(Plain(region:IsShown())), table.concat(anchors, " ")))
+	end
+	local container = blizz.TargetFrameContainer
+	local content = blizz.TargetFrameContent
+	local main = content and content.TargetFrameContentMain
+	local contextual = content and content.TargetFrameContentContextual
+	describe("TargetFrame", blizz)
+	describe("Container", container)
+	describe("Container.FrameTexture", container and container.FrameTexture)
+	describe("Container.Portrait", container and container.Portrait)
+	describe("portrait", blizz.portrait)
+	describe("Content", content)
+	describe("ContentMain", main)
+	describe("HealthBarsContainer", main and main.HealthBarsContainer)
+	describe("ManaBar", main and main.ManaBar)
+	describe("Contextual", contextual)
+	describe("Auras", contextual and contextual.Auras)
+	if container then
+		for i, region in ipairs({container:GetRegions()}) do
+			describe("Container region "..i.." "..tostring(region.GetDebugName and region:GetDebugName() or ""), region)
+		end
+	end
+	local flags = {}
+	for key, value in pairs(blizz) do
+		if type(key) == "string" and (type(value) == "boolean" or type(value) == "number" or type(value) == "string") then
+			tinsert(flags, key.."="..tostring(Plain(value)))
+		end
+	end
+	sort(flags)
+	tinsert(lines, "flags: "..table.concat(flags, ", "))
+	local conf = XPerl_Target and XPerl_Target.conf
+	if conf then
+		conf.blizzArtDump = conf.blizzArtDump or {}
+		conf.blizzArtDump[label or "now"] = lines
+	end
+	XPerl_Notice("Blizzard target frame recorded as '"..(label or "now").."'. /reload to write it to disk.")
+end
+
 function XPerl_Target_ArtShift(self, part)
 	local blizz = self.blizzFrame
 	local art = blizz and blizz.TargetFrameContainer
