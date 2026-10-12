@@ -318,6 +318,21 @@ function XPerl_Targets_BuffUpdate(self)
 	end
 end
 
+-- Forever keeps auras from addon code in combat, so the buff code keeps the
+-- icons it last drew. Those belong to the old unit once the target or focus
+-- changes; clear them rather than show them on the new one.
+local function XPerl_Target_ClearLockedAuras(self)
+	if not (XPerl_AurasLocked and XPerl_AurasLocked(self.partyid)) then
+		return
+	end
+	for _, list in pairs({self.buffFrame.buff, self.buffFrame.debuff}) do
+		for _, button in ipairs(list) do
+			button.expireTime = nil
+			button:Hide()
+		end
+	end
+end
+
 -- GetComboColour
 local function GetComboColour(num)
 	if (num == 10) then
@@ -1313,8 +1328,27 @@ function XPerl_Target_OnEvent(self, event, ...)
 end
 
 
+-- After combat the client hands auras out again; redraw them now rather than
+-- wait for the next aura change.
+local function XPerl_Target_AurasAfterCombat(self, retried)
+	if not (self.conf and UnitExists(self.partyid)) then
+		return
+	end
+	if XPerl_AurasLocked and XPerl_AurasLocked(self.partyid) then
+		if not retried then
+			C_Timer.After(1, function() XPerl_Target_AurasAfterCombat(self, true) end)
+		end
+		return
+	end
+	XPerl_Targets_BuffUpdate(self)
+	if (self.conf.highlightDebuffs.enable) then
+		XPerl_Target_CheckDebuffs(self)
+	end
+end
+
 function XPerl_Target_Events:PLAYER_REGEN_ENABLED()
 	XPerl_Unit_ThreatStatus(self, self.partyid == "target" and "player" or nil)
+	XPerl_Target_AurasAfterCombat(self)
 end
 
 function XPerl_Target_Events:PLAYER_REGEN_DISABLED()
@@ -1486,6 +1520,7 @@ function XPerl_Target_Events:PLAYER_TARGET_CHANGED()
 	--self.feigning = UnitBuff(self.partyid, feignDeath)
 	self.PlayerFlash = 0
 	XPerl_CombatFlashSetFrames(self)
+	XPerl_Target_ClearLockedAuras(self)
 	XPerl_Target_UpdateDisplay(self)
 
 	if (UnitIsUnit("target", "focus")) then
@@ -1517,6 +1552,7 @@ function XPerl_Target_Events:PLAYER_FOCUS_CHANGED()
 	--self.feigning = UnitBuff(self.partyid, feignDeath)
 	self.PlayerFlash = 0
 	XPerl_CombatFlashSetFrames(self)
+	XPerl_Target_ClearLockedAuras(self)
 	XPerl_Target_UpdateDisplay(self)
 
 	if (UnitIsUnit("target", "focus")) then

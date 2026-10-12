@@ -1,3 +1,7 @@
+**Unreleased**
+* Forever: the target and focus frames no longer show the old target's buffs and debuffs after you switch targets in combat. The client keeps every unit's auras from addons while you are in combat, so the frame can only keep what it drew before combat; on a new target it now shows no icons instead of wrong ones
+* Forever: the target and focus frames redraw their buffs and debuffs as soon as combat ends, instead of waiting for the next aura change
+
 **8.0.7** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: fixed an error on load ("attempt to index local 'combo' (a nil value)" in ZPerl_Target.lua). The October client patch removed Blizzard's old combo point frame, which the target frame's Blizzard Combo Points option moves into place; without it the option now does nothing
 * Forever: player, target, target of target, party and raid frames show a player's full name, first name and surname. The client gives the surname where other clients give the realm, so only the first name showed. In combat, when the client hides the name, the frame draws both parts if it can and the first name if not
