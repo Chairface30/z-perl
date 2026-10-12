@@ -429,6 +429,11 @@ function XPerl_Target_BlizzardPortrait()
 			holder:SetBackdropColor(frame.r, frame.g, frame.b, frame.a)
 			holder:SetBackdropBorderColor(border.r, border.g, border.b, border.a)
 		end
+		-- a golden border for elites
+		local class = Plain(UnitClassification("target"))
+		if class == "elite" or class == "rareelite" or class == "worldboss" then
+			holder:SetBackdropBorderColor(1, 0.82, 0, 1)
+		end
 		if event ~= "UNIT_LEVEL" and event ~= "UNIT_CLASSIFICATION_CHANGED" then
 			updateModel()
 		end
