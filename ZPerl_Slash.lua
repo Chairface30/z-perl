@@ -80,12 +80,15 @@ local function XPerl_SlashHandler(msg)
 		else
 			XPerl_Notice("No valid unit to focus")
 		end
+	elseif (args[1] == "layout" and XPerl_Target_EditLayout) then
+		XPerl_Target_EditLayout()
 	elseif (args[1] == "help") then
 		DEFAULT_CHAT_FRAME:AddMessage("|cFFFFFF00ZPerl Commands:|r")
 		DEFAULT_CHAT_FRAME:AddMessage("  /zperl - Open options")
 		DEFAULT_CHAT_FRAME:AddMessage("  /zperl focus [unit] - Set focus (default: target)")
 		DEFAULT_CHAT_FRAME:AddMessage("  /zperl lock - Lock frames")
 		DEFAULT_CHAT_FRAME:AddMessage("  /zperl unlock - Unlock frames")
+		DEFAULT_CHAT_FRAME:AddMessage("  /zperl layout - Edit the target frame layout (WoW Forever)")
 		DEFAULT_CHAT_FRAME:AddMessage("|cFFFFFF00TBC Anniversary Focus Tips:|r")
 		DEFAULT_CHAT_FRAME:AddMessage("  Shift+Left-Click on any unit frame to set focus")
 		DEFAULT_CHAT_FRAME:AddMessage("  Bind 'Set Focus to Target' in Key Bindings > Addons")
