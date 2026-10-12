@@ -84,6 +84,9 @@ function ZPerl_TargetTarget_OnLoad(self)
 	if (self == XPerl_TargetTarget) then
 		self.parentid = "target"
 		self.partyid = "targettarget"
+		-- Forever: laid over Blizzard's target of target, which draws its debuffs
+		self.useBlizzardFrame = XPerl_IsForever and TargetFrameToT and true or nil
+		self.blizzFrame = TargetFrameToT
 		self:RegisterEvent("PLAYER_TARGET_CHANGED")
 		for i, event in pairs(events) do
 			pcall(self.RegisterUnitEvent, self, event, "target") -- skip any event this client lacks
@@ -225,6 +228,11 @@ end
 
 -- XPerl_TargetTarget_Buff_UpdateAll
 local function XPerl_TargetTarget_Buff_UpdateAll(self)
+	if self.useBlizzardFrame then
+		self.buffFrame:Hide()
+		self.debuffFrame:Hide()
+		return
+	end
 	if self.conf.buffs.enable then
 		self.buffFrame:Show()
 	else
@@ -435,13 +443,16 @@ function XPerl_TargetTarget_OnUpdate(self, elapsed)
 
 	if XPerl_GUIDDiffers(newGuid, self.guid, XPerl_GUIDPoll(self, elapsed)) then
 		XPerl_TargetTarget_UpdateDisplay(self)
+		if self.useBlizzardFrame then
+			XPerl_PlaceOverBlizzard(self)
+		end
 	else
 		self.time = elapsed + (self.time or 0)
 		if self.time >= 0.5 then
 			XPerl_TargetTarget_Update_Combat(self)
 			XPerl_TargetTarget_Update_Control(self)
 			XPerl_TargetTarget_UpdatePVP(self)
-			if self.conf.buffs.enable or self.conf.debuffs.enable then
+			if (self.conf.buffs.enable or self.conf.debuffs.enable) and not self.useBlizzardFrame then
 				XPerl_Unit_UpdateBuffs(self, nil, nil, self.conf.buffs.castable, self.conf.debuffs.curable)
 				XPerl_TargetTarget_BuffPositions(self)
 			end
@@ -503,13 +514,16 @@ function XPerl_TargetTargetTarget_OnUpdate(self, elapsed)
 
 	if XPerl_GUIDDiffers(newGuid, self.guid, XPerl_GUIDPoll(self, elapsed)) then
 		XPerl_TargetTarget_UpdateDisplay(self)
+		if self.useBlizzardFrame then
+			XPerl_PlaceOverBlizzard(self)
+		end
 	else
 		self.time = elapsed + (self.time or 0)
 		if self.time >= 0.5 then
 			XPerl_TargetTarget_Update_Combat(self)
 			XPerl_TargetTarget_Update_Control(self)
 			XPerl_TargetTarget_UpdatePVP(self)
-			if self.conf.buffs.enable or self.conf.debuffs.enable then
+			if (self.conf.buffs.enable or self.conf.debuffs.enable) and not self.useBlizzardFrame then
 				XPerl_Unit_UpdateBuffs(self, nil, nil, self.conf.buffs.castable, self.conf.debuffs.curable)
 				XPerl_TargetTarget_BuffPositions(self)
 			end
@@ -680,6 +694,9 @@ local function Set(self)
 
 	if self:IsShown() then
 		XPerl_TargetTarget_UpdateDisplay(self, true)
+	end
+	if self.useBlizzardFrame then
+		XPerl_PlaceOverBlizzard(self)
 	end
 end
 

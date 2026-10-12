@@ -173,11 +173,12 @@ function XPerl_Target_OnLoad(self, partyid)
 	if (partyid == "target") then
 		-- Forever: Blizzard's target frame stays, with the Z-Perl frame laid over it
 		self.useBlizzardFrame = XPerl_IsForever and TargetFrame and true or nil
+		self.blizzFrame, self.shippedLayout = TargetFrame, XPerl_Target_ShippedLayout
 		if (not self.useBlizzardFrame) then
 			XPerl_BlizzFrameDisable(TargetFrame)
+			XPerl_BlizzFrameDisable(TargetofTargetFrame)
+			XPerl_BlizzFrameDisable(TargetFrameToT) -- its name on newer clients
 		end
-		XPerl_BlizzFrameDisable(TargetofTargetFrame)
-		XPerl_BlizzFrameDisable(TargetFrameToT) -- its name on newer clients
 
 		self.statsFrame.focusTarget:SetVertexColor(0.7, 1, 1, 0.5)
 
@@ -325,7 +326,55 @@ XPerl_Target_ShippedLayout = {
 }
 
 local function TargetLayout(self)
-	return self.conf and self.conf.blizzLayout or XPerl_Target_ShippedLayout
+	return self.conf and self.conf.blizzLayout or self.shippedLayout
+end
+
+-- The laid-over frame takes no mouse at all: clicks reach Blizzard's frame
+-- underneath, so nothing of Z-Perl's needs handling in combat. Protected
+-- parts can only be changed out of combat.
+local function ClickThrough(frame)
+	if frame.EnableMouse then
+		frame:EnableMouse(false)
+	end
+	if frame.EnableMouseWheel then
+		frame:EnableMouseWheel(false)
+	end
+	for _, child in ipairs({frame:GetChildren()}) do
+		ClickThrough(child)
+	end
+end
+
+-- Forever: a Z-Perl frame laid over its Blizzard counterpart (target, target
+-- of target), whose buffs and debuffs show around it: one strata up, at the
+-- frame's own scale, pinned to the Blizzard frame's top left, its parts put
+-- where the layout says. Position and scale only change out of combat.
+local BLIZZ_STRATA = {"BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP"}
+function XPerl_PlaceOverBlizzard(self)
+	if not self.useBlizzardFrame or self.editingLayout then
+		return
+	end
+	if InCombatLockdown() then
+		XPerl_Target_ApplyLayout(self)
+		return
+	end
+	local strata = self.blizzFrame:GetFrameStrata()
+	for i, level in ipairs(BLIZZ_STRATA) do
+		if level == strata then
+			self:SetFrameStrata(BLIZZ_STRATA[min(#BLIZZ_STRATA, i + 1)])
+			break
+		end
+	end
+	ClickThrough(self)
+	if self == XPerl_Target and not TargetLayout(self) then
+		return -- the target measures its own fit
+	end
+	if self.blizzFrame == TargetFrameToT and GetCVar and GetCVar("showTargetOfTarget") == "0" then
+		pcall(SetCVar, "showTargetOfTarget", "1") -- Blizzard's draws the debuffs
+	end
+	self:SetScale(self.conf.scale or 0.8)
+	self:ClearAllPoints()
+	self:SetPoint("TOPLEFT", self.blizzFrame, "TOPLEFT")
+	XPerl_Target_ApplyLayout(self)
 end
 
 -- Puts every laid-out part in place. Protected parts (the name button) only
@@ -340,7 +389,7 @@ function XPerl_Target_ApplyLayout(self)
 		local part = self[name]
 		if part and not (inCombat and part:IsProtected()) then
 			part:ClearAllPoints()
-			part:SetPoint("TOPLEFT", TargetFrame, "TOPLEFT", spot[1], spot[2])
+			part:SetPoint("TOPLEFT", self.blizzFrame, "TOPLEFT", spot[1], spot[2])
 			part:SetSize(spot[3], spot[4])
 		end
 	end
@@ -348,8 +397,8 @@ function XPerl_Target_ApplyLayout(self)
 	return true
 end
 
--- /zperl layout: once to show a box on each part, again (or Save) to keep
--- it. Click a box to select it: its X, Y, W and H can be typed in the panel,
+-- /zperl layout: once to show a box on each part of the target and target
+-- of target frames, again (or Save) to keep it. Click a box to select it: its X, Y, W and H can be typed in the panel,
 -- and the arrow keys bump it one unit (Shift: resize, Ctrl: ten units).
 -- Dragging moves a box, its corner resizes it, the mouse wheel nudges it.
 function XPerl_Target_EditLayout()
@@ -364,19 +413,31 @@ function XPerl_Target_EditLayout()
 	end
 
 	local panel = XPerl_TargetLayoutPanel
+	local owners = {}
+	for _, frame in ipairs({XPerl_Target, XPerl_TargetTarget}) do
+		if frame and frame.useBlizzardFrame and frame.conf then
+			tinsert(owners, frame)
+		end
+	end
 	if self.layoutHandles then
-		local layout = {}
+		local layouts = {}
 		for _, handle in ipairs(self.layoutHandles) do
-			layout[handle.partName] = handle.spot
+			local owner = handle.owner
+			layouts[owner] = layouts[owner] or {}
+			layouts[owner][handle.partName] = handle.spot
 			handle:Hide()
 		end
 		self.layoutHandles = nil
-		self.editingLayout = nil
-		self.conf.blizzLayout = layout
+		for _, owner in ipairs(owners) do
+			owner.editingLayout = nil
+			if layouts[owner] then
+				owner.conf.blizzLayout = layouts[owner]
+			end
+			XPerl_PlaceOverBlizzard(owner)
+		end
 		if panel then
 			panel:Hide()
 		end
-		XPerl_Target_ApplyLayout(self)
 		XPerl_Notice("Target layout saved. /reload to write it to disk.")
 		return
 	end
@@ -385,8 +446,6 @@ function XPerl_Target_EditLayout()
 		XPerl_Notice("Target something first, so both target frames show.")
 		return
 	end
-	self.editingLayout = true
-	local blizzScale = TargetFrame:GetEffectiveScale()
 	local uiScale = UIParent:GetEffectiveScale()
 	local selected
 
@@ -408,14 +467,14 @@ function XPerl_Target_EditLayout()
 		handle.spot = {x, y, w, h}
 		if not (InCombatLockdown() and part:IsProtected()) then
 			part:ClearAllPoints()
-			part:SetPoint("TOPLEFT", TargetFrame, "TOPLEFT", x, y)
+			part:SetPoint("TOPLEFT", handle.owner.blizzFrame, "TOPLEFT", x, y)
 			part:SetSize(w, h)
 			if handle.partName == "statsFrame" then
-				XPerl_StatsFrameSetup(self)
+				XPerl_StatsFrameSetup(handle.owner)
 			end
 			cover(handle)
 		end
-		handle.label:SetFormattedText("%s\n%d, %d  %dx%d", handle.partName, x, y, w, h)
+		handle.label:SetFormattedText("%s\n%d, %d  %dx%d", handle.title, x, y, w, h)
 		if handle == selected then
 			refreshPanel()
 		end
@@ -424,10 +483,12 @@ function XPerl_Target_EditLayout()
 	-- the part moved to where its handle was dragged
 	local function place(handle)
 		local partScale = handle.part:GetEffectiveScale()
+		local blizz = handle.owner.blizzFrame
+		local blizzScale = blizz:GetEffectiveScale()
 		local left, top = handle:GetLeft() * uiScale, handle:GetTop() * uiScale
 		setSpot(handle,
-			floor((left - TargetFrame:GetLeft() * blizzScale) / partScale + 0.5),
-			floor((top - TargetFrame:GetTop() * blizzScale) / partScale + 0.5),
+			floor((left - blizz:GetLeft() * blizzScale) / partScale + 0.5),
+			floor((top - blizz:GetTop() * blizzScale) / partScale + 0.5),
 			floor(handle:GetWidth() * uiScale / partScale + 0.5),
 			floor(handle:GetHeight() * uiScale / partScale + 0.5))
 	end
@@ -487,7 +548,7 @@ function XPerl_Target_EditLayout()
 			end
 			return
 		end
-		panel.title:SetText("Target layout: "..selected.partName)
+		panel.title:SetText("Layout: "..selected.title)
 		for i, box in ipairs(panel.boxes) do
 			if not box:HasFocus() then
 				box:SetText(selected.spot[i])
@@ -553,13 +614,17 @@ function XPerl_Target_EditLayout()
 	end
 
 	self.layoutHandles = {}
-	for i, name in ipairs(LAYOUT_PARTS) do
-		local part = self[name]
+	for o, owner in ipairs(owners) do
+	  if owner:IsShown() then
+		owner.editingLayout = true
+		for i, name in ipairs(LAYOUT_PARTS) do
+		local part = owner[name]
 		if part and part:IsShown() and part:GetLeft() then
 			local handle = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-			handle.part, handle.partName = part, name
+			handle.part, handle.partName, handle.owner = part, name, owner
+			handle.title = (owner == XPerl_Target and "" or "ToT ")..name
 			handle:SetFrameStrata("DIALOG")
-			handle:SetFrameLevel(10 + i)
+			handle:SetFrameLevel(10 + o * 20 + i)
 			handle:SetBackdrop({bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1})
 			handle:SetBackdropColor(0.1, 0.8, 0.2, 0.25)
 			handle:SetBackdropBorderColor(0.2, 1, 0.3, 0.9)
@@ -613,6 +678,8 @@ function XPerl_Target_EditLayout()
 			place(handle)
 			tinsert(self.layoutHandles, handle)
 		end
+		end
+	  end
 	end
 	selected = nil
 	refreshPanel()
@@ -637,7 +704,6 @@ local function Plain(value)
 	return value
 end
 
-local STRATA = {"BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP"}
 
 -- A region's edges in screen units, or nil when hidden or unknown
 local function ScreenRect(region)
@@ -732,18 +798,8 @@ function XPerl_Target_FitToBlizzard(self)
 	if not self.useBlizzardFrame or self.editingLayout or InCombatLockdown() then
 		return
 	end
-	local strata = TargetFrame:GetFrameStrata()
-	for i, level in ipairs(STRATA) do
-		if level == strata then
-			self:SetFrameStrata(STRATA[min(#STRATA, i + 1)])
-			break
-		end
-	end
+	XPerl_PlaceOverBlizzard(self)
 	if TargetLayout(self) then
-		self:SetScale(self.conf.scale or 0.8)
-		self:ClearAllPoints()
-		self:SetPoint("TOPLEFT", TargetFrame, "TOPLEFT")
-		XPerl_Target_ApplyLayout(self)
 		return
 	end
 	local left, top, right, bottom = BlizzardArtBox(self)
