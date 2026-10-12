@@ -432,6 +432,13 @@ function XPerl_PlaceOverBlizzard(self)
 	local scale = width * self.blizzFrame:GetEffectiveScale() / span / self:GetParent():GetEffectiveScale()
 	if abs((Plain(self:GetScale()) or 0) - scale) > 0.0005 then
 		self:SetScale(scale)
+		-- a rescaled model resets its camera: put the portrait's camera
+		-- settings back once the new size has taken, so only the box grows
+		C_Timer.After(0, function()
+			if UnitExists(self.partyid) then
+				XPerl_Unit_UpdatePortrait(self, true)
+			end
+		end)
 	end
 	self:ClearAllPoints()
 	self:SetPoint("TOPLEFT", self.blizzFrame, "TOPLEFT")
