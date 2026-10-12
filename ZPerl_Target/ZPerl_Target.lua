@@ -430,10 +430,6 @@ end
 
 -- Puts every laid-out part in place. Protected parts (the name button) only
 -- move out of combat.
--- How far Blizzard's art has moved inside its frame from where it normally
--- sits, in a part's units. Buffs on Top moves the art down to make room for
--- the auras above it; the layout moves with it. The normal spot is learned
--- whenever Buffs on Top is off, and kept.
 -- /zperl artdump <label>: where each piece of Blizzard's target frame sits,
 -- and its flags, kept in the target settings (blizzArtDump) for reading
 -- after a /reload. Taken with Buffs on Top on and off, it shows what moves.
@@ -507,27 +503,19 @@ function XPerl_Target_ArtDump(label)
 	XPerl_Notice("Blizzard target frame recorded as '"..(label or "now").."'. /reload to write it to disk.")
 end
 
-function XPerl_Target_ArtShift(self, part)
-	local blizz = self.blizzFrame
-	local art = blizz and blizz.TargetFrameContainer
-	if not art then
+-- With Buffs on Top, Blizzard's auras sit above its frame and the whole
+-- Z-Perl layer moves up or down by its own amount (set as "whole frame" in
+-- /zperl layout), in the parts' units. Blizzard's frame never moves.
+function XPerl_Target_ArtShift(self)
+	if not Plain(self.blizzFrame and self.blizzFrame.buffsOnTop) then
 		return 0, 0
 	end
-	local blizzScale, artScale = blizz:GetEffectiveScale(), art:GetEffectiveScale()
-	local frameLeft, frameTop = Plain(blizz:GetLeft()), Plain(blizz:GetTop())
-	local artLeft, artTop = Plain(art:GetLeft()), Plain(art:GetTop())
-	if not (frameLeft and frameTop and artLeft and artTop) then
-		return 0, 0
+	local y = self.editTopY
+	if y == nil then
+		local saved = self.conf and self.conf.blizzLayout
+		y = saved and saved.buffsOnTopY or self.shippedLayout and self.shippedLayout.buffsOnTopY or 0
 	end
-	-- in the Blizzard frame's units
-	local dx = (artLeft * artScale - frameLeft * blizzScale) / blizzScale
-	local dy = (artTop * artScale - frameTop * blizzScale) / blizzScale
-	if not Plain(blizz.buffsOnTop) and self.conf then
-		self.conf.blizzArtSpot = {dx, dy}
-	end
-	local normal = self.conf and self.conf.blizzArtSpot
-	local ratio = blizzScale / part:GetEffectiveScale()
-	return (dx - (normal and normal[1] or 0)) * ratio, (dy - (normal and normal[2] or 0)) * ratio
+	return 0, y
 end
 
 function XPerl_Target_ApplyLayout(self)
@@ -536,7 +524,7 @@ function XPerl_Target_ApplyLayout(self)
 		return false
 	end
 	local inCombat = InCombatLockdown()
-	local shiftX, shiftY = XPerl_Target_ArtShift(self, self.nameFrame)
+	local shiftX, shiftY = XPerl_Target_ArtShift(self)
 	-- part by part: the saved spot, else the shipped one
 	local saved = self.conf and self.conf.blizzLayout
 	for _, name in ipairs(LAYOUT_PARTS) do
@@ -580,13 +568,20 @@ function XPerl_Target_EditLayout()
 		for _, handle in ipairs(self.layoutHandles) do
 			local owner = handle.owner
 			layouts[owner] = layouts[owner] or {}
-			layouts[owner][handle.partName] = handle.spot
+			if handle.whole then
+				layouts[owner].buffsOnTopY = handle.spot[2]
+			else
+				layouts[owner][handle.partName] = handle.spot
+			end
 			handle:Hide()
 		end
 		self.layoutHandles = nil
 		for _, owner in ipairs(owners) do
 			owner.editingLayout = nil
+			owner.editTopY = nil
 			if layouts[owner] then
+				local old = owner.conf.blizzLayout
+				layouts[owner].buffsOnTopY = layouts[owner].buffsOnTopY or old and old.buffsOnTopY
 				layouts[owner].scale = owner:GetEffectiveScale() / owner.blizzFrame:GetEffectiveScale()
 				-- how wide Blizzard's frame is in the parts' units
 				layouts[owner].width = owner.blizzFrame:GetWidth() * owner.blizzFrame:GetEffectiveScale() / owner:GetEffectiveScale()
@@ -625,12 +620,26 @@ function XPerl_Target_EditLayout()
 
 	-- the part put on a spot, its handle over it
 	local function setSpot(handle, x, y, w, h)
+		if handle.whole then
+			handle.spot = {0, y, 0, 0}
+			handle.owner.editTopY = y
+			for _, other in ipairs(self.layoutHandles) do
+				if other.owner == handle.owner and not other.whole then
+					setSpot(other, unpack(other.spot))
+				end
+			end
+			handle.label:SetFormattedText("%s  Y %d", handle.title, y)
+			if handle == selected then
+				refreshPanel()
+			end
+			return
+		end
 		local part = handle.part
 		w, h = max(4, w), max(4, h)
 		handle.spot = {x, y, w, h}
 		if not (InCombatLockdown() and part:IsProtected()) then
 			part:ClearAllPoints()
-			local shiftX, shiftY = XPerl_Target_ArtShift(handle.owner, part)
+			local shiftX, shiftY = XPerl_Target_ArtShift(handle.owner)
 			part:SetPoint("TOPLEFT", handle.owner.blizzFrame, "TOPLEFT", x + shiftX, y + shiftY)
 			part:SetSize(w, h)
 			if handle.partName == "statsFrame" then
@@ -650,7 +659,7 @@ function XPerl_Target_EditLayout()
 		local blizz = handle.owner.blizzFrame
 		local blizzScale = blizz:GetEffectiveScale()
 		local left, top = handle:GetLeft() * uiScale, handle:GetTop() * uiScale
-		local shiftX, shiftY = XPerl_Target_ArtShift(handle.owner, handle.part)
+		local shiftX, shiftY = XPerl_Target_ArtShift(handle.owner)
 		setSpot(handle,
 			floor((left - blizz:GetLeft() * blizzScale) / partScale - shiftX + 0.5),
 			floor((top - blizz:GetTop() * blizzScale) / partScale - shiftY + 0.5),
@@ -761,7 +770,9 @@ function XPerl_Target_EditLayout()
 		p:SetPropagateKeyboardInput(false)
 		local step = IsControlKeyDown() and 10 or 1
 		local x, y, w, h = unpack(selected.spot)
-		if IsShiftKeyDown() then
+		if selected.whole then
+			y = y + bump[2] * step
+		elseif IsShiftKeyDown() then
 			w, h = w + bump[1] * step, h - bump[2] * step
 		else
 			x, y = x + bump[1] * step, y + bump[2] * step
@@ -845,6 +856,33 @@ function XPerl_Target_EditLayout()
 		end
 		end
 	  end
+	end
+	for _, owner in ipairs(owners) do
+		if owner.editingLayout and Plain(owner.blizzFrame.buffsOnTop) then
+			local _, y = XPerl_Target_ArtShift(owner)
+			local bar = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+			bar.whole, bar.owner = true, owner
+			bar.title = (owner == XPerl_Target and "" or "Focus ").."whole frame (Buffs on Top)"
+			bar:SetFrameStrata("DIALOG")
+			bar:SetFrameLevel(100)
+			bar:SetBackdrop({bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1})
+			bar:SetBackdropColor(0.1, 0.4, 1, 0.35)
+			bar:SetBackdropBorderColor(0.3, 0.6, 1, 0.9)
+			bar:SetSize(220, 14)
+			bar:SetPoint("BOTTOMLEFT", owner.nameFrame, "TOPLEFT", 0, 2)
+			bar:EnableMouse(true)
+			bar:EnableMouseWheel(true)
+			bar.label = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+			bar.label:SetPoint("CENTER")
+			bar:SetScript("OnMouseDown", select)
+			bar:SetScript("OnMouseWheel", function(b, delta)
+				select(b)
+				setSpot(b, 0, b.spot[2] + delta, 0, 0)
+			end)
+			bar.spot = {0, y, 0, 0}
+			bar.label:SetFormattedText("%s  Y %d", bar.title, y)
+			tinsert(self.layoutHandles, bar)
+		end
 	end
 	selected = nil
 	refreshPanel()
