@@ -335,14 +335,23 @@ local LAYOUT_PARTS = {"nameFrame", "statsFrame", "portraitFrame", "levelFrame", 
 XPerl_Target_ShippedLayout = {
 	scale = 0.9694, -- the parts' scale against Blizzard's frame when recorded
 	width = 239.3, -- Blizzard's frame (232 wide) in the parts' units
-	buffsOnTopY = -16, -- the whole layer lower while Buffs on Top is set
 	nameFrame = {12, -6, 159, 25},
 	statsFrame = {12, -27, 159, 49},
-	portraitFrame = {167, -1, 75, 75},
-	typeFramePlayer = {240, -4, 25, 25},
-	creatureTypeFrame = {240, -4, 54, 22}, -- where the class icon sits for players
-	bossFrame = {240, -31, 27, 20},
-	levelFrame = {189, -69, 35, 30},
+	portraitFrame = {167, -6, 75, 75},
+	typeFramePlayer = {240, -9, 25, 25},
+	creatureTypeFrame = {240, -9, 54, 22}, -- where the class icon sits for players
+	bossFrame = {240, -36, 27, 20},
+	levelFrame = {189, -74, 35, 30},
+	-- with Buffs on Top: the whole layer this much lower, and these parts
+	-- where they differ
+	buffsOnTopY = -16,
+	onTop = {
+		portraitFrame = {167, -1, 75, 75},
+		typeFramePlayer = {240, -4, 25, 25},
+		creatureTypeFrame = {240, -4, 54, 22},
+		bossFrame = {240, -31, 27, 20},
+		levelFrame = {189, -69, 35, 30},
+	},
 }
 
 local function TargetLayout(self)
@@ -504,6 +513,33 @@ function XPerl_Target_ArtDump(label)
 	XPerl_Notice("Blizzard target frame recorded as '"..(label or "now").."'. /reload to write it to disk.")
 end
 
+-- A saved layout's spots for each mode. A save from before the two modes
+-- were kept apart, made with Buffs on Top set (it has buffsOnTopY), holds
+-- that mode's spots only.
+local function SavedSpots(saved)
+	if not saved then
+		return nil, nil
+	end
+	if not saved.version and saved.buffsOnTopY then
+		return nil, saved
+	end
+	return saved, saved.onTop
+end
+
+-- Where a part goes: with Buffs on Top its own spot for that mode if it has
+-- one, else the normal one; a saved spot before the shipped one.
+local function LayoutSpot(self, name, onTop)
+	local savedBase, savedTop = SavedSpots(self.conf and self.conf.blizzLayout)
+	local shipped = self.shippedLayout
+	if onTop then
+		local spot = savedTop and savedTop[name] or shipped and shipped.onTop and shipped.onTop[name]
+		if spot then
+			return spot
+		end
+	end
+	return savedBase and savedBase[name] or shipped and shipped[name]
+end
+
 -- With Buffs on Top, Blizzard's auras sit above its frame and the whole
 -- Z-Perl layer moves up or down by its own amount (set as "whole frame" in
 -- /zperl layout), in the parts' units. Blizzard's frame never moves.
@@ -527,9 +563,9 @@ function XPerl_Target_ApplyLayout(self)
 	local inCombat = InCombatLockdown()
 	local shiftX, shiftY = XPerl_Target_ArtShift(self)
 	-- part by part: the saved spot, else the shipped one
-	local saved = self.conf and self.conf.blizzLayout
+	local onTop = Plain(self.blizzFrame.buffsOnTop)
 	for _, name in ipairs(LAYOUT_PARTS) do
-		local spot = saved and saved[name] or self.shippedLayout and self.shippedLayout[name]
+		local spot = LayoutSpot(self, name, onTop)
 		local part = spot and self[name]
 		if part and not (inCombat and part:IsProtected()) then
 			part:ClearAllPoints()
@@ -580,13 +616,32 @@ function XPerl_Target_EditLayout()
 		for _, owner in ipairs(owners) do
 			owner.editingLayout = nil
 			owner.editTopY = nil
-			if layouts[owner] then
+			local parts = layouts[owner]
+			if parts then
+				-- the mode being edited takes these spots; the other keeps its own
 				local old = owner.conf.blizzLayout
-				layouts[owner].buffsOnTopY = layouts[owner].buffsOnTopY or old and old.buffsOnTopY
-				layouts[owner].scale = owner:GetEffectiveScale() / owner.blizzFrame:GetEffectiveScale()
-				-- how wide Blizzard's frame is in the parts' units
-				layouts[owner].width = owner.blizzFrame:GetWidth() * owner.blizzFrame:GetEffectiveScale() / owner:GetEffectiveScale()
-				owner.conf.blizzLayout = layouts[owner]
+				local oldBase, oldTop = SavedSpots(old)
+				local new = {
+					version = 2,
+					buffsOnTopY = parts.buffsOnTopY or old and old.buffsOnTopY,
+					scale = owner:GetEffectiveScale() / owner.blizzFrame:GetEffectiveScale(),
+					-- how wide Blizzard's frame is in the parts' units
+					width = owner.blizzFrame:GetWidth() * owner.blizzFrame:GetEffectiveScale() / owner:GetEffectiveScale(),
+				}
+				local function copy(from, to)
+					for _, name in ipairs(LAYOUT_PARTS) do
+						to[name] = from and from[name]
+					end
+					return to
+				end
+				if Plain(owner.blizzFrame.buffsOnTop) then
+					copy(oldBase, new)
+					new.onTop = copy(parts, {})
+				else
+					copy(parts, new)
+					new.onTop = oldTop and copy(oldTop, {})
+				end
+				owner.conf.blizzLayout = new
 			end
 			XPerl_PlaceOverBlizzard(owner)
 		end
