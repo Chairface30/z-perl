@@ -440,7 +440,14 @@ end
 function XPerl_Target_ArtDump(label)
 	local blizz = TargetFrame
 	local lines = {}
+	local describeOne
 	local function describe(name, region)
+		local ok, err = pcall(describeOne, name, region)
+		if not ok then
+			tinsert(lines, name..": error "..tostring(err))
+		end
+	end
+	describeOne = function(name, region)
 		if not region then
 			tinsert(lines, name..": missing")
 			return
@@ -452,10 +459,14 @@ function XPerl_Target_ArtDump(label)
 			return value and format("%.1f", value * scale) or "?"
 		end
 		local anchors = {}
-		for i = 1, (region.GetNumPoints and region:GetNumPoints() or 0) do
-			local point, rel, relPoint, x, y = region:GetPoint(i)
-			local relName = rel and (rel.GetDebugName and rel:GetDebugName() or rel.GetName and rel:GetName()) or "nil"
-			tinsert(anchors, format("%s>%s.%s(%.1f,%.1f)", tostring(point), tostring(relName), tostring(relPoint), Plain(x) or 0, Plain(y) or 0))
+		-- some of Blizzard's frames keep even their anchor count secret
+		local count = region.GetNumPoints and Plain(region:GetNumPoints()) or 0
+		for i = 1, count do
+			pcall(function()
+				local point, rel, relPoint, x, y = region:GetPoint(i)
+				local relName = rel and (rel.GetDebugName and Plain(rel:GetDebugName()) or rel.GetName and Plain(rel:GetName())) or "nil"
+				tinsert(anchors, format("%s>%s.%s(%.1f,%.1f)", tostring(Plain(point)), tostring(relName), tostring(Plain(relPoint)), Plain(x) or 0, Plain(y) or 0))
+			end)
 		end
 		tinsert(lines, format("%s: L %s T %s R %s B %s shown %s | %s", name, edge("GetLeft"), edge("GetTop"), edge("GetRight"), edge("GetBottom"),
 			tostring(Plain(region:IsShown())), table.concat(anchors, " ")))
