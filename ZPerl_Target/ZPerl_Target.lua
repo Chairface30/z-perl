@@ -315,9 +315,10 @@ end
 
 -- Forever: Blizzard's own target frame is used in place of Z-Perl's. The
 -- client keeps the target's auras from addons in combat, and only Blizzard's
--- frame can still show its debuffs. Z-Perl lays a 3D portrait over the
--- frame's round portrait: a black disc over Blizzard's picture, the model
--- square inside it. Nothing of Blizzard's is called or moved.
+-- frame can still show its debuffs. Z-Perl lays a square portrait in its own
+-- frame style over Blizzard's round portrait and level badge: the 3D model
+-- (or the flat picture when there is no model), with the level in the top
+-- right corner. Nothing of Blizzard's is called or moved.
 local issecret = issecretvalue
 local function Plain(value)
 	if issecret and issecret(value) then
@@ -333,37 +334,75 @@ function XPerl_Target_BlizzardPortrait()
 		return
 	end
 
-	local holder = CreateFrame("Frame", "XPerl_TargetBlizzardPortrait", TargetFrame)
-	holder:SetFrameLevel((container or TargetFrame):GetFrameLevel() + 2)
-	holder:SetPoint("TOPLEFT", portrait, "TOPLEFT", 1, -1)
-	holder:SetPoint("BOTTOMRIGHT", portrait, "BOTTOMRIGHT", -1, 1)
+	-- a little larger than the circle, reaching over the level badge
+	local holder = CreateFrame("Frame", "XPerl_TargetBlizzardPortrait", TargetFrame, "XPerl_BorderStyleTemplate")
+	-- over every layer of Blizzard's frame, its level badge included
+	local top = TargetFrame:GetFrameLevel()
+	local function highest(frame, depth)
+		for _, child in ipairs({frame:GetChildren()}) do
+			top = max(top, Plain(child:GetFrameLevel()) or 0)
+			if depth < 3 then
+				highest(child, depth + 1)
+			end
+		end
+	end
+	highest(TargetFrame, 1)
+	holder:SetFrameLevel(top + 2)
+	holder:SetPoint("TOPLEFT", portrait, "TOPLEFT", -5, 5)
+	holder:SetPoint("BOTTOMRIGHT", portrait, "BOTTOMRIGHT", 13, -13)
 
-	local disc = holder:CreateTexture(nil, "BACKGROUND")
-	disc:SetAllPoints()
-	disc:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask")
-	disc:SetVertexColor(0, 0, 0, 1)
+	local flat = holder:CreateTexture(nil, "ARTWORK")
+	flat:SetPoint("TOPLEFT", 3, -3)
+	flat:SetPoint("BOTTOMRIGHT", -3, 3)
+	flat:SetTexCoord(0.1, 0.9, 0.1, 0.9)
 
-	-- the largest square that fits in the circle
 	local model = CreateFrame("PlayerModel", nil, holder)
-	model:SetPoint("CENTER")
-	holder:SetScript("OnSizeChanged", function(self, width)
-		width = Plain(width)
-		if width then
-			model:SetSize(width * 0.72, width * 0.72)
-		end
-	end)
-	model:SetSize(40, 40)
+	model:SetPoint("TOPLEFT", 3, -3)
+	model:SetPoint("BOTTOMRIGHT", -4, 4)
 
-	local function update()
-		if not UnitExists("target") then
+	-- above the model
+	local overlay = CreateFrame("Frame", nil, holder)
+	overlay:SetAllPoints()
+	overlay:SetFrameLevel(model:GetFrameLevel() + 2)
+	local level = overlay:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	level:SetPoint("TOPRIGHT", -5, -5)
+	local skull = overlay:CreateTexture(nil, "OVERLAY")
+	skull:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-Skull")
+	skull:SetSize(14, 14)
+	skull:SetPoint("TOPRIGHT", -4, -4)
+
+	local function updateLevel()
+		local targetLevel = UnitLevel("target")
+		local plainLevel = Plain(targetLevel)
+		if plainLevel and plainLevel < 0 then
+			level:Hide()
+			skull:Show()
 			return
 		end
-		-- out of view (too far away): Blizzard's picture shows instead
+		skull:Hide()
+		level:Show()
+		-- a secret level still shows; it can't be compared or colored
+		level:SetText(targetLevel)
+		local color = plainLevel and GetDifficultyColor(plainLevel) or NORMAL_FONT_COLOR
+		level:SetTextColor(color.r, color.g, color.b)
+		local class = Plain(UnitClassification("target"))
+		if plainLevel and (class == "elite" or class == "worldboss" or class == "rareelite") then
+			level:SetText(plainLevel.."+")
+		end
+	end
+
+	local function updateModel()
+		-- out of view (too far away): the flat picture instead
 		if Plain(UnitIsVisible("target")) == false then
-			holder:Hide()
+			model:Hide()
+			pcall(SetPortraitTexture, flat, "target")
+			flat:Show()
+			holder.noModel = true
 			return
 		end
-		holder:Show()
+		holder.noModel = nil
+		flat:Hide()
+		model:Show()
 		model:ClearModel()
 		model:SetUnit("target")
 		local cam = XPerlDB and XPerlDB.portrait3DCamera or {}
@@ -381,19 +420,36 @@ function XPerl_Target_BlizzardPortrait()
 		pcall(model.SetLight, model, true, false, 0, 0, 0, 1.0, 1.0, 1.0, 1.0)
 	end
 
+	local function update(_, event)
+		if not UnitExists("target") then
+			return
+		end
+		if conf then
+			local frame, border = conf.colour.frame, conf.colour.border
+			holder:SetBackdropColor(frame.r, frame.g, frame.b, frame.a)
+			holder:SetBackdropBorderColor(border.r, border.g, border.b, border.a)
+		end
+		if event ~= "UNIT_LEVEL" and event ~= "UNIT_CLASSIFICATION_CHANGED" then
+			updateModel()
+		end
+		updateLevel()
+	end
+
 	holder:RegisterEvent("PLAYER_TARGET_CHANGED")
 	holder:RegisterUnitEvent("UNIT_MODEL_CHANGED", "target")
 	holder:RegisterUnitEvent("UNIT_PORTRAIT_UPDATE", "target")
+	holder:RegisterUnitEvent("UNIT_LEVEL", "target")
+	holder:RegisterUnitEvent("UNIT_CLASSIFICATION_CHANGED", "target")
 	holder:SetScript("OnEvent", update)
-	-- a target out of view gets its model once it comes into view
-	local ticker = CreateFrame("Frame", nil, TargetFrame)
+	holder:SetScript("OnShow", update)
+	-- a target that was out of view gets its model once it comes into view
 	local elapsed = 0
-	ticker:SetScript("OnUpdate", function(_, step)
+	holder:SetScript("OnUpdate", function(_, step)
 		elapsed = elapsed + step
-		if elapsed > 2 then
+		if elapsed > 1 then
 			elapsed = 0
-			if Plain(UnitIsVisible("target")) ~= false and not holder:IsShown() then
-				update()
+			if holder.noModel and Plain(UnitIsVisible("target")) ~= false then
+				updateModel()
 			end
 		end
 	end)
