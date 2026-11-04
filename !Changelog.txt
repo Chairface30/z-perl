@@ -1,4 +1,4 @@
-**Unreleased**
+**8.0.10** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: a Hide Surnames option (general settings, under Show AFK Flag) shows players by first name only. Frames that were widened for full names go back to their own widths with it on
 * No more chat messages at login about disabling PerlButton, WT_ZoningTimeFix, CT_PartyBuffs and XPerl_GrimReaper. Z-Perl checked for these old addons on every login and, on clients where the addon check answers differently, reported them disabled even when they weren't installed. The checks are gone, along with a silent one for XPerl_TeamSpeak and an unused list of old module names
 * Forever: getting hit or healed in combat no longer throws Lua errors from the player, target, party and pet frames ("attempt to compare local 'amount' (a secret number value, while execution tainted by 'ZPerl_Player')" in CombatFeedback.lua). The client keeps the amount secret in combat, and Blizzard's hit indicator code compares it. With a secret amount the number on the portrait is skipped; the hit and heal flash still shows
