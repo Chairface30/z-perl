@@ -367,6 +367,25 @@ function XPerl_Secret(...)
 	return false
 end
 
+-- UNIT_COMBAT hit indicator and flash. In combat the client hands the
+-- amount over as a secret number; Blizzard's CombatFeedback_OnCombatEvent
+-- compares it (amount ~= 0) and throws while running from our tainted code.
+-- With a secret amount the portrait number is skipped and the hit is taken
+-- as a hit. Returns "heal", "hit" or nil for the caller's combat flash.
+function XPerl_CombatFeedback(self, showText, action, descriptor, damage, damageType)
+	local secret = issecret and issecret(damage)
+	if showText and not secret then
+		CombatFeedback_OnCombatEvent(self, action, descriptor, damage, damageType)
+	end
+	if action == "HEAL" then
+		return "heal"
+	elseif secret then
+		return action == "WOUND" and "hit" or nil
+	elseif damage and damage > 0 then
+		return "hit"
+	end
+end
+
 -- UnitIsCharmed for the charmed warning icons. On WoW Forever the answer can
 -- come back secret, and testing a secret boolean throws ("attempt to perform
 -- boolean test on a secret boolean value"). Unknown reads as not charmed.

@@ -1557,13 +1557,10 @@ end
 
 -- UNIT_COMBAT
 function XPerl_Player_Events:UNIT_COMBAT(action, descriptor, damage, damageType)
-	if (pconf.hitIndicator and pconf.portrait) then
-		CombatFeedback_OnCombatEvent(self, action, descriptor, damage, damageType)
-	end
-
-	if (action == "HEAL") then
+	local hit = XPerl_CombatFeedback(self, pconf.hitIndicator and pconf.portrait, action, descriptor, damage, damageType)
+	if (hit == "heal") then
 		XPerl_Player_CombatFlash(self, 0, true, true)
-	elseif (damage and damage > 0) then
+	elseif (hit) then
 		XPerl_Player_CombatFlash(self, 0, true)
 	end
 end

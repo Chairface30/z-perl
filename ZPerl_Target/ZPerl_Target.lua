@@ -2412,15 +2412,11 @@ function XPerl_Target_Events:UNIT_COMBAT(unitID, action, descriptor, damage, dam
 	if (unitID == self.partyid) then
 		XPerl_Target_Update_Combat(self)
 
-		if (not self.conf.ownDamageOnly) then
-			if (self.conf.hitIndicator and self.conf.portrait) then
-				CombatFeedback_OnCombatEvent(self, action, descriptor, damage, damageType)
-			end
-		end
-
-		if (action == "HEAL") then
+		local showText = (not self.conf.ownDamageOnly) and self.conf.hitIndicator and self.conf.portrait
+		local hit = XPerl_CombatFeedback(self, showText, action, descriptor, damage, damageType)
+		if (hit == "heal") then
 			XPerl_Target_CombatFlash(self, 0, true, true)
-		elseif (damage and damage > 0) then
+		elseif (hit) then
 			XPerl_Target_CombatFlash(self, 0, true)
 		end
 	end

@@ -555,13 +555,10 @@ end
 
 function XPerl_Player_Pet_Events:UNIT_COMBAT(unitID, action, descriptor, damage, damageType)
 	if (unitID == self.partyid) then
-		if (pconf.hitIndicator and pconf.portrait) then
-			CombatFeedback_OnCombatEvent(self, action, descriptor, damage, damageType)
-		end
-
-		if (action == "HEAL") then
+		local hit = XPerl_CombatFeedback(self, pconf.hitIndicator and pconf.portrait, action, descriptor, damage, damageType)
+		if (hit == "heal") then
 			XPerl_Player_Pet_CombatFlash(XPerl_Player_Pet, 0, true, true)
-		elseif (damage and damage > 0) then
+		elseif (hit) then
 			XPerl_Player_Pet_CombatFlash(XPerl_Player_Pet, 0, true)
 		end
 	end

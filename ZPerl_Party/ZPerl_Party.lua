@@ -1319,14 +1319,12 @@ XPerl_Party_Events.READY_CHECK_FINISHED = XPerl_Party_Events.READY_CHECK
 function XPerl_Party_Events:UNIT_COMBAT(...)
 	local action, descriptor, damage, damageType = ...
 
-	if (pconf.hitIndicator and pconf.portrait) then
-		CombatFeedback_OnCombatEvent(self, action, descriptor, damage, damageType)
-	end
+	local hit = XPerl_CombatFeedback(self, pconf.hitIndicator and pconf.portrait, action, descriptor, damage, damageType)
 
 	XPerl_Party_UpdateCombat(self)
-	if (action == "HEAL") then
+	if (hit == "heal") then
 		XPerl_Party_CombatFlash(self, 0, true, true)
-	elseif (damage and damage > 0) then
+	elseif (hit) then
 		XPerl_Party_CombatFlash(self, 0, true)
 	end
 end
