@@ -1,4 +1,4 @@
-**Unreleased**
+**8.0.11** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: a rogue's (or cat druid's) combo points show over the Z-Perl target frame again. Blizzard's combo point frame sits on its own target frame, under the Z-Perl frame laid over it, and the portrait hid it completely. It now sits one layer above the Z-Perl target and follows the Blizzard Combo Points position option (top, bottom, left or right, inside the portrait's edges); with that option off it is hidden. While Z-Perl is unlocked (options open), a green Combo Points box over them can be dragged to put them anywhere; they keep that spot beside the target frame's portrait. Right-click the box to reset them, or pick a position button
 * Forever: Z-Perl's own combo point bar and number no longer risk an error in combat, when the client keeps the count secret; they show it in one colour then
 
