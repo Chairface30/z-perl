@@ -1468,6 +1468,10 @@ function XPerl_UnlockFrames()
 		XPerl_AggroAnchor:Enable()
 	end
 
+	if (XPerl_Target_ComboUnlock) then
+		XPerl_Target_ComboUnlock(true)
+	end
+
 	--[[if (XPerl_Player) then
 		if (XPerl_Player.runes and not InCombatLockdown()) then
 			XPerl_Player.runes:EnableMouse(true)
@@ -1505,6 +1509,10 @@ function XPerl_LockFrames()
 
 	if (XPerl_AggroAnchor) then
 		XPerl_AggroAnchor:Disable()
+	end
+
+	if (XPerl_Target_ComboUnlock) then
+		XPerl_Target_ComboUnlock(false)
 	end
 
 	--[[if (XPerl_Player) then

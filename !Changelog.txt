@@ -1,3 +1,7 @@
+**Unreleased**
+* Forever: a rogue's (or cat druid's) combo points show over the Z-Perl target frame again. Blizzard's combo point frame sits on its own target frame, under the Z-Perl frame laid over it, and the portrait hid it completely. It now sits one layer above the Z-Perl target and follows the Blizzard Combo Points position option (top, bottom, left or right, inside the portrait's edges); with that option off it is hidden. While Z-Perl is unlocked (options open), a green Combo Points box over them can be dragged to put them anywhere; they keep that spot beside the target frame's portrait. Right-click the box to reset them, or pick a position button
+* Forever: Z-Perl's own combo point bar and number no longer risk an error in combat, when the client keeps the count secret; they show it in one colour then
+
 **8.0.10** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: a Hide Surnames option (general settings, under Show AFK Flag) shows players by first name only. Frames that were widened for full names go back to their own widths with it on
 * No more chat messages at login about disabling PerlButton, WT_ZoningTimeFix, CT_PartyBuffs and XPerl_GrimReaper. Z-Perl checked for these old addons on every login and, on clients where the addon check answers differently, reported them disabled even when they weren't installed. The checks are gone, along with a silent one for XPerl_TeamSpeak and an unused list of old module names

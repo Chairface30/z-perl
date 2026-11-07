@@ -396,6 +396,9 @@ function XPerl_PlaceOverBlizzard(self)
 		end
 	end
 	ClickThrough(self)
+	if self == XPerl_Target and XPerl_Target_PinForeverCombo then
+		XPerl_Target_PinForeverCombo() -- back on top of the layer's new strata
+	end
 	if self == XPerl_Target and not TargetLayout(self) then
 		return -- the target measures its own fit
 	end
@@ -1280,7 +1283,14 @@ end
 ---------------
 function XPerl_Target_UpdateCombo(self)
 	local comboPoints = IsClassic and GetComboPoints("player", "target") or UnitPower(UnitHasVehicleUI("player") and "vehicle" or "player", Enum.PowerType.ComboPoints)
-	local r, g, b = GetComboColour(comboPoints)
+	-- Forever keeps the count secret in combat: it can't be compared, so it
+	-- gets one colour; the bar and the number still take it as it is
+	local r, g, b
+	if XPerl_Plain(comboPoints) == nil then
+		r, g, b = 1, 0.5, 0
+	else
+		r, g, b = GetComboColour(comboPoints)
+	end
 	if (tconf.combo.enable) then
 		--self.cpFrame:Hide()
 		self.nameFrame.cpMeter:SetValue(comboPoints)
@@ -2896,8 +2906,167 @@ function XPerl_Target_ComboFrame_OnEvent(self, event, ...)
 	end
 end
 
+-- Forever: Blizzard's combo points (ComboFrame, from RogueComboPoint.xml) sit
+-- on its target frame, under the Z-Perl layer laid over it, and the square
+-- portrait hides them. The frame is lifted one strata above the Z-Perl
+-- target and pinned to its portrait where the Blizzard Combo Points position
+-- says. Its points have no names, so it is moved as a whole, and Blizzard
+-- still shows and hides it. With the option off it is made invisible.
+local comboPinning
+local function PinForeverCombo()
+	local self = XPerl_Target
+	local combo = ComboFrame
+	if comboPinning or not (self and combo and tconf) then
+		return
+	end
+	if InCombatLockdown() and combo:IsProtected() then
+		return
+	end
+	comboPinning = true
+	local strata = self:GetFrameStrata()
+	for i, level in ipairs(BLIZZ_STRATA) do
+		if level == strata then
+			combo:SetFrameStrata(BLIZZ_STRATA[min(#BLIZZ_STRATA, i + 1)])
+			break
+		end
+	end
+	if tconf.combo.blizzard then
+		combo:SetAlpha(1)
+		local portrait = self.portraitFrame
+		local pos = tconf.combo.pos
+		combo:ClearAllPoints()
+		-- inside the portrait's edges, so Blizzard's auras around the frame
+		-- stay clear
+		if pos == "custom" then
+			-- dragged by hand while Z-Perl is unlocked: its centre this far
+			-- from the portrait's, in the combo frame's own units
+			combo:SetPoint("CENTER", portrait, "CENTER", tconf.combo.x or 0, tconf.combo.y or 0)
+		elseif pos == "bottom" then
+			combo:SetPoint("BOTTOM", portrait, "BOTTOM", 0, 3)
+		elseif pos == "left" then
+			combo:SetPoint("TOPLEFT", portrait, "TOPLEFT", 3, -3)
+		elseif pos == "right" then
+			combo:SetPoint("TOPRIGHT", portrait, "TOPRIGHT", -3, -3)
+		else
+			combo:SetPoint("TOP", portrait, "TOP", 0, -3)
+		end
+	else
+		combo:SetAlpha(0)
+	end
+	comboPinning = nil
+end
+
+function XPerl_Target_PinForeverCombo()
+	if not (XPerl_IsForever and ComboFrame and not ComboPoint1) then
+		return
+	end
+	if not XPerl_Target.comboHooked then
+		XPerl_Target.comboHooked = true
+		-- Blizzard puts it back on its own frame (target change, Edit Mode)
+		hooksecurefunc(ComboFrame, "SetPoint", PinForeverCombo)
+		hooksecurefunc(ComboFrame, "SetFrameStrata", PinForeverCombo)
+	end
+	PinForeverCombo()
+	-- the drag box follows the Blizzard Combo Points checkbox while unlocked
+	if XPerl_Target_ComboUnlock then
+		XPerl_Target_ComboUnlock(XPerlLocked == 0)
+	end
+end
+
+-- While Z-Perl is unlocked (options open), a box over Blizzard's combo
+-- points can be dragged to put them anywhere; the spot is kept as an offset
+-- from the Z-Perl portrait, so they follow the target frame. Right-click
+-- puts them back on the portrait's top edge. Picking one of the position
+-- buttons in the options replaces a dragged spot.
+local comboMover
+local function ComboOffset()
+	local combo, portrait = ComboFrame, XPerl_Target.portraitFrame
+	local cx, cy = combo:GetCenter()
+	local px, py = portrait:GetCenter()
+	cx, cy, px, py = XPerl_Plain(cx), XPerl_Plain(cy), XPerl_Plain(px), XPerl_Plain(py)
+	if not (cx and cy and px and py) then
+		return tconf.combo.x or 0, tconf.combo.y or 0
+	end
+	local cs, ps = combo:GetEffectiveScale(), portrait:GetEffectiveScale()
+	return (cx * cs - px * ps) / cs, (cy * cs - py * ps) / cs
+end
+
+local function ComboMover()
+	if comboMover then
+		return comboMover
+	end
+	local f = CreateFrame("Frame", "XPerl_ComboMover", UIParent)
+	f:SetFrameStrata("DIALOG")
+	f:EnableMouse(true)
+	f:SetClampedToScreen(true)
+	local tex = f:CreateTexture(nil, "BACKGROUND")
+	tex:SetAllPoints()
+	tex:SetColorTexture(0, 1, 0, 0.35)
+	local label = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	label:SetPoint("CENTER")
+	label:SetText("Combo Points")
+	f:SetScript("OnMouseDown", function(self, button)
+		if InCombatLockdown() and ComboFrame:IsProtected() then
+			return
+		end
+		if button == "RightButton" then
+			tconf.combo.pos = "top"
+			tconf.combo.x, tconf.combo.y = nil, nil
+			PinForeverCombo()
+			return
+		end
+		local scale = ComboFrame:GetEffectiveScale()
+		local mx, my = GetCursorPosition()
+		local ox, oy = ComboOffset()
+		self:SetScript("OnUpdate", function()
+			local x, y = GetCursorPosition()
+			tconf.combo.pos = "custom"
+			tconf.combo.x = floor((ox + (x - mx) / scale) * 10 + 0.5) / 10
+			tconf.combo.y = floor((oy + (y - my) / scale) * 10 + 0.5) / 10
+			PinForeverCombo()
+		end)
+	end)
+	f:SetScript("OnMouseUp", function(self)
+		self:SetScript("OnUpdate", nil)
+	end)
+	f:SetScript("OnHide", function(self)
+		self:SetScript("OnUpdate", nil)
+	end)
+	f:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText("Combo Points")
+		GameTooltip:AddLine("Drag to move. Right-click to reset.", 1, 1, 1)
+		GameTooltip:Show()
+	end)
+	f:SetScript("OnLeave", function()
+		GameTooltip:Hide()
+	end)
+	comboMover = f
+	return f
+end
+
+-- Called by XPerl_UnlockFrames / XPerl_LockFrames
+function XPerl_Target_ComboUnlock(unlocked)
+	if not (XPerl_IsForever and ComboFrame and not ComboPoint1 and XPerl_Target and tconf) then
+		return
+	end
+	if unlocked and tconf.combo.blizzard then
+		local f = ComboMover()
+		local w = XPerl_Plain(ComboFrame:GetWidth()) or 0
+		local h = XPerl_Plain(ComboFrame:GetHeight()) or 0
+		local scale = ComboFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+		f:ClearAllPoints()
+		f:SetPoint("CENTER", ComboFrame, "CENTER")
+		f:SetSize(max(w * scale, 80), max(h * scale, 20))
+		f:Show()
+	elseif comboMover then
+		comboMover:Hide()
+	end
+end
+
 -- Using the Blizzard Combo Point frame, but we move the buttons around a little
 function XPerl_Target_Set_BlizzCPFrame(self)
+	XPerl_Target_PinForeverCombo()
 	if not (ComboFrame and ComboPoint1) then
 		return
 	end
