@@ -1119,6 +1119,10 @@ end
 ---------------------------------
 function XPerl_SetSmoothBarColor(self, percentage)
 	if (self) then
+		-- No readable percentage (missing or secret): colour as full health.
+		if type(percentage) ~= "number" or XPerl_Secret(percentage) then
+			percentage = 1
+		end
 		local r, g, b
 		if (conf.colour.classic) then
 			r, g, b = smoothColor(percentage)

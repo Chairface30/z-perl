@@ -1,3 +1,7 @@
+**8.0.13** - Z-Perl Unit Frames Forever - By Chairface Chippendale
+* TBC Anniversary: no more endless "ZPerl.lua: attempt to compare nil with number" errors. A health bar given no readable health percentage now shows full-health colour instead of erroring
+* The health bar on a party member's target gets its health colour again; the colour was worked out but never reached the bar
+
 **8.0.12** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: Blizzard's raid manager (the pull-out tab on the left edge of the screen, with ready check, raid markers and so on) shows again in a group while Z-Perl's raid frames are on. Z-Perl hid it along with Blizzard's raid frames; now only Blizzard's raid frames are hidden
 * Forever: getting hit or healed in combat no longer risks a Lua error from the raid and party pet frames, when the client keeps the amount secret; the hit and heal flash still shows

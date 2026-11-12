@@ -1014,10 +1014,10 @@ local function XPerl_Party_TargetUpdateHealth(self)
 	--tf.healthBar:SetMinMaxValues(0, hpMax)
 	--tf.healthBar:SetValue(hp)
 	-- Begin 4.3 division by 0 work around to ensure we don't divide if max is 0
+	local percent -- read again below for the bar colour
 	if XPerl_Secret(hp, hpMax) then
 		XPerl_DrawSecretBar(tf.healthBar, targetid, hp, hpMax)
 	else
-		local percent
 		if UnitIsDeadOrGhost(targetid) then -- Probably dead target
 			percent = 0 -- So just automatically set percent to 0 and avoid division of 0/0 all together in this situation.
 		elseif hp > 0 and hpMax == 0 then -- We have current ho but max hp failed.
