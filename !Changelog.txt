@@ -1,3 +1,7 @@
+**8.0.12** - Z-Perl Unit Frames Forever - By Chairface Chippendale
+* Forever: Blizzard's raid manager (the pull-out tab on the left edge of the screen, with ready check, raid markers and so on) shows again in a group while Z-Perl's raid frames are on. Z-Perl hid it along with Blizzard's raid frames; now only Blizzard's raid frames are hidden
+* Forever: getting hit or healed in combat no longer risks a Lua error from the raid and party pet frames, when the client keeps the amount secret; the hit and heal flash still shows
+
 **8.0.11** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * Forever: a rogue's (or cat druid's) combo points show over the Z-Perl target frame again. Blizzard's combo point frame sits on its own target frame, under the Z-Perl frame laid over it, and the portrait hid it completely. It now sits one layer above the Z-Perl target and follows the Blizzard Combo Points position option (top, bottom, left or right, inside the portrait's edges); with that option off it is hidden. While Z-Perl is unlocked (options open), a green Combo Points box over them can be dragged to put them anywhere; they keep that spot beside the target frame's portrait. Right-click the box to reset them, or pick a position button
 * Forever: Z-Perl's own combo point bar and number no longer risk an error in combat, when the client keeps the count secret; they show it in one colour then

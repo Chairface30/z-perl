@@ -284,7 +284,9 @@ function XPerl_Raid_OnLoad(self)
 	-- Blizzard's raid frames go while Z-Perl's raid frames are on. (The old
 	-- code for this, above, drove Blizzard's raid manager and was switched
 	-- off; this only moves the frames out of sight and back.)
-	local BLIZZARD_RAID_FRAMES = { "CompactRaidFrameManager", "CompactRaidFrameContainer" }
+	-- The raid manager (the pull-out tab on the left edge, with ready check,
+	-- markers and so on) stays: only Blizzard's unit frames are replaced.
+	local BLIZZARD_RAID_FRAMES = { "CompactRaidFrameContainer" }
 	XPerl_SetBlizzardShown(BLIZZARD_RAID_FRAMES, not XPerlDB.raid.enable)
 
 	XPerl_RegisterOptionChanger(function()
@@ -1579,9 +1581,12 @@ end
 
 -- UNIT_COMBAT
 function XPerl_Raid_Events:UNIT_COMBAT(unitID, action, descriptor, damage, damageType)
-	if (action == "HEAL") then
+	-- The damage can be secret in combat; XPerl_CombatFeedback reads it safely.
+	-- No hit text here, only the flash.
+	local hit = XPerl_CombatFeedback(self, false, action, descriptor, damage, damageType)
+	if (hit == "heal") then
 		XPerl_Raid_CombatFlash(self, 0, true, true)
-	elseif (damage and damage > 0) then
+	elseif (hit) then
 		XPerl_Raid_CombatFlash(self, 0, true)
 	end
 end

@@ -645,9 +645,12 @@ end
 function XPerl_Party_Pet_Events:UNIT_COMBAT(...)
 	local action, descriptor, damage, damageType = ...
 
-	if (action == "HEAL") then
+	-- The damage can be secret in combat; XPerl_CombatFeedback reads it safely.
+	-- No hit text here, only the flash.
+	local hit = XPerl_CombatFeedback(self, false, action, descriptor, damage, damageType)
+	if (hit == "heal") then
 		XPerl_Party_Pet_CombatFlash(self, 0, true, true)
-	elseif (damage and damage > 0) then
+	elseif (hit) then
 		XPerl_Party_Pet_CombatFlash(self, 0, true)
 	end
 end
