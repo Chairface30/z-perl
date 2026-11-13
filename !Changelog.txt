@@ -1,3 +1,6 @@
+**8.0.14** - Z-Perl Unit Frames Forever - By Chairface Chippendale
+* Forever: Blizzard's target and focus frames no longer show through a see-through Z-Perl target or focus frame. The Blizzard frame art, portrait, health and mana bars, name, level and small icons under the Z-Perl frame are now invisible; only Blizzard's buffs and debuffs show. They show again while /zperl layout is open, to line the parts up with
+
 **8.0.13** - Z-Perl Unit Frames Forever - By Chairface Chippendale
 * TBC Anniversary: no more endless "ZPerl.lua: attempt to compare nil with number" errors. A health bar given no readable health percentage now shows full-health colour instead of erroring
 * The health bar on a party member's target gets its health colour again; the colour was worked out but never reached the bar

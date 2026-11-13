@@ -380,7 +380,59 @@ end
 -- Blizzard's target frame width at its normal size (units)
 local BLIZZ_FRAME_WIDTH = 232
 local BLIZZ_STRATA = {"BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP"}
+-- Blizzard's frame art, bars, text and icons under the Z-Perl frame are
+-- faded out so a see-through Z-Perl frame doesn't show them; its auras
+-- stay. Faded, not hidden: the fit still measures the art's edges. While
+-- the layout is edited the art shows again, to line the parts up with.
+local function BlizzardArtParts(blizz)
+	local parts = {}
+	local content = blizz.TargetFrameContent
+	tinsert(parts, blizz.TargetFrameContainer)
+	tinsert(parts, content and content.TargetFrameContentMain)
+	local contextual = content and content.TargetFrameContentContextual
+	if contextual then
+		local auras = contextual.Auras
+		for _, child in ipairs({contextual:GetChildren()}) do
+			if child ~= auras then
+				tinsert(parts, child)
+			end
+		end
+		for _, region in ipairs({contextual:GetRegions()}) do
+			tinsert(parts, region)
+		end
+	end
+	return parts
+end
+
+function XPerl_Target_HideBlizzardArt(self)
+	if not (self.useBlizzardFrame and self.blizzFrame) then
+		return
+	end
+	local alpha = self.editingLayout and 1 or 0
+	self.blizzArtAlpha = alpha
+	for _, part in ipairs(BlizzardArtParts(self.blizzFrame)) do
+		if part and part.SetAlpha then
+			if not part.zperlAlphaHooked then
+				part.zperlAlphaHooked = true
+				-- Blizzard's code may bring a piece back; fade it again
+				hooksecurefunc(part, "SetAlpha", function(region)
+					local want = self.blizzArtAlpha
+					if want and not region.zperlSettingAlpha then
+						region.zperlSettingAlpha = true
+						pcall(region.SetAlpha, region, want)
+						region.zperlSettingAlpha = nil
+					end
+				end)
+			end
+			part.zperlSettingAlpha = true
+			pcall(part.SetAlpha, part, alpha)
+			part.zperlSettingAlpha = nil
+		end
+	end
+end
+
 function XPerl_PlaceOverBlizzard(self)
+	XPerl_Target_HideBlizzardArt(self)
 	if not self.useBlizzardFrame or self.editingLayout then
 		return
 	end
@@ -967,6 +1019,7 @@ function XPerl_Target_EditLayout()
 	for o, owner in ipairs(owners) do
 	  if owner:IsShown() then
 		owner.editingLayout = true
+		XPerl_Target_HideBlizzardArt(owner)
 		for i, name in ipairs(LAYOUT_PARTS) do
 		local part = owner[name]
 		if part and part:IsShown() and part:GetLeft() then
@@ -1169,6 +1222,7 @@ function XPerl_Target_ApplyBlizzFit(self)
 end
 
 function XPerl_Target_FitToBlizzard(self)
+	XPerl_Target_HideBlizzardArt(self) -- also in combat, for pieces made since
 	if not self.useBlizzardFrame or self.editingLayout or InCombatLockdown() then
 		return
 	end
